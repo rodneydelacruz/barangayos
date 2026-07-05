@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle } from 'lucide-react'
-import { getRecords, createRecord, updateRecord, deleteRecord, type ApiRecord } from '@/api/records'
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { getBlotters, createBlotter, updateBlotter, deleteBlotter, getNextCaseNumber, type ApiBlotter, type BlotterData } from '@/api/blotter'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -11,66 +11,136 @@ import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
 import { cn } from '@/lib/utils'
 
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }> = {
-  pending:   { label: 'Pending',   icon: Clock,        color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-500/10' },
-  approved:  { label: 'Approved',  icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-  rejected:  { label: 'Rejected',  icon: XCircle,      color: 'text-red-pinoy',   bg: 'bg-red-50 dark:bg-red-500/10' },
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  pending:   { label: 'Pending',   color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-500/10' },
+  hearing:   { label: 'Hearing',   color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-500/10' },
+  settled:   { label: 'Settled',   color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+  escalated: { label: 'Escalated', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
+  dismissed: { label: 'Dismissed', color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-500/10' },
+}
+
+const incidentTypeOptions = [
+  { value: 'blotter', label: 'Blotter' },
+  { value: 'complaint', label: 'Complaint' },
+  { value: 'dispute', label: 'Dispute' },
+  { value: 'other', label: 'Other' },
+]
+
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'hearing', label: 'Hearing' },
+  { value: 'settled', label: 'Settled' },
+  { value: 'escalated', label: 'Escalated' },
+  { value: 'dismissed', label: 'Dismissed' },
+]
+
+function emptyForm(): BlotterData & { case_number: string } {
+  return {
+    case_number: '',
+    incident_type: 'blotter',
+    complainant_name: '',
+    complainant_contact: '',
+    respondent_name: '',
+    respondent_contact: '',
+    incident_date: '',
+    incident_location: '',
+    narrative: '',
+    involved_parties: '',
+    status: 'pending',
+    action_taken: '',
+  }
 }
 
 export default function RecordsPage() {
-  const [records, setRecords] = useState<ApiRecord[]>([])
+  const [blotters, setBlotters] = useState<ApiBlotter[]>([])
   const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
-  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
-  const [sortBy, setSortBy] = useState<'title' | 'status' | 'updated'>('updated')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getRecords()
-      .then(setRecords)
-      .catch(console.error)
+    getBlotters()
+      .then(setBlotters)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load blotters'))
       .finally(() => setLoading(false))
   }, [])
 
+  const filteredBlotters = useMemo(() => {
+    return blotters.filter((b) => {
+      if (search) {
+        const q = search.toLowerCase()
+        if (
+          !b.case_number.toLowerCase().includes(q) &&
+          !b.complainant_name.toLowerCase().includes(q) &&
+          !b.respondent_name?.toLowerCase().includes(q)
+        ) return false
+      }
+      if (statusFilter && b.status !== statusFilter) return false
+      if (typeFilter && b.incident_type !== typeFilter) return false
+      return true
+    })
+  }, [blotters, search, statusFilter, typeFilter])
+
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!form.complainant_name.trim()) return
 
     try {
       if (editingId) {
-        await updateRecord(editingId, { title, status })
-        setRecords((prev) =>
-          prev.map((r) => r.id === editingId ? { ...r, title, status } : r),
+        const { case_number, ...payload } = form
+        const updated = await updateBlotter(editingId, payload)
+        setBlotters((prev) =>
+          prev.map((b) => (b.id === editingId ? updated : b)),
         )
       } else {
-        const created = await createRecord({ title, status })
-        setRecords((prev) => [created, ...prev])
+        const caseNumber = form.case_number || await getNextCaseNumber()
+        const { case_number: _, ...payload } = form
+        const created = await createBlotter({ ...payload, case_number: caseNumber })
+        setBlotters((prev) => [created, ...prev])
       }
-      setTitle('')
-      setStatus('pending')
-      setEditingId(null)
-      setPanelOpen(false)
+      closePanel()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save record')
+      setError(err instanceof Error ? err.message : 'Failed to save blotter case')
     }
   }
 
   function openCreatePanel() {
     setError(null)
     setEditingId(null)
-    setTitle('')
-    setStatus('pending')
+    const base = emptyForm()
+    getNextCaseNumber().then((num) => {
+      setForm({ ...base, case_number: num })
+    }).catch(() => {
+      setForm(base)
+    })
     setPanelOpen(true)
   }
 
-  function openEditPanel(record: ApiRecord) {
+  function openEditPanel(record: ApiBlotter) {
     setEditingId(record.id)
-    setTitle(record.title)
-    setStatus(record.status)
+    setForm({
+      case_number: record.case_number,
+      incident_type: record.incident_type,
+      complainant_name: record.complainant_name,
+      complainant_contact: record.complainant_contact,
+      respondent_name: record.respondent_name,
+      respondent_contact: record.respondent_contact,
+      incident_date: record.incident_date,
+      incident_location: record.incident_location,
+      narrative: record.narrative,
+      involved_parties: record.involved_parties,
+      status: record.status,
+      action_taken: record.action_taken,
+    })
     setPanelOpen(true)
     setError(null)
   }
@@ -82,56 +152,67 @@ export default function RecordsPage() {
   async function confirmDelete() {
     if (!deletingId) return
     try {
-      await deleteRecord(deletingId)
-      setRecords((prev) => prev.filter((r) => r.id !== deletingId))
+      await deleteBlotter(deletingId)
+      setBlotters((prev) => prev.filter((b) => b.id !== deletingId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete record')
+      setError(err instanceof Error ? err.message : 'Failed to delete blotter case')
     } finally {
       setDeletingId(null)
     }
   }
 
-  function handleSort(field: 'title' | 'status' | 'updated') {
-    if (sortBy === field) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortBy(field)
-      setSortDir('asc')
-    }
-  }
-
-  const sortedRecords = useMemo(() => {
-    return [...records].sort((a, b) => {
-      let cmp = 0
-      if (sortBy === 'title') cmp = a.title.localeCompare(b.title)
-      else if (sortBy === 'status') cmp = a.status.localeCompare(b.status)
-      else cmp = new Date(a.updated).getTime() - new Date(b.updated).getTime()
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-  }, [records, sortBy, sortDir])
-
   function closePanel() {
     setPanelOpen(false)
     setEditingId(null)
-    setTitle('')
-    setStatus('pending')
+    setForm(emptyForm())
     setError(null)
   }
+
+  const canModify = hasRole('admin', 'staff')
 
   return (
     <>
       <PageHeader title="Blotter Records" subtitle="Manage and track incident reports and complaints.">
-        {hasRole('admin', 'staff') && (
+        {canModify && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />
-            New Record
+            New Blotter
           </Button>
         )}
       </PageHeader>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search by case # or name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-9 w-60 max-w-full text-sm"
+        />
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v)}
+          className="h-9 w-36 text-sm"
+        >
+          <option value="">All Status</option>
+          {statusOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Select>
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter(v)}
+          className="h-9 w-36 text-sm"
+        >
+          <option value="">All Types</option>
+          {incidentTypeOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Select>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Records</CardTitle>
+          <CardTitle>Blotter Cases</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -144,13 +225,13 @@ export default function RecordsPage() {
                 </div>
               ))}
             </div>
-          ) : records.length === 0 ? (
+          ) : blotters.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
-              <p className="text-sm text-muted-foreground">No records found.</p>
-              {hasRole('admin', 'staff') && (
+              <p className="text-sm text-muted-foreground">No blotter cases yet.</p>
+              {canModify && (
                 <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={openCreatePanel}>
                   <Plus className="size-3.5" />
-                  Create first record
+                  Create first case
                 </Button>
               )}
             </div>
@@ -159,86 +240,89 @@ export default function RecordsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    <th className="px-4 py-3 sm:px-6 cursor-pointer select-none" onClick={() => handleSort('title')}>
-                      <span className="inline-flex items-center gap-1">
-                        Title
-                        {sortBy === 'title' && (sortDir === 'asc' ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />)}
-                      </span>
-                    </th>
-                    <th className="px-4 py-3 sm:px-6 cursor-pointer select-none" onClick={() => handleSort('status')}>
-                      <span className="inline-flex items-center gap-1">
-                        Status
-                        {sortBy === 'status' && (sortDir === 'asc' ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />)}
-                      </span>
-                    </th>
-                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6 cursor-pointer select-none" onClick={() => handleSort('updated')}>
-                      <span className="inline-flex items-center gap-1">
-                        Date
-                        {sortBy === 'updated' && (sortDir === 'asc' ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />)}
-                      </span>
-                    </th>
+                    <th className="px-4 py-3 sm:px-6">Case #</th>
+                    <th className="px-4 py-3 sm:px-6">Complainant</th>
+                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Respondent</th>
+                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Incident Type</th>
+                    <th className="px-4 py-3 sm:px-6">Status</th>
+                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Date</th>
                     <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {sortedRecords.map((record, i) => {
-                    const cfg = statusConfig[record.status]
-                    const StatusIcon = cfg.icon
+                <tbody className={filteredBlotters.length === 0 ? 'hidden' : ''}>
+                  {filteredBlotters.map((b, i) => {
+                    const cfg = statusConfig[b.status]
                     return (
                       <tr
-                        key={record.id}
+                        key={b.id}
                         className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
-                        style={{ ['--stagger-index' as string]: i }}
+                        style={{ '--stagger-index': i } as React.CSSProperties}
                       >
-                        <td className="px-4 py-3 sm:px-6 text-sm font-medium text-foreground">{record.title}</td>
-                        <td className="px-4 py-3 sm:px-6">
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
+                          {b.case_number}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
+                          {b.complainant_name}
+                        </td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
+                          {b.respondent_name || '—'}
+                        </td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground capitalize">
+                          {b.incident_type}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                           <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium', cfg.bg, cfg.color)}>
-                            <StatusIcon className="size-3" />
                             {cfg.label}
                           </span>
                         </td>
-                        <td className="hidden px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                          {new Date(record.updated).toLocaleDateString()}
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
+                          {b.incident_date ? new Date(b.incident_date).toLocaleDateString() : '—'}
                         </td>
-                        <td className="px-4 py-3 sm:px-6 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0"
-                              onClick={() => openEditPanel(record)}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(record.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
+                          {canModify && (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="size-8 p-0"
+                                onClick={() => openEditPanel(b)}
+                                aria-label="Edit"
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDelete(b.id)}
+                                aria-label="Delete"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
+              {filteredBlotters.length === 0 && blotters.length > 0 && (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <p className="text-sm text-muted-foreground">No blotter cases match your filters.</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Slide-over panel / bottom drawer */}
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
           <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
             <div className="flex items-center justify-between border-b px-5 py-4">
-              <h2 className="text-sm font-semibold text-foreground">{editingId ? 'Edit Record' : 'New Record'}</h2>
+              <h2 className="text-sm font-semibold text-foreground">{editingId ? 'Edit Blotter Case' : 'New Blotter Case'}</h2>
               <button
                 type="button"
                 onClick={closePanel}
@@ -254,22 +338,113 @@ export default function RecordsPage() {
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="panel-title">Title</Label>
-                <Input id="panel-title" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="panel-status">Status</Label>
-                <Select
-                  id="panel-status"
-                  value={status}
-                  onValueChange={(v) => setStatus(v as 'pending' | 'approved' | 'rejected')}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </Select>
-              </div>
+
+              <fieldset className="space-y-3">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Case Info</legend>
+                <div className="space-y-2">
+                  <Label htmlFor="panel-case-number">Case Number</Label>
+                  <Input id="panel-case-number" value={form.case_number} readOnly className="bg-muted/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="panel-incident-type">Incident Type</Label>
+                  <Select
+                    id="panel-incident-type"
+                    value={form.incident_type}
+                    onValueChange={(v) => updateField('incident_type', v)}
+                  >
+                    {incidentTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-incident-date">Incident Date</Label>
+                    <Input id="panel-incident-date" type="date" value={form.incident_date} onChange={(e) => updateField('incident_date', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-incident-location">Location</Label>
+                    <Input id="panel-incident-location" value={form.incident_location} onChange={(e) => updateField('incident_location', e.target.value)} />
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset className="space-y-3">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Parties</legend>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-complainant-name">Complainant Name *</Label>
+                    <Input id="panel-complainant-name" value={form.complainant_name} onChange={(e) => updateField('complainant_name', e.target.value)} required autoFocus />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-complainant-contact">Contact</Label>
+                    <Input id="panel-complainant-contact" value={form.complainant_contact} onChange={(e) => updateField('complainant_contact', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-respondent-name">Respondent Name</Label>
+                    <Input id="panel-respondent-name" value={form.respondent_name} onChange={(e) => updateField('respondent_name', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-respondent-contact">Contact</Label>
+                    <Input id="panel-respondent-contact" value={form.respondent_contact} onChange={(e) => updateField('respondent_contact', e.target.value)} />
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset className="space-y-3">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Details</legend>
+                <div className="space-y-2">
+                  <Label htmlFor="panel-narrative">Narrative</Label>
+                  <textarea
+                    id="panel-narrative"
+                    value={form.narrative}
+                    onChange={(e) => updateField('narrative', e.target.value)}
+                    rows={4}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="panel-involved-parties">Involved Parties</Label>
+                  <textarea
+                    id="panel-involved-parties"
+                    value={form.involved_parties}
+                    onChange={(e) => updateField('involved_parties', e.target.value)}
+                    rows={3}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+              </fieldset>
+
+              <fieldset className="space-y-3">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resolution</legend>
+                <div className="space-y-2">
+                  <Label htmlFor="panel-status">Status</Label>
+                  <Select
+                    id="panel-status"
+                    value={form.status}
+                    onValueChange={(v) => updateField('status', v)}
+                  >
+                    {statusOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+                {(form.status === 'settled' || form.status === 'escalated') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="panel-action-taken">Action Taken</Label>
+                    <textarea
+                      id="panel-action-taken"
+                      value={form.action_taken}
+                      onChange={(e) => updateField('action_taken', e.target.value)}
+                      rows={3}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </div>
+                )}
+              </fieldset>
+
               <div className="flex gap-2 pt-2">
                 <Button type="submit">{editingId ? 'Update' : 'Create'}</Button>
                 <Button type="button" variant="outline" onClick={closePanel}>Cancel</Button>
@@ -281,8 +456,8 @@ export default function RecordsPage() {
 
       <ConfirmDialog
         open={deletingId !== null}
-        title="Delete record"
-        message="This action cannot be undone. The record and all its data will be permanently removed."
+        title="Delete blotter case"
+        message="This action cannot be undone. The blotter case and all its data will be permanently removed."
         confirmLabel="Delete"
         destructive
         onConfirm={confirmDelete}
