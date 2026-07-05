@@ -1,14 +1,18 @@
-# Task 6: Sidebar Navigation — Report
+# Task 6: Dashboard update — Report
 
-## Steps Completed
+## What was implemented
+Updated `src/pages/Dashboard.tsx` to use blotter API instead of the deleted records API:
+- Imports: replaced `@/api/records` with `@/api/blotter` (`getBlotters`, `getBlottersSummary`, `ApiBlotter`)
+- State: changed stats shape to `{ total, pending, hearing, settled, escalated, dismissed }`
+- Data fetching: calls `getBlottersSummary()` and `getBlotters()` instead of records equivalents
+- Stat cards: Hearing (blue) and Settled (emerald) replace Approved/Rejected
+- `statusConfig`: updated with hearing, settled, escalated, dismissed statuses
+- Recent records: displays `case_number — complainant_name` instead of `title`
+- Quick Actions: buttons renamed to "New Blotter Case" and "View All Cases"
+- Added `Scale`, `ArrowUpCircle` to lucide-react import
 
-1. **Added imports**: Added `Users` and `Home` to the `lucide-react` import in `src/components/Sidebar.tsx`
-2. **Added nav groups**: Inserted the `Residents` nav group (Resident Profiles, Households) between Overview and Records in `navGroups`
-3. **Build verification**: `npm run build` passes (tsc + vite build)
-4. **Committed** with message: `"Add Resident Profiles and Households sidebar navigation"`
+## Build result
+**PASS** — `tsc -b && vite build` completed successfully with no errors.
 
-## Result
-
-- **Status**: DONE
-- **Commits**: `43255ff` on `dark-mode-redesign`
-- **Build**: ✅ Passes
+## Files changed
+- `src/pages/Dashboard.tsx` (modified)

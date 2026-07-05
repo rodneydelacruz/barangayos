@@ -8,7 +8,7 @@ import { ResidentsPage } from '@/features/residents'
 import { HouseholdsPage } from '@/features/households'
 import { DocumentsPage, ReleasePage } from '@/features/documents'
 import { SystemSettings } from '@/features/settings'
-import { ActivityPage } from '@/features/logs'
+import { ActivityPage, VisitorLogPage } from '@/features/logs'
 
 export default function AppRoutes() {
   return (
@@ -71,10 +71,18 @@ export default function AppRoutes() {
           }
         />
         <Route
-          path="activity-log"
+          path="logs/activity"
           element={
-            <ProtectedRoute roles={['admin', 'staff', 'viewer']}>
+            <ProtectedRoute roles={['admin', 'staff']}>
               <ActivityPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="logs/visitors"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <VisitorLogPage />
             </ProtectedRoute>
           }
         />

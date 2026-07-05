@@ -11,7 +11,8 @@ import {
   Home,
   ClipboardList,
   CheckSquare,
-  Activity,
+  ClipboardCheck,
+  DoorOpen,
 } from 'lucide-react'
 import { getCurrentUser, logout, type Role } from '@/auth/session'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -54,10 +55,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
+    label: 'Logs',
+    items: [
+      { to: '/logs/activity', label: 'Activity Log', icon: ClipboardCheck, roles: ['admin', 'staff'] },
+      { to: '/logs/visitors', label: 'Visitor Log', icon: DoorOpen, roles: ['admin', 'staff'] },
+    ],
+  },
+  {
     label: 'Administration',
     items: [
       { to: '/settings', label: 'System Settings', icon: Settings, roles: ['admin'] },
-      { to: '/activity-log', label: 'Activity Log', icon: Activity, roles: ['admin', 'staff', 'viewer'] },
     ],
   },
 ]
