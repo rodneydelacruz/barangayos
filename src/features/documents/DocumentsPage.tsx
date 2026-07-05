@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Search, FileText, Clock, User } from 'lucide-react'
 import { getDocuments, createDocument, updateDocument, deleteDocument, getDailyQueueNumber, type ApiDocument } from '@/api/documents'
-import { getResidents, type ApiResident } from '@/api/residents'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -9,8 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDate, formatDateTime } from '@/lib/utils'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { SortSelect } from '@/components/ui/SortSelect'
 
 const documentTypeOptions = [
   { value: 'barangay_clearance', label: 'Barangay Clearance' },
@@ -25,11 +27,11 @@ const documentTypeOptions = [
 const statusOptions = ['pending', 'processing', 'for_release', 'released', 'cancelled']
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  for_release: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  pending: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  processing: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  for_release: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   released: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  cancelled: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const statusLabels: Record<string, string> = {
@@ -54,7 +56,6 @@ function emptyForm() {
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<ApiDocument[]>([])
-  const [residents, setResidents] = useState<ApiResident[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -64,23 +65,26 @@ export default function DocumentsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [residentSearch, setResidentSearch] = useState('')
+  const [flyoutDoc, setFlyoutDoc] = useState<ApiDocument | null>(null)
+  const [sortBy, setSortBy] = useState('-created')
 
   useEffect(() => {
-    Promise.all([
-      getDocuments(),
-      getResidents(),
-    ])
-      .then(([docsData, residentsData]) => {
-        setDocs(docsData)
-        setResidents(residentsData)
-      })
+    getDocuments()
+      .then(setDocs)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load data'))
       .finally(() => setLoading(false))
   }, [])
 
   const filteredDocs = useMemo(() => {
-    return docs.filter((d) => {
+    const sorted = [...docs].sort((a, b) => {
+      const desc = sortBy.startsWith('-')
+      const field = desc ? sortBy.slice(1) : sortBy
+      const va: string = (a as Record<string, unknown>)[field] as string || ''
+      const vb: string = (b as Record<string, unknown>)[field] as string || ''
+      const cmp = va.localeCompare(vb)
+      return desc ? -cmp : cmp
+    })
+    return sorted.filter((d) => {
       if (search) {
         const q = search.toLowerCase()
         if (!d.queue_number.toLowerCase().includes(q) && !d.resident_name.toLowerCase().includes(q)) return false
@@ -89,15 +93,7 @@ export default function DocumentsPage() {
       if (typeFilter && d.document_type !== typeFilter) return false
       return true
     })
-  }, [docs, search, statusFilter, typeFilter])
-
-  const filteredResidents = useMemo(() => {
-    if (!residentSearch) return residents.slice(0, 10)
-    const q = residentSearch.toLowerCase()
-    return residents.filter((r) =>
-      `${r.first_name} ${r.last_name} ${r.middle_name}`.toLowerCase().includes(q),
-    ).slice(0, 10)
-  }, [residents, residentSearch])
+  }, [docs, search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => {
@@ -130,7 +126,6 @@ export default function DocumentsPage() {
     setError(null)
     setEditingId(null)
     setForm(emptyForm())
-    setResidentSearch('')
     setPanelOpen(true)
   }
 
@@ -185,13 +180,20 @@ export default function DocumentsPage() {
     setError(null)
   }
 
-  function selectResident(r: ApiResident) {
-    updateField('resident_id', r.id)
-    updateField('resident_name', `${r.first_name} ${r.last_name}`)
-    setResidentSearch(`${r.first_name} ${r.last_name}`)
-  }
-
   const canModify = hasRole('admin', 'staff')
+
+  const sortFields = [
+    { value: 'queue_number', label: 'Queue #' },
+    { value: 'resident_name', label: 'Name' },
+    { value: 'document_type', label: 'Type' },
+    { value: 'status', label: 'Status' },
+    { value: 'requested_at', label: 'Date' },
+    { value: '-created', label: 'Newest' },
+  ]
+
+  function closeFlyout() {
+    setFlyoutDoc(null)
+  }
 
   return (
     <>
@@ -234,6 +236,7 @@ export default function DocumentsPage() {
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </Select>
+        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
       </div>
 
       <Card>
@@ -279,8 +282,9 @@ export default function DocumentsPage() {
                   {filteredDocs.map((d, i) => (
                     <tr
                       key={d.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
+                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
                       style={{ '--stagger-index': i } as React.CSSProperties}
+                      onClick={() => setFlyoutDoc(d)}
                     >
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
                         #{d.queue_number}
@@ -297,7 +301,7 @@ export default function DocumentsPage() {
                         </span>
                       </td>
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                        {new Date(d.requested_at).toLocaleDateString()}
+                        {formatDate(d.requested_at)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
                         {canModify && (
@@ -390,44 +394,12 @@ export default function DocumentsPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="panel-resident">Resident *</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="panel-resident"
-                    placeholder="Search resident..."
-                    value={residentSearch}
-                    onChange={(e) => {
-                      setResidentSearch(e.target.value)
-                      if (!e.target.value) {
-                        updateField('resident_id', '')
-                        updateField('resident_name', '')
-                      }
-                    }}
-                    className="h-9 pl-8 text-sm"
-                  />
-                  {residentSearch && !editingId && (
-                    <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border bg-card shadow-lg">
-                      {filteredResidents.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-muted-foreground">No residents found</p>
-                      ) : (
-                        filteredResidents.map((r) => (
-                          <button
-                            key={r.id}
-                            type="button"
-                            className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
-                            onClick={() => selectResident(r)}
-                          >
-                            {r.first_name} {r.last_name}
-                            {r.purok && (
-                              <span className="ml-auto text-xs text-muted-foreground">{r.purok}</span>
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
+                <Label>Resident *</Label>
+                <ResidentCombobox
+                  value={form.resident_name}
+                  onChange={(v) => { updateField('resident_name', v); if (!v) updateField('resident_id', '') }}
+                  onSelectResident={(r) => { updateField('resident_id', r.id); updateField('resident_name', `${r.first_name} ${r.last_name}`) }}
+                />
               </div>
 
               <div className="space-y-2">
@@ -488,6 +460,56 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
+
+      <DetailPanel
+        open={flyoutDoc !== null}
+        onClose={closeFlyout}
+        title={flyoutDoc ? `#${flyoutDoc.queue_number} - ${flyoutDoc.resident_name}` : ''}
+        onEdit={canModify && flyoutDoc ? () => { openEditPanel(flyoutDoc); closeFlyout() } : undefined}
+      >
+        {flyoutDoc && (
+          <>
+            <DetailSection icon={<FileText className="size-3" />} title="Document Info">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Queue #:</span> <span className="font-medium">#{flyoutDoc.queue_number}</span></div>
+                <div><span className="text-muted-foreground">Type:</span> <span className="capitalize">{flyoutDoc.document_type.replace(/_/g, ' ')}</span></div>
+                {flyoutDoc.other_document_type && <div className="col-span-2"><span className="text-muted-foreground">Specified:</span> {flyoutDoc.other_document_type}</div>}
+                <div className="col-span-2"><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[flyoutDoc.status])}>{statusLabels[flyoutDoc.status]}</span></div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<User className="size-3" />} title="Resident">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-2"><span className="text-muted-foreground">Name:</span> {flyoutDoc.resident_name}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<FileText className="size-3" />} title="Purpose">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutDoc.purpose}</p>
+            </DetailSection>
+
+            {flyoutDoc.notes && (
+              <DetailSection title="Notes">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutDoc.notes}</p>
+              </DetailSection>
+            )}
+
+            <DetailSection icon={<Clock className="size-3" />} title="Timeline">
+              <div className="space-y-1 text-sm">
+                <div><span className="text-muted-foreground">Requested:</span> {formatDateTime(flyoutDoc.requested_at)}</div>
+                {flyoutDoc.released_at && <div><span className="text-muted-foreground">Released:</span> {formatDateTime(flyoutDoc.released_at)}</div>}
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Metadata">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>Created: {formatDateTime(flyoutDoc.created)}</div>
+                <div>Updated: {formatDateTime(flyoutDoc.updated)}</div>
+              </div>
+            </DetailSection>
+          </>
+        )}
+      </DetailPanel>
 
       <ConfirmDialog
         open={deletingId !== null}

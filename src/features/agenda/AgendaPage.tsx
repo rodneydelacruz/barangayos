@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 const meetingTypeOptions = [
   { value: 'regular', label: 'Regular' },
@@ -19,9 +19,9 @@ const meetingTypeOptions = [
 ]
 
 const meetingTypeColors: Record<string, string> = {
-  regular: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  special: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  emergency: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  regular: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  special: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  emergency: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const statusOptions = ['scheduled', 'ongoing', 'adjourned']
@@ -33,8 +33,8 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColors: Record<string, string> = {
-  scheduled: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300',
-  ongoing: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  scheduled: 'bg-slate-200 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
+  ongoing: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   adjourned: 'bg-muted text-muted-foreground',
 }
 
@@ -47,9 +47,9 @@ const agendaStatusLabels: Record<string, string> = {
 }
 
 const agendaStatusColors: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  discussed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  deferred: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  pending: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  discussed: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  deferred: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
 }
 
 function minutesStatus(items: ApiAgendaItem[]) {
@@ -303,9 +303,8 @@ export default function AgendaPage() {
     }
   }
 
-  function formatDate(dateStr: string): string {
-    if (!dateStr) return '\u2014'
-    return new Date(dateStr).toLocaleDateString('en-PH', {
+  function fmtDate(dateStr: string): string {
+    return formatDate(dateStr, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -319,7 +318,7 @@ export default function AgendaPage() {
       <>
         <div className="mb-6 motion-fade-in">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">{formatDate(selectedMeeting.meeting_date)}</span>
+            <span className="text-sm text-muted-foreground">{fmtDate(selectedMeeting.meeting_date)}</span>
             <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[selectedMeeting.meeting_type])}>
               {meetingTypeOptions.find((t) => t.value === selectedMeeting.meeting_type)?.label || selectedMeeting.meeting_type}
             </span>
@@ -671,7 +670,7 @@ export default function AgendaPage() {
                         {m.title}
                       </td>
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                        {formatDate(m.meeting_date)}
+                        {fmtDate(m.meeting_date)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                         <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[m.meeting_type])}>

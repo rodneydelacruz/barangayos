@@ -34,14 +34,16 @@ export async function logActivity(
 export async function getActivities(
   page = 1,
   perPage = 25,
-  sort = '-created',
+  sort = '-id',
   collection?: string,
+  recordId?: string,
 ): Promise<{ items: ApiActivity[]; totalItems: number; totalPages: number }> {
   try {
+    const filters: string[] = []
+    if (collection) filters.push(`collection = '${collection}'`)
+    if (recordId) filters.push(`record_id = '${recordId}'`)
     const options: Record<string, unknown> = { sort }
-    if (collection) {
-      options.filter = `collection = '${collection}'`
-    }
+    if (filters.length > 0) options.filter = filters.join(' && ')
     const result = await getClient().collection('activity_logs').getList<ApiActivity>(page, perPage, options)
     return {
       items: result.items,

@@ -1,6 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { Plus, Pencil, Trash2, ChevronDown, Search, Home, FileText, BookOpen, Activity } from 'lucide-react'
 import { getResidents, createResident, updateResident, deleteResident, type ApiResident } from '@/api/residents'
+import { searchHouseholds, getHousehold, type ApiHousehold } from '@/api/households'
+import { getDocuments, type ApiDocument } from '@/api/documents'
+import { getBlotters, type ApiBlotter } from '@/api/blotter'
+import { getActivities, type ApiActivity } from '@/api/activity'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -8,8 +12,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDate, formatDateTime } from '@/lib/utils'
+
+function statusClass(value: string, type: 'document' | 'blotter' | 'activity'): string {
+  if (type === 'document') {
+    if (value === 'released') return 'bg-muted text-muted-foreground'
+    if (value === 'cancelled') return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    if (value === 'for_release') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+    if (value === 'processing') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+    return 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+  }
+  if (type === 'blotter') {
+    if (value === 'settled') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+    if (value === 'hearing') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+    if (value === 'dismissed') return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    if (value === 'escalated') return 'bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+    return 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+  }
+  if (value === 'create') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (value === 'update') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+  return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+}
 
 function calculateAge(birthDate: string): number {
   if (!birthDate) return 0
@@ -31,10 +56,10 @@ const tagLabels: Record<string, string> = {
   is_pwd: 'PWD',
 }
 const tagColors: Record<string, string> = {
-  is_voter: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  is_4ps: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  is_senior: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  is_pwd: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  is_voter: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  is_4ps: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  is_senior: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  is_pwd: 'bg-purple-200 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
 }
 
 function emptyForm() {
@@ -60,6 +85,112 @@ function emptyForm() {
   }
 }
 
+function HouseholdCombobox({ value, onChange }: { value: string; onChange: (id: string | null) => void }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ApiHousehold[]>([])
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState<ApiHousehold | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (value) {
+      getHousehold(value)
+        .then(setSelected)
+        .catch(() => setSelected(null))
+    } else {
+      setSelected(null)
+    }
+  }, [value])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  useEffect(() => {
+    if (!query || selected) { setResults([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const data = await searchHouseholds(query)
+        setResults(data)
+      } catch { setResults([]) }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query, selected])
+
+  function handleSelect(h: ApiHousehold) {
+    setSelected(h)
+    onChange(h.id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  function handleClear() {
+    setSelected(null)
+    onChange(null)
+    setQuery('')
+    inputRef.current?.focus()
+  }
+
+  const displayValue = selected ? `${selected.head_name} (${selected.household_number})` : query
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          id="panel-household"
+          value={displayValue}
+          onChange={(e) => {
+            setSelected(null)
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search by name, household #, or address..."
+        />
+        {selected && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-lg text-muted-foreground hover:text-foreground leading-none"
+            aria-label="Clear household"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {open && results.length > 0 && query && (
+        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-background shadow-lg">
+          {results.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              onClick={() => handleSelect(h)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <span className="font-medium">{h.head_name}</span>
+              <span className="text-muted-foreground">({h.household_number})</span>
+              {h.address && <span className="ml-auto truncate text-xs text-muted-foreground">{h.address}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && !selected && query && results.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-background p-2 text-sm text-muted-foreground shadow-lg">
+          No households found
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ResidentsPage() {
   const [residents, setResidents] = useState<ApiResident[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +203,12 @@ export default function ResidentsPage() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [age, setAge] = useState(0)
+  const [flyoutResident, setFlyoutResident] = useState<ApiResident | null>(null)
+  const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
+  const [flyoutDocs, setFlyoutDocs] = useState<ApiDocument[]>([])
+  const [flyoutBlotters, setFlyoutBlotters] = useState<ApiBlotter[]>([])
+  const [flyoutActivities, setFlyoutActivities] = useState<ApiActivity[]>([])
+  const [flyoutLoading, setFlyoutLoading] = useState(false)
 
   useEffect(() => {
     getResidents()
@@ -114,6 +251,9 @@ export default function ResidentsPage() {
 
     try {
       const payload = { ...form, age }
+      for (const key of ['household_id', 'gender', 'civil_status', 'blood_type', 'suffix', 'middle_name', 'contact_number', 'occupation', 'nationality', 'notes'] as const) {
+        if (payload[key] === '') (payload as Record<string, unknown>)[key] = null
+      }
       if (editingId) {
         const updated = await updateResident(editingId, payload)
         setResidents((prev) =>
@@ -178,6 +318,37 @@ export default function ResidentsPage() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  function openFlyout(r: ApiResident) {
+    setFlyoutResident(r)
+    setFlyoutLoading(true)
+    setFlyoutHousehold(null)
+    setFlyoutDocs([])
+    setFlyoutBlotters([])
+    setFlyoutActivities([])
+    Promise.all([
+      r.household_id ? getHousehold(r.household_id).catch(() => null) : Promise.resolve(null),
+      getDocuments(),
+      getBlotters(),
+      getActivities(1, 50, '-id', undefined, r.id),
+    ]).then(([household, docs, blotters, acts]) => {
+      setFlyoutHousehold(household as ApiHousehold | null)
+      setFlyoutDocs((docs as ApiDocument[]).filter((d) => d.resident_name && r.first_name && d.resident_name.includes(r.first_name)))
+      setFlyoutBlotters((blotters as ApiBlotter[]).filter((b) =>
+        (b.complainant_name && r.first_name && b.complainant_name.includes(r.first_name)) ||
+        (b.respondent_name && r.first_name && b.respondent_name.includes(r.first_name)),
+      ))
+      setFlyoutActivities(acts.items)
+    }).catch(() => {}).finally(() => setFlyoutLoading(false))
+  }
+
+  function closeFlyout() {
+    setFlyoutResident(null)
+    setFlyoutHousehold(null)
+    setFlyoutDocs([])
+    setFlyoutBlotters([])
+    setFlyoutActivities([])
   }
 
   function closePanel() {
@@ -279,8 +450,9 @@ export default function ResidentsPage() {
                   {filteredResidents.map((r, i) => (
                     <tr
                       key={r.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
+                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer"
                       style={{ '--stagger-index': i } as React.CSSProperties}
+                      onClick={() => openFlyout(r)}
                     >
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
                         {r.first_name} {r.last_name}
@@ -442,8 +614,8 @@ export default function ResidentsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="panel-household">Household</Label>
-                  <Input id="panel-household" value={form.household_id} onChange={(e) => updateField('household_id', e.target.value)} placeholder="Household ID" />
+                  <Label>Household</Label>
+                  <HouseholdCombobox value={form.household_id} onChange={(id) => updateField('household_id', id ?? '')} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="panel-occupation">Occupation</Label>
@@ -513,6 +685,105 @@ export default function ResidentsPage() {
           </div>
         </div>
       )}
+
+      <DetailPanel
+        open={flyoutResident !== null}
+        onClose={closeFlyout}
+        title={flyoutResident ? `${flyoutResident.first_name} ${flyoutResident.last_name}` : ''}
+        onEdit={canModify && flyoutResident ? () => { openEditPanel(flyoutResident!); closeFlyout() } : undefined}
+        loading={flyoutLoading}
+      >
+        {flyoutResident && (
+          <>
+            <DetailSection icon={<Search className="size-3" />} title="Personal Information">
+          <div className="grid grid-cols-2 gap-2">
+            <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutResident!.first_name} {flyoutResident!.last_name}</span></div>
+            <div><span className="text-muted-foreground">Middle Name:</span> {flyoutResident!.middle_name || '—'}</div>
+            <div><span className="text-muted-foreground">Suffix:</span> {flyoutResident!.suffix || '—'}</div>
+            <div><span className="text-muted-foreground">Age:</span> {flyoutResident!.age || '—'}</div>
+            <div><span className="text-muted-foreground">Gender:</span> {flyoutResident!.gender ? (flyoutResident!.gender.charAt(0).toUpperCase() + flyoutResident!.gender.slice(1)) : '—'}</div>
+            <div><span className="text-muted-foreground">Birth Date:</span> {formatDate(flyoutResident!.birth_date)}</div>
+            <div><span className="text-muted-foreground">Contact:</span> {flyoutResident!.contact_number || '—'}</div>
+            <div><span className="text-muted-foreground">Civil Status:</span> {flyoutResident!.civil_status ? (flyoutResident!.civil_status.charAt(0).toUpperCase() + flyoutResident!.civil_status.slice(1)) : '—'}</div>
+            <div><span className="text-muted-foreground">Purok:</span> {flyoutResident!.purok || '—'}</div>
+            <div><span className="text-muted-foreground">Occupation:</span> {flyoutResident!.occupation || '—'}</div>
+            <div><span className="text-muted-foreground">Nationality:</span> {flyoutResident!.nationality || '—'}</div>
+            <div><span className="text-muted-foreground">Blood Type:</span> {flyoutResident!.blood_type || '—'}</div>
+            <div className="col-span-2 flex gap-1 flex-wrap">
+              {tagKeys.map((tag) =>
+                (flyoutResident as Record<string, unknown>)[tag] ? (
+                  <span key={tag} className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
+                    {tagLabels[tag]}
+                  </span>
+                ) : null,
+              )}
+            </div>
+          </div>
+        </DetailSection>
+
+        <DetailSection icon={<Home className="size-3" />} title="Household">
+          {flyoutHousehold ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="text-muted-foreground">Household #:</span> {flyoutHousehold.household_number}</div>
+              <div><span className="text-muted-foreground">Head:</span> {flyoutHousehold.head_name}</div>
+              <div><span className="text-muted-foreground">Purok:</span> {flyoutHousehold.purok || '—'}</div>
+              <div><span className="text-muted-foreground">Address:</span> {flyoutHousehold.address || '—'}</div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Not assigned to a household.</p>
+          )}
+        </DetailSection>
+
+        <DetailSection icon={<FileText className="size-3" />} title="Document Requests">
+          {flyoutDocs.length === 0 ? (
+            <p className="text-muted-foreground">No document requests found.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {flyoutDocs.map((d) => (
+                <div key={d.id} className="flex items-center justify-between text-sm gap-2">
+                  <span className="font-medium shrink-0">#{d.queue_number}</span>
+                  <span className="capitalize text-muted-foreground flex-1 truncate">{d.document_type.replace(/_/g, ' ')}</span>
+                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(d.status, 'document'))}>{d.status.replace(/_/g, ' ')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection icon={<BookOpen className="size-3" />} title="Blotter Records">
+          {flyoutBlotters.length === 0 ? (
+            <p className="text-muted-foreground">No blotter records found.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {flyoutBlotters.map((b) => (
+                <div key={b.id} className="flex items-center justify-between text-sm gap-2">
+                  <span className="font-medium shrink-0">{b.case_number}</span>
+                  <span className="text-muted-foreground flex-1 truncate">{b.complainant_name} vs {b.respondent_name || '—'}</span>
+                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(b.status, 'blotter'))}>{b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection icon={<Activity className="size-3" />} title="Activity History">
+          {flyoutActivities.length === 0 ? (
+            <p className="text-muted-foreground">No activity history found.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {flyoutActivities.map((a) => (
+                <div key={a.id} className="flex items-center justify-between text-sm gap-2">
+                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(a.action, 'activity'))}>{a.action}</span>
+                  <span className="flex-1 px-2 text-muted-foreground truncate">{a.details}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(a.created)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+          </>
+        )}
+      </DetailPanel>
 
       <ConfirmDialog
         open={deletingId !== null}

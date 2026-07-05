@@ -22,9 +22,38 @@ export interface ApiHousehold extends RecordModel {
   updated: string
 }
 
+export async function getNextHouseholdNumber(): Promise<string> {
+  try {
+    const all = await getClient().collection(COLLECTION).getFullList<ApiHousehold>({
+      sort: '-created',
+      requestKey: 'next-household-number',
+    })
+    let max = 0
+    for (const h of all) {
+      const num = parseInt(h.household_number.replace(/[^0-9]/g, ''), 10)
+      if (num > max) max = num
+    }
+    return `H-${String(max + 1).padStart(4, '0')}`
+  } catch {
+    return 'H-0001'
+  }
+}
+
 export async function getHouseholds(): Promise<ApiHousehold[]> {
   try {
     return await getClient().collection(COLLECTION).getFullList<ApiHousehold>({ sort: 'household_number' })
+  } catch (err) {
+    throw handleApiError(err)
+  }
+}
+
+export async function searchHouseholds(query: string): Promise<ApiHousehold[]> {
+  try {
+    const result = await getClient().collection(COLLECTION).getList<ApiHousehold>(1, 20, {
+      filter: `(head_name ~ "${query}" || household_number ~ "${query}" || address ~ "${query}")`,
+      sort: 'head_name',
+    })
+    return result.items
   } catch (err) {
     throw handleApiError(err)
   }

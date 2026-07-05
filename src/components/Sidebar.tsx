@@ -130,7 +130,7 @@ export default function Sidebar({ pinned, onTogglePin, mobileOpen, onMobileOpenC
   }
 
   function isActive(path: string) {
-    return path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
+    return path === '/' ? location.pathname === '/' : location.pathname === path
   }
 
   return (
@@ -140,7 +140,7 @@ export default function Sidebar({ pinned, onTogglePin, mobileOpen, onMobileOpenC
           'z-40 flex flex-col border-r bg-background transition-all duration-200',
           pinned ? 'w-60' : 'w-16',
           mobileOpen ? 'fixed inset-y-0 left-0 translate-x-0' : 'fixed inset-y-0 left-0 -translate-x-full',
-          'md:relative md:inset-auto md:translate-x-0',
+          'md:sticky md:top-0 md:h-screen md:translate-x-0',
         )}
       >
         <div className={cn(
@@ -180,7 +180,7 @@ export default function Sidebar({ pinned, onTogglePin, mobileOpen, onMobileOpenC
           ) : null}
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4">
+        <nav className="sidebar-scroll flex-1 overflow-y-auto py-4">
           <div className={cn('space-y-6', pinned ? 'px-3' : 'px-2')}>
             {navGroups.map((group) => {
               const visibleItems = group.items.filter((item) => user && item.roles.includes(user.role))

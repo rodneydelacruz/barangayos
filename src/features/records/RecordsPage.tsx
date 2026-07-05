@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Calendar, Users, BookOpen, FileText } from 'lucide-react'
 import { getBlotters, createBlotter, updateBlotter, deleteBlotter, getNextCaseNumber, type ApiBlotter, type BlotterData } from '@/api/blotter'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -8,15 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { SortSelect } from '@/components/ui/SortSelect'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDate, formatDateTime } from '@/lib/utils'
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  pending:   { label: 'Pending',   color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-500/10' },
-  hearing:   { label: 'Hearing',   color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-500/10' },
-  settled:   { label: 'Settled',   color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-  escalated: { label: 'Escalated', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
-  dismissed: { label: 'Dismissed', color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-500/10' },
+  pending:   { label: 'Pending',   color: 'text-amber-800', bg: 'bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300' },
+  hearing:   { label: 'Hearing',   color: 'text-blue-800',  bg: 'bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300' },
+  settled:   { label: 'Settled',   color: 'text-emerald-800', bg: 'bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  escalated: { label: 'Escalated', color: 'text-orange-800', bg: 'bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300' },
+  dismissed: { label: 'Dismissed', color: 'text-red-800',    bg: 'bg-red-200 dark:bg-red-900/30 dark:text-red-300' },
 }
 
 const incidentTypeOptions = [
@@ -62,6 +65,8 @@ export default function RecordsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [flyoutBlotter, setFlyoutBlotter] = useState<ApiBlotter | null>(null)
+  const [sortBy, setSortBy] = useState('-created')
 
   useEffect(() => {
     getBlotters()
@@ -71,7 +76,15 @@ export default function RecordsPage() {
   }, [])
 
   const filteredBlotters = useMemo(() => {
-    return blotters.filter((b) => {
+    const sorted = [...blotters].sort((a, b) => {
+      const desc = sortBy.startsWith('-')
+      const field = desc ? sortBy.slice(1) : sortBy
+      const va: string = (a as Record<string, unknown>)[field] as string || ''
+      const vb: string = (b as Record<string, unknown>)[field] as string || ''
+      const cmp = va.localeCompare(vb)
+      return desc ? -cmp : cmp
+    })
+    return sorted.filter((b) => {
       if (search) {
         const q = search.toLowerCase()
         if (
@@ -84,7 +97,7 @@ export default function RecordsPage() {
       if (typeFilter && b.incident_type !== typeFilter) return false
       return true
     })
-  }, [blotters, search, statusFilter, typeFilter])
+  }, [blotters, search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -170,6 +183,18 @@ export default function RecordsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
+  const sortFields = [
+    { value: 'case_number', label: 'Case #' },
+    { value: 'incident_type', label: 'Type' },
+    { value: 'status', label: 'Status' },
+    { value: 'incident_date', label: 'Date' },
+    { value: '-created', label: 'Newest' },
+  ]
+
+  function closeFlyout() {
+    setFlyoutBlotter(null)
+  }
+
   return (
     <>
       <PageHeader title="Blotter Records" subtitle="Manage and track incident reports and complaints.">
@@ -205,10 +230,11 @@ export default function RecordsPage() {
         >
           <option value="">All Types</option>
           {incidentTypeOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </Select>
-      </div>
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </Select>
+          <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
+        </div>
 
       <Card>
         <CardHeader>
@@ -255,8 +281,9 @@ export default function RecordsPage() {
                     return (
                       <tr
                         key={b.id}
-                        className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
+                        className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
                         style={{ '--stagger-index': i } as React.CSSProperties}
+                        onClick={() => setFlyoutBlotter(b)}
                       >
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
                           {b.case_number}
@@ -276,7 +303,7 @@ export default function RecordsPage() {
                           </span>
                         </td>
                         <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                          {b.incident_date ? new Date(b.incident_date).toLocaleDateString() : '—'}
+                          {formatDate(b.incident_date)}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
                           {canModify && (
@@ -374,7 +401,7 @@ export default function RecordsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="panel-complainant-name">Complainant Name *</Label>
-                    <Input id="panel-complainant-name" value={form.complainant_name} onChange={(e) => updateField('complainant_name', e.target.value)} required autoFocus />
+                    <ResidentCombobox value={form.complainant_name} onChange={(v) => updateField('complainant_name', v)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-complainant-contact">Contact</Label>
@@ -384,7 +411,7 @@ export default function RecordsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="panel-respondent-name">Respondent Name</Label>
-                    <Input id="panel-respondent-name" value={form.respondent_name} onChange={(e) => updateField('respondent_name', e.target.value)} />
+                    <ResidentCombobox value={form.respondent_name ?? ''} onChange={(v) => updateField('respondent_name', v)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-respondent-contact">Contact</Label>
@@ -453,6 +480,64 @@ export default function RecordsPage() {
           </div>
         </div>
       )}
+
+      <DetailPanel
+        open={flyoutBlotter !== null}
+        onClose={closeFlyout}
+        title={flyoutBlotter ? `Case #${flyoutBlotter.case_number}` : ''}
+        onEdit={canModify && flyoutBlotter ? () => { openEditPanel(flyoutBlotter); closeFlyout() } : undefined}
+      >
+        {flyoutBlotter && (() => {
+          const cfg = statusConfig[flyoutBlotter.status]
+          return (
+            <>
+              <DetailSection icon={<Calendar className="size-3" />} title="Case Info">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><span className="text-muted-foreground">Case #:</span> <span className="font-medium">{flyoutBlotter.case_number}</span></div>
+                  <div><span className="text-muted-foreground">Type:</span> <span className="capitalize">{flyoutBlotter.incident_type}</span></div>
+                  <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium', cfg.bg, cfg.color)}>{cfg.label}</span></div>
+                  <div><span className="text-muted-foreground">Date:</span> {formatDate(flyoutBlotter.incident_date)}</div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Location:</span> {flyoutBlotter.incident_location || '—'}</div>
+                </div>
+              </DetailSection>
+
+              <DetailSection icon={<Users className="size-3" />} title="Parties">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><span className="text-muted-foreground">Complainant:</span> {flyoutBlotter.complainant_name}</div>
+                  <div><span className="text-muted-foreground">Complainant Contact:</span> {flyoutBlotter.complainant_contact || '—'}</div>
+                  <div><span className="text-muted-foreground">Respondent:</span> {flyoutBlotter.respondent_name || '—'}</div>
+                  <div><span className="text-muted-foreground">Respondent Contact:</span> {flyoutBlotter.respondent_contact || '—'}</div>
+                </div>
+              </DetailSection>
+
+              {flyoutBlotter.narrative && (
+                <DetailSection icon={<BookOpen className="size-3" />} title="Narrative">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutBlotter.narrative}</p>
+                </DetailSection>
+              )}
+
+              {flyoutBlotter.involved_parties && (
+                <DetailSection title="Involved Parties">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutBlotter.involved_parties}</p>
+                </DetailSection>
+              )}
+
+              {flyoutBlotter.action_taken && (
+                <DetailSection icon={<FileText className="size-3" />} title="Action Taken">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutBlotter.action_taken}</p>
+                </DetailSection>
+              )}
+
+              <DetailSection title="Metadata">
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>Created: {formatDateTime(flyoutBlotter.created)}</div>
+                  <div>Updated: {formatDateTime(flyoutBlotter.updated)}</div>
+                </div>
+              </DetailSection>
+            </>
+          )
+        })()}
+      </DetailPanel>
 
       <ConfirmDialog
         open={deletingId !== null}

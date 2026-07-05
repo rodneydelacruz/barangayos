@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, Fragment } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
-import { getHouseholds, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
+import { useState, useEffect, useMemo } from 'react'
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Home, Users } from 'lucide-react'
+import { getHouseholds, getNextHouseholdNumber, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
 import { getResidents, type ApiResident } from '@/api/residents'
+import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -10,7 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { SortSelect } from '@/components/ui/SortSelect'
 
 function calculateAge(birthDate: string): number {
   if (!birthDate) return 0
@@ -32,10 +35,10 @@ const tagLabels: Record<string, string> = {
   is_pwd: 'PWD',
 }
 const tagColors: Record<string, string> = {
-  is_voter: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  is_4ps: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  is_senior: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  is_pwd: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  is_voter: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  is_4ps: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  is_senior: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  is_pwd: 'bg-purple-200 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
 }
 
 function emptyForm() {
@@ -54,7 +57,8 @@ export default function HouseholdsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [purokFilter, setPurokFilter] = useState('')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
+  const [sortBy, setSortBy] = useState('-created')
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -107,10 +111,12 @@ export default function HouseholdsPage() {
     }
   }
 
-  function openCreatePanel() {
+  async function openCreatePanel() {
     setError(null)
     setEditingId(null)
     setForm(emptyForm())
+    const num = await getNextHouseholdNumber()
+    setForm((prev) => ({ ...prev, household_number: num }))
     setPanelOpen(true)
   }
 
@@ -143,10 +149,6 @@ export default function HouseholdsPage() {
     }
   }
 
-  function toggleExpand(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id))
-  }
-
   function closePanel() {
     setPanelOpen(false)
     setEditingId(null)
@@ -156,8 +158,27 @@ export default function HouseholdsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
+  const sortFields = [
+    { value: 'household_number', label: 'Household #' },
+    { value: 'purok', label: 'Purok' },
+    { value: 'head_name', label: 'Head Name' },
+    { value: '-created', label: 'Newest' },
+  ]
+
+  function closeFlyout() {
+    setFlyoutHousehold(null)
+  }
+
   const filteredHouseholds = useMemo(() => {
-    return households.filter((h) => {
+    const sorted = [...households].sort((a, b) => {
+      const desc = sortBy.startsWith('-')
+      const field = desc ? sortBy.slice(1) : sortBy
+      const va: string = (a as Record<string, unknown>)[field] as string || ''
+      const vb: string = (b as Record<string, unknown>)[field] as string || ''
+      const cmp = va.localeCompare(vb)
+      return desc ? -cmp : cmp
+    })
+    return sorted.filter((h) => {
       if (search) {
         const q = search.toLowerCase()
         if (
@@ -169,7 +190,7 @@ export default function HouseholdsPage() {
       if (purokFilter && h.purok !== purokFilter) return false
       return true
     })
-  }, [households, search, purokFilter])
+  }, [households, search, purokFilter, sortBy])
 
   return (
     <>
@@ -199,6 +220,7 @@ export default function HouseholdsPage() {
             <option key={p} value={p}>{p}</option>
           ))}
         </Select>
+        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
       </div>
 
       <Card>
@@ -241,81 +263,47 @@ export default function HouseholdsPage() {
                 <tbody>
                   {filteredHouseholds.map((h, i) => {
                     const members = residentsMap.get(h.id) || []
-                    const isExpanded = expandedId === h.id
                     return (
-                      <Fragment key={h.id}>
-                        <tr
-                          className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer"
-                          style={{ '--stagger-index': i } as React.CSSProperties}
-                          onClick={() => toggleExpand(h.id)}
-                        >
-                          <td className="px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
-                            <span className="inline-flex items-center gap-1.5">
-                              {isExpanded ? <ChevronDown className="size-3.5 text-muted-foreground" /> : <ChevronRight className="size-3.5 text-muted-foreground" />}
-                              {h.household_number}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.purok}</td>
-                          <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.head_name}</td>
-                          <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{members.length}</td>
-                          <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                            {canModify && (
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="size-8 p-0"
-                                  onClick={() => openEditPanel(h)}
-                                  aria-label="Edit"
-                                >
-                                  <Pencil className="size-3.5" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                                  onClick={() => handleDelete(h.id)}
-                                  aria-label="Delete"
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </Button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr key={`${h.id}-expanded`} className="even:bg-muted/20">
-                            <td colSpan={5} className="px-4 py-3 sm:px-6">
-                              <div className="rounded-md bg-muted/30 p-3">
-                                {members.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground">No members.</p>
-                                ) : (
-                                  <div className="space-y-2">
-                                    {members.map((m) => (
-                                      <div key={m.id} className="flex items-center gap-3 text-sm">
-                                        <span className="font-medium text-foreground">{m.first_name} {m.last_name}</span>
-                                        <span className="text-muted-foreground">({calculateAge(m.birth_date)} yrs old)</span>
-                                        <div className="flex gap-1">
-                                          {tagKeys.map((tag) =>
-                                            (m as Record<string, unknown>)[tag] ? (
-                                              <span
-                                                key={tag}
-                                                className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}
-                                              >
-                                                {tagLabels[tag]}
-                                              </span>
-                                            ) : null,
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
+                      <tr
+                        key={h.id}
+                        className="cursor-pointer border-b even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
+                        style={{ '--stagger-index': i } as React.CSSProperties}
+                        onClick={() => setFlyoutHousehold(h)}
+                      >
+                        <td className="px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
+                          <span className="inline-flex items-center gap-1.5">
+                            <ChevronRight className="size-3.5 text-muted-foreground" />
+                            {h.household_number}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.purok}</td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.head_name}</td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{members.length}</td>
+                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                          {canModify && (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="size-8 p-0"
+                                onClick={() => openEditPanel(h)}
+                                aria-label="Edit"
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDelete(h.id)}
+                                aria-label="Delete"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
                     )
                   })}
                 </tbody>
@@ -353,7 +341,7 @@ export default function HouseholdsPage() {
               )}
               <div className="space-y-2">
                 <Label htmlFor="panel-household-number">Household Number *</Label>
-                <Input id="panel-household-number" value={form.household_number} onChange={(e) => updateField('household_number', e.target.value)} required autoFocus />
+                <Input id="panel-household-number" value={form.household_number} disabled className="bg-muted" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="panel-purok">Purok</Label>
@@ -365,8 +353,8 @@ export default function HouseholdsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="panel-head-name">Head Name *</Label>
-                <Input id="panel-head-name" value={form.head_name} onChange={(e) => updateField('head_name', e.target.value)} required />
+                <Label>Head Name *</Label>
+                <ResidentCombobox value={form.head_name} onChange={(v) => updateField('head_name', v)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="panel-address">Address</Label>
@@ -396,6 +384,66 @@ export default function HouseholdsPage() {
           </div>
         </div>
       )}
+
+      <DetailPanel
+        open={flyoutHousehold !== null}
+        onClose={closeFlyout}
+        title={flyoutHousehold ? `Household #${flyoutHousehold.household_number}` : ''}
+        onEdit={canModify && flyoutHousehold ? () => { openEditPanel(flyoutHousehold); closeFlyout() } : undefined}
+      >
+        {flyoutHousehold && (() => {
+          const members = residentsMap.get(flyoutHousehold.id) || []
+          return (
+            <>
+              <DetailSection icon={<Home className="size-3" />} title="Household Info">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><span className="text-muted-foreground">Household #:</span> <span className="font-medium">{flyoutHousehold.household_number}</span></div>
+                  <div><span className="text-muted-foreground">Purok:</span> {flyoutHousehold.purok || '—'}</div>
+                  <div><span className="text-muted-foreground">Head:</span> {flyoutHousehold.head_name}</div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Address:</span> {flyoutHousehold.address || '—'}</div>
+                </div>
+              </DetailSection>
+
+              <DetailSection icon={<Users className="size-3" />} title={`Members (${members.length})`}>
+                {members.length === 0 ? (
+                  <p className="text-muted-foreground">No members.</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {members.map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-foreground">{m.first_name} {m.last_name}</span>
+                        <span className="text-muted-foreground">({calculateAge(m.birth_date)} yrs)</span>
+                        <div className="flex gap-1 flex-wrap">
+                          {tagKeys.map((tag) =>
+                            (m as Record<string, unknown>)[tag] ? (
+                              <span key={tag} className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
+                                {tagLabels[tag]}
+                              </span>
+                            ) : null,
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DetailSection>
+
+              {flyoutHousehold.notes && (
+                <DetailSection title="Notes">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutHousehold.notes}</p>
+                </DetailSection>
+              )}
+
+              <DetailSection title="Metadata">
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>Created: {formatDateTime(flyoutHousehold.created)}</div>
+                  <div>Updated: {formatDateTime(flyoutHousehold.updated)}</div>
+                </div>
+              </DetailSection>
+            </>
+          )
+        })()}
+      </DetailPanel>
 
       <ConfirmDialog
         open={deletingId !== null}

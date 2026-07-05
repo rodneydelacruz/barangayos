@@ -237,3 +237,29 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.sidebar-scroll:hover {
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+

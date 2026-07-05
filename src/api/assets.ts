@@ -32,7 +32,7 @@ export interface AssetSummary {
 
 export async function getAssets(): Promise<ApiAsset[]> {
   try {
-    return await getClient().collection(COLLECTION).getFullList<ApiAsset>({ sort: '-created' })
+    return await getClient().collection(COLLECTION).getFullList<ApiAsset>({ sort: '-id' })
   } catch (err) {
     throw handleApiError(err)
   }

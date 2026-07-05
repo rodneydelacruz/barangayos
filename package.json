@@ -12,6 +12,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "idb": "^8.0.3",
     "lucide-react": "^1.23.0",
     "pocketbase": "^0.27.0",

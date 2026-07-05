@@ -52,7 +52,7 @@ export interface ApiResident extends RecordModel {
 
 export async function getResidents(params?: { household_id?: string }): Promise<ApiResident[]> {
   try {
-    const query: Record<string, unknown> = { sort: '-updated' }
+    const query: Record<string, unknown> = { sort: '-id' }
     if (params?.household_id) {
       query.filter = `household_id = '${params.household_id.trim()}'`
     }

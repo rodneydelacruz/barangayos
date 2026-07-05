@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Search, Camera, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Search, Camera, X, ClipboardList, Tag, MapPin } from 'lucide-react'
 import { getAssets, createAsset, updateAsset, deleteAsset, type ApiAsset } from '@/api/assets'
 import { getResidents, type ApiResident } from '@/api/residents'
 import { uploadImage } from '@/api/upload'
@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDate, formatDateTime } from '@/lib/utils'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { SortSelect } from '@/components/ui/SortSelect'
 
 const assetTypeOptions = [
   { value: 'equipment', label: 'Equipment' },
@@ -35,11 +37,11 @@ const conditionLabels: Record<string, string> = {
 }
 
 const conditionColors: Record<string, string> = {
-  new: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  good: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  fair: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  poor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  damaged: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  new: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  good: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  fair: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  poor: 'bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  damaged: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   disposed: 'bg-muted text-muted-foreground',
 }
 
@@ -52,8 +54,8 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColors: Record<string, string> = {
-  available: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  assigned: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  available: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  assigned: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   disposed: 'bg-muted text-muted-foreground',
 }
 
@@ -90,6 +92,8 @@ export default function AssetsPage() {
   const [error, setError] = useState<string | null>(null)
   const [residentSearch, setResidentSearch] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [flyoutAsset, setFlyoutAsset] = useState<ApiAsset | null>(null)
+  const [sortBy, setSortBy] = useState('-created')
 
   useEffect(() => {
     Promise.all([
@@ -105,7 +109,20 @@ export default function AssetsPage() {
   }, [])
 
   const filteredAssets = useMemo(() => {
-    return assets.filter((a) => {
+    const sorted = [...assets].sort((a, b) => {
+      const desc = sortBy.startsWith('-')
+      const field = desc ? sortBy.slice(1) : sortBy
+      let va: string | number = (a as Record<string, unknown>)[field] as string | number || ''
+      let vb: string | number = (b as Record<string, unknown>)[field] as string | number || ''
+      if (field === 'purchase_cost') {
+        va = Number(va) || 0
+        vb = Number(vb) || 0
+      }
+      const cmp = typeof va === 'string' && typeof vb === 'string'
+        ? va.localeCompare(vb) : Number(va) - Number(vb)
+      return desc ? -cmp : cmp
+    })
+    return sorted.filter((a) => {
       if (search) {
         const q = search.toLowerCase()
         if (!a.name.toLowerCase().includes(q)) return false
@@ -115,7 +132,7 @@ export default function AssetsPage() {
       if (statusFilter && a.status !== statusFilter) return false
       return true
     })
-  }, [assets, search, typeFilter, conditionFilter, statusFilter])
+  }, [assets, search, typeFilter, conditionFilter, statusFilter, sortBy])
 
   const filteredResidents = useMemo(() => {
     if (!residentSearch) return residents.slice(0, 10)
@@ -231,6 +248,24 @@ export default function AssetsPage() {
 
   const isAdmin = hasRole('admin')
 
+  const sortFields = [
+    { value: 'name', label: 'Name' },
+    { value: 'asset_type', label: 'Type' },
+    { value: 'condition', label: 'Condition' },
+    { value: 'status', label: 'Status' },
+    { value: 'purchase_date', label: 'Purchase Date' },
+    { value: 'purchase_cost', label: 'Cost' },
+    { value: '-created', label: 'Newest' },
+  ]
+
+  function openFlyout(asset: ApiAsset) {
+    setFlyoutAsset(asset)
+  }
+
+  function closeFlyout() {
+    setFlyoutAsset(null)
+  }
+
   return (
     <>
       <PageHeader title="Assets" subtitle="Manage barangay equipment, furniture, vehicles, and other assets.">
@@ -288,6 +323,7 @@ export default function AssetsPage() {
             <option key={s} value={s}>{statusLabels[s]}</option>
           ))}
         </Select>
+        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
       </div>
 
       <Card>
@@ -337,8 +373,9 @@ export default function AssetsPage() {
                   {filteredAssets.map((a, i) => (
                     <tr
                       key={a.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
+                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
                       style={{ '--stagger-index': i } as React.CSSProperties}
+                      onClick={() => openFlyout(a)}
                     >
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                         {a.image_url ? (
@@ -642,6 +679,69 @@ export default function AssetsPage() {
           </div>
         </div>
       )}
+
+      <DetailPanel
+        open={flyoutAsset !== null}
+        onClose={closeFlyout}
+        title={flyoutAsset?.name ?? ''}
+        onEdit={isAdmin && flyoutAsset ? () => { openEditPanel(flyoutAsset); closeFlyout() } : undefined}
+      >
+        {flyoutAsset && (
+          <>
+            <DetailSection icon={<Camera className="size-3" />} title="Image">
+              {flyoutAsset.image_url ? (
+                <img src={flyoutAsset.image_url} alt="" className="h-32 w-full rounded object-cover" />
+              ) : (
+                <p className="text-muted-foreground">No image</p>
+              )}
+            </DetailSection>
+
+            <DetailSection icon={<ClipboardList className="size-3" />} title="Details">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutAsset.name}</span></div>
+                <div><span className="text-muted-foreground">Type:</span> {assetTypeOptions.find((t) => t.value === flyoutAsset.asset_type)?.label || flyoutAsset.asset_type}</div>
+                <div><span className="text-muted-foreground">Serial #:</span> {flyoutAsset.serial_number || '—'}</div>
+                <div><span className="text-muted-foreground">Condition:</span> <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', conditionColors[flyoutAsset.condition])}>{conditionLabels[flyoutAsset.condition]}</span></div>
+                <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[flyoutAsset.status ?? ''])}>{statusLabels[flyoutAsset.status ?? '']}</span></div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Tag className="size-3" />} title="Valuation">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Purchase Cost:</span> {flyoutAsset.purchase_cost ? `₱${Number(flyoutAsset.purchase_cost).toLocaleString()}` : '—'}</div>
+                <div><span className="text-muted-foreground">Current Value:</span> {flyoutAsset.current_value ? `₱${Number(flyoutAsset.current_value).toLocaleString()}` : '—'}</div>
+                <div><span className="text-muted-foreground">Purchase Date:</span> {formatDate(flyoutAsset.purchase_date)}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<MapPin className="size-3" />} title="Assignment">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Assigned To:</span> {flyoutAsset.assigned_to ? (residentMap[flyoutAsset.assigned_to] || '—') : '—'}</div>
+                <div><span className="text-muted-foreground">Location:</span> {flyoutAsset.location || '—'}</div>
+              </div>
+            </DetailSection>
+
+            {flyoutAsset.description && (
+              <DetailSection title="Description">
+                <p className="text-sm text-muted-foreground">{flyoutAsset.description}</p>
+              </DetailSection>
+            )}
+
+            {flyoutAsset.notes && (
+              <DetailSection title="Notes">
+                <p className="text-sm text-muted-foreground">{flyoutAsset.notes}</p>
+              </DetailSection>
+            )}
+
+            <DetailSection title="Metadata">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>Created: {formatDateTime(flyoutAsset.created)}</div>
+                <div>Updated: {formatDateTime(flyoutAsset.updated)}</div>
+              </div>
+            </DetailSection>
+          </>
+        )}
+      </DetailPanel>
 
       <ConfirmDialog
         open={deletingId !== null}

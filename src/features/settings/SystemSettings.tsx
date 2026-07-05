@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, X, Plus, Building2, Users, MapPin, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Loader2, X, Plus, Building2, Users, MapPin, ShieldAlert, CheckCircle2, AlertTriangle, Database, Trash2 } from 'lucide-react'
 import { getClient } from '@/api/client'
 import { updateSetting, type ApiSetting } from '@/api/settings'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { AVAILABLE_COLLECTIONS, seedCollections, eraseCollections } from './demoData'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface TagInputProps {
   items: string[]
@@ -131,6 +133,12 @@ export default function SystemSettings() {
   const [purokOptions, setPurokOptions] = useState<string[]>([])
   const [incidentTypes, setIncidentTypes] = useState<string[]>([])
 
+  const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set(AVAILABLE_COLLECTIONS.map((c) => c.id)))
+  const [seeding, setSeeding] = useState(false)
+  const [erasing, setErasing] = useState(false)
+  const [showEraseConfirm, setShowEraseConfirm] = useState(false)
+  const [progress, setProgress] = useState<string[]>([])
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -232,6 +240,54 @@ export default function SystemSettings() {
 
   function onArrayChange(setter: (items: string[]) => void): (items: string[]) => void {
     return (items) => { setter(items); scheduleSave() }
+  }
+
+  function toggleCollection(id: string) {
+    setSelectedCollections((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedCollections.size === AVAILABLE_COLLECTIONS.length) {
+      setSelectedCollections(new Set())
+    } else {
+      setSelectedCollections(new Set(AVAILABLE_COLLECTIONS.map((c) => c.id)))
+    }
+  }
+
+  function addProgress(msg: string) {
+    setProgress((prev) => [...prev, msg])
+  }
+
+  async function handleSeed() {
+    const ids = [...selectedCollections]
+    if (ids.length === 0) { window.alert('Select at least one collection.'); return }
+    setSeeding(true)
+    setProgress([])
+    const result = await seedCollections(ids, addProgress)
+    addProgress(`Done! ${result.total} records created.`)
+    if (result.errors.length > 0) {
+      addProgress(`Errors: ${result.errors.length}`)
+      result.errors.slice(0, 5).forEach((e) => addProgress(`  - ${e}`))
+    }
+    setSeeding(false)
+  }
+
+  async function handleErase() {
+    setShowEraseConfirm(false)
+    const ids = [...selectedCollections]
+    setErasing(true)
+    setProgress([])
+    const result = await eraseCollections(ids, addProgress)
+    addProgress(`Done! ${result.total} records deleted.`)
+    if (result.errors.length > 0) {
+      addProgress(`Errors: ${result.errors.length}`)
+      result.errors.slice(0, 5).forEach((e) => addProgress(`  - ${e}`))
+    }
+    setErasing(false)
   }
 
   if (loading) {
@@ -342,6 +398,95 @@ export default function SystemSettings() {
             <TagInput items={incidentTypes} placeholder="Add type..." onChange={onArrayChange(setIncidentTypes)} />
           </div>
         </section>
+
+        <section className="rounded-lg border bg-card shadow-sm motion-fade-in motion-slide-up" style={{ animationDelay: '300ms' }}>
+          <div className="flex items-center gap-2 border-b border-bamboo/40 px-4 py-2.5 dark:border-bamboo/20">
+            <Database className="size-4 text-muted-foreground/60" />
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
+              Demo Data Management
+            </h2>
+          </div>
+          <div className="p-3 space-y-3">
+            <p className="text-[11px] text-muted-foreground/60">
+              Populate the system with realistic sample data for testing and demonstrations, or erase existing records to start fresh.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="text-xs font-medium text-gold hover:text-gold/80 transition-colors"
+              >
+                {selectedCollections.size === AVAILABLE_COLLECTIONS.length ? 'Deselect All' : 'Select All'}
+              </button>
+              <span className="text-[11px] text-muted-foreground/50">
+                {selectedCollections.size} / {AVAILABLE_COLLECTIONS.length} selected
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {AVAILABLE_COLLECTIONS.map((c) => {
+                const checked = selectedCollections.has(c.id)
+                return (
+                  <label
+                    key={c.id}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs cursor-pointer transition-colors',
+                      checked
+                        ? 'border-gold/50 bg-gold/5'
+                        : 'border-input bg-background hover:bg-accent',
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCollection(c.id)}
+                      className="size-3.5 rounded border-input text-gold focus:ring-gold/30 focus:ring-offset-0"
+                    />
+                    {c.label}
+                  </label>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSeed}
+                disabled={seeding || erasing || selectedCollections.size === 0}
+                className="gap-1.5"
+              >
+                {seeding ? <Loader2 className="size-3.5 animate-spin" /> : <Database className="size-3.5" />}
+                {seeding ? 'Seeding...' : 'Seed Demo Data'}
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowEraseConfirm(true)}
+                disabled={seeding || erasing || selectedCollections.size === 0}
+                className="gap-1.5"
+              >
+                {erasing ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                {erasing ? 'Erasing...' : 'Erase Selected'}
+              </Button>
+            </div>
+
+            {progress.length > 0 && (
+              <div className="max-h-32 overflow-y-auto rounded-md border border-input bg-muted/30 p-2 space-y-0.5">
+                {progress.map((msg, i) => (
+                  <p key={i} className={cn(
+                    'text-[11px] font-mono leading-relaxed',
+                    msg.startsWith('Done!') ? 'text-emerald-600 dark:text-emerald-400' :
+                    msg.startsWith('Error') || msg.startsWith('  - ') ? 'text-destructive' :
+                    'text-muted-foreground/80',
+                  )}>
+                    {msg}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
       {toast && (
@@ -369,6 +514,17 @@ export default function SystemSettings() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showEraseConfirm}
+        title="Erase selected data?"
+        message={`This will permanently delete all records from ${selectedCollections.size} selected collection(s). This action cannot be undone.`}
+        confirmLabel="Erase Everything"
+        destructive
+        loading={erasing}
+        onConfirm={handleErase}
+        onCancel={() => setShowEraseConfirm(false)}
+      />
     </div>
   )
 }

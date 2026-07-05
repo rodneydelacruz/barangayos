@@ -9,11 +9,11 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  for_release: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  pending: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  processing: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  for_release: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   released: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  cancelled: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const statusLabels: Record<string, string> = {

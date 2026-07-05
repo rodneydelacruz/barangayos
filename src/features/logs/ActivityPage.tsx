@@ -3,7 +3,7 @@ import { getActivities, type ApiActivity } from '@/api/activity'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 
 const collectionOptions = [
   { value: '', label: 'All Collections' },
@@ -15,9 +15,9 @@ const collectionOptions = [
 ]
 
 const actionColors: Record<string, string> = {
-  create: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  update: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  delete: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  create: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  update: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  delete: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const sortFields = ['collection', 'user_name', 'created'] as const
@@ -28,7 +28,7 @@ export default function ActivityPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState('-created')
+  const [sortBy, setSortBy] = useState('-id')
   const [collectionFilter, setCollectionFilter] = useState('')
 
   async function fetchActivities(
@@ -173,7 +173,7 @@ export default function ActivityPage() {
                         {a.user_name}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {new Date(a.created).toLocaleString()}
+                        {formatDateTime(a.created)}
                       </td>
                     </tr>
                   ))}

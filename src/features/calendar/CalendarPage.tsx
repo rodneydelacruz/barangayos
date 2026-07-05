@@ -56,6 +56,11 @@ function toDateInput(dt: string): string {
   return dt.slice(0, 16)
 }
 
+function toISO(input: string): string | undefined {
+  if (!input) return undefined
+  return input.length === 16 ? `${input}:00` : input
+}
+
 function formatTime(dt: string): string {
   if (!dt) return ''
   const d = new Date(dt)
@@ -166,26 +171,24 @@ export default function CalendarPage() {
     e.preventDefault()
     if (!form.title.trim() || !form.event_type || !form.start_datetime) return
 
+    const payload = {
+      title: form.title,
+      description: form.description || undefined,
+      event_type: form.event_type,
+      start_datetime: toISO(form.start_datetime)!,
+      end_datetime: form.end_datetime ? toISO(form.end_datetime) : undefined,
+      all_day: form.all_day,
+      location: form.location || undefined,
+      agenda_ref: form.agenda_ref || undefined,
+      notes: form.notes || undefined,
+    }
+
     try {
       if (editingId) {
-        const updated = await updateEvent(editingId, {
-          ...form,
-          end_datetime: form.end_datetime || undefined,
-          description: form.description || undefined,
-          location: form.location || undefined,
-          agenda_ref: form.agenda_ref || undefined,
-          notes: form.notes || undefined,
-        })
+        const updated = await updateEvent(editingId, payload)
         setEvents((prev) => prev.map((ev) => (ev.id === editingId ? updated : ev)))
       } else {
-        const created = await createEvent({
-          ...form,
-          end_datetime: form.end_datetime || undefined,
-          description: form.description || undefined,
-          location: form.location || undefined,
-          agenda_ref: form.agenda_ref || undefined,
-          notes: form.notes || undefined,
-        })
+        const created = await createEvent(payload)
         setEvents((prev) => [...prev, created])
       }
       closePanel()
