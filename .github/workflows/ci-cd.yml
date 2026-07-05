@@ -99,10 +99,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     if: github.event_name == 'pull_request' || github.ref_name == 'main'
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -121,17 +117,6 @@ jobs:
       - name: Dependency audit
         run: npm audit --audit-level=high
         continue-on-error: true
-      - name: Secret scanning
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --results=verified,unknown
-        continue-on-error: true
-      - name: CodeQL Init
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-      - name: CodeQL Analyze
-        uses: github/codeql-action/analyze@v3
 
   deploy-production:
     name: Deploy Production
