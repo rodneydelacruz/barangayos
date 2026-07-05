@@ -1,0 +1,103 @@
+[
+  {
+    "name": "assets",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "name", "type": "text", "required": true, "options": { "max": 255 } },
+      { "name": "asset_type", "type": "select", "required": true, "options": { "values": ["equipment", "furniture", "it_equipment", "vehicle", "facility", "tool", "other"] } },
+      { "name": "description", "type": "text", "options": { "max": 5000 } },
+      { "name": "serial_number", "type": "text", "options": { "max": 100 } },
+      { "name": "purchase_date", "type": "date" },
+      { "name": "purchase_cost", "type": "number" },
+      { "name": "current_value", "type": "number" },
+      { "name": "condition", "type": "select", "required": true, "options": { "values": ["new", "good", "fair", "poor", "damaged", "disposed"] } },
+      { "name": "status", "type": "select", "required": true, "options": { "values": ["available", "assigned", "disposed"] } },
+      { "name": "assigned_to", "type": "relation", "options": { "collectionId": "", "maxSelect": 1 } },
+      { "name": "location", "type": "text", "options": { "max": 255 } },
+      { "name": "image_url", "type": "text", "options": { "max": 500 } },
+      { "name": "notes", "type": "text", "options": { "max": 2000 } }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_assets_asset_type ON assets (asset_type)",
+      "CREATE INDEX idx_assets_condition ON assets (condition)",
+      "CREATE INDEX idx_assets_status ON assets (status)"
+    ],
+    "listRule": "@request.auth.role = 'admin'",
+    "viewRule": "@request.auth.role = 'admin'",
+    "createRule": "@request.auth.role = 'admin'",
+    "updateRule": "@request.auth.role = 'admin'",
+    "deleteRule": "@request.auth.role = 'admin'"
+  },
+  {
+    "name": "calendar_events",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "title", "type": "text", "required": true, "options": { "max": 255 } },
+      { "name": "description", "type": "text", "options": { "max": 5000 } },
+      { "name": "event_type", "type": "select", "required": true, "options": { "values": ["barangay_event", "hearing", "council_meeting", "holiday", "other"] } },
+      { "name": "start_datetime", "type": "date", "required": true },
+      { "name": "end_datetime", "type": "date" },
+      { "name": "all_day", "type": "bool", "options": { "default": false } },
+      { "name": "location", "type": "text", "options": { "max": 255 } },
+      { "name": "agenda_ref", "type": "relation", "options": { "collectionId": "", "maxSelect": 1 } },
+      { "name": "notes", "type": "text", "options": { "max": 5000 } }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_calendar_start ON calendar_events (start_datetime)",
+      "CREATE INDEX idx_calendar_type ON calendar_events (event_type)"
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "updateRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "deleteRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'"
+  },
+  {
+    "name": "meetings",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "title", "type": "text", "required": true, "options": { "max": 255 } },
+      { "name": "meeting_date", "type": "date", "required": true },
+      { "name": "location", "type": "text", "options": { "max": 255 } },
+      { "name": "meeting_type", "type": "select", "required": true, "options": { "values": ["regular", "special", "emergency"] } },
+      { "name": "status", "type": "select", "required": true, "options": { "values": ["scheduled", "ongoing", "adjourned"] } },
+      { "name": "notes", "type": "text", "options": { "max": 5000 } }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_meetings_date ON meetings (meeting_date)",
+      "CREATE INDEX idx_meetings_status ON meetings (status)"
+    ],
+    "listRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "viewRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "createRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "updateRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "deleteRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'"
+  },
+  {
+    "name": "agenda_items",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "meeting_id", "type": "relation", "required": true, "options": { "collectionId": "", "maxSelect": 1, "cascadeDelete": true } },
+      { "name": "title", "type": "text", "required": true, "options": { "max": 255 } },
+      { "name": "description", "type": "text", "options": { "max": 5000 } },
+      { "name": "sort_order", "type": "number" },
+      { "name": "status", "type": "select", "required": true, "options": { "values": ["pending", "discussed", "deferred"] } },
+      { "name": "minutes", "type": "text", "options": { "max": 10000 } },
+      { "name": "submitted_by", "type": "text", "options": { "max": 255 } },
+      { "name": "submitted_at", "type": "autodate", "options": { "when": "create" } }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_agenda_meeting ON agenda_items (meeting_id)",
+      "CREATE INDEX idx_agenda_sort ON agenda_items (sort_order)"
+    ],
+    "listRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "viewRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "createRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "updateRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'",
+    "deleteRule": "@request.auth.role = 'admin' || @request.auth.role = 'staff'"
+  }
+]
