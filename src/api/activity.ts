@@ -40,7 +40,7 @@ export async function getActivities(
   try {
     const options: Record<string, unknown> = { sort }
     if (collection) {
-      options.filter = `collection = "${collection}"`
+      options.filter = `collection = '${collection}'`
     }
     const result = await getClient().collection('activity_logs').getList<ApiActivity>(page, perPage, options)
     return {

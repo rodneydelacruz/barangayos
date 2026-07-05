@@ -33,7 +33,7 @@ export default function Dashboard() {
       setStats({ total: 0, pending: 0, hearing: 0, settled: 0, escalated: 0, dismissed: 0 })
     }).finally(() => setLoading(false))
 
-    getBlotters().then((all) => setRecentRecords(all.slice(0, 5))).catch(console.error)
+    getBlotters().then((all) => setRecentRecords(all.slice(0, 5))).catch(() => setRecentRecords([]))
   }, [])
 
   const statCards: Stat[] = [
@@ -41,13 +41,15 @@ export default function Dashboard() {
     { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: 'text-amber-500' },
     { label: 'Hearing', value: stats?.hearing ?? 0, icon: Scale, color: 'text-blue-500' },
     { label: 'Settled', value: stats?.settled ?? 0, icon: CheckCircle2, color: 'text-emerald-500' },
+    { label: 'Escalated', value: stats?.escalated ?? 0, icon: ArrowUpCircle, color: 'text-orange-500' },
+    { label: 'Dismissed', value: stats?.dismissed ?? 0, icon: XCircle, color: 'text-red-pinoy' },
   ]
 
   return (
     <>
       <PageHeader title="Dashboard" subtitle="Overview of barangay records and system activity" />
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 motion-stagger-75">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 motion-stagger-75">
           {statCards.map((stat, i) => (
             <Card key={stat.label} className="overflow-hidden motion-lift" style={{ ['--stagger-index' as string]: i }}>
               <div className="h-1 w-full bg-gold/60" />
