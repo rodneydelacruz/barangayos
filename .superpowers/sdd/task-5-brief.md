@@ -1,25 +1,46 @@
-### Task 5: Activity log viewer page
+### Task 5: AgendaPage — Meetings + Agenda Items UI
 
 **Files:**
-- Create: `src/features/logs/ActivityPage.tsx`
+- Create: `src/features/agenda/AgendaPage.tsx`
 
 **Interfaces:**
-- Consumes: `getActivities` from `@/api/activity`
+- Consumes: all exports from `@/api/meetings` (Task 3) and `@/api/agenda` (Task 3)
+- Consumes: `hasRole()` from `@/auth/session`
 
-- [ ] **Step 1: Create `src/features/logs/ActivityPage.tsx`**
+- [ ] **Step 1: Create AgendaPage**
 
-Key specs:
-- Import `getActivities`, `type ApiActivity` from `@/api/activity`
-- State: `activities: ApiActivity[]`, `page`, `totalPages`, `loading`, `sortBy`, `collectionFilter`
-- On mount, fetch page 1 with default sort `-created`
-- Table columns: Action (badge: create/update/delete), Collection, Details, User, Timestamp
-- Sort controls: click on collection, user, timestamp headers to re-sort (pass sort param to getActivities)
-- "Load more" button at bottom when `page < totalPages`
-- Clicking "Load more" adds next page's items to the list (append, not replace)
-- Collection filter: select dropdown with options for all collections
-- Read-only: no create/edit/delete buttons at all
-- Empty state: "No activity recorded yet."
-- Action badge colors: create=emerald, update=blue, delete=red
+Create `src/features/agenda/AgendaPage.tsx` with two views:
+
+**Meetings list view (default):**
+- Table: Title, Date, Type badge (regular/special/emergency with color), Status badge (scheduled/ongoing/adjourned), Items count, Minutes status, Actions
+- Filters: search by title, status dropdown
+- Click row → detail view
+- "New Meeting" button opens slide-over form
+- Slide-over form: Title *, Date *, Location, Type dropdown, Status dropdown, Notes
+
+**Meeting detail view:**
+- Header: meeting title, date, type badge, status badge, location
+- Back button → list
+- Edit Meeting button, Add Item button
+- Notes section (if any)
+- Agenda items table: #, Title (+ description), Status badge, Minutes (truncated preview or "Pending meeting" / "Fill minutes"), Actions (Edit/Delete)
+- Click item → slide-over form for agenda item
+- Item form: Title *, Description, Sort Order, Status dropdown, Minutes textarea (shown only if meeting status is not 'scheduled')
+- `submitted_by` auto-set from authStore on first minutes save
+- ConfirmDialog for delete
+
+- [ ] **Step 2: Verify build passes**
+
+Run: `npm run build`
+
+Expected: builds cleanly
+
+- [ ] **Step 3: Commit**
+
+```
+git add src/features/agenda/AgendaPage.tsx
+git commit -m "feat: add Agenda & Minutes page with meetings list and detail view"
+```
 
 ---
 

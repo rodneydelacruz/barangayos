@@ -1,118 +1,51 @@
-### Task 4: Visitors API + page
+### Task 4: Calendar API + CalendarPage
 
 **Files:**
-- Create: `src/api/visitors.ts`
-- Create: `src/features/logs/VisitorLogPage.tsx`
-- Create: `src/features/logs/index.ts`
+- Create: `src/api/calendar.ts`
+- Create: `src/features/calendar/CalendarPage.tsx`
 
 **Interfaces:**
-- Consumes: `logActivity` from `./activity`
-- Produces: standard CRUD + `checkOutVisitor(id)`
+- Consumes: `logActivity(...)` from `@/api/activity`
+- Consumes: `getMeetings()`, `ApiMeeting` from `@/api/meetings` (Task 3)
+- Produces: `ApiCalendarEvent`, `CalendarEventData`, `getEvents()`, `getEventsByMonth()`, `getEvent()`, `createEvent()`, `updateEvent()`, `deleteEvent()`
 
-- [ ] **Step 1: Create `src/api/visitors.ts`**
+- [ ] **Step 1: Create calendar API**
 
-```typescript
-import type { RecordModel } from 'pocketbase'
-import { getClient } from './client'
-import { handleApiError } from './errorHandler'
-import { logActivity } from './activity'
+Create `src/api/calendar.ts`:
+- `CalendarEventData` interface (title, description?, event_type, start_datetime, end_datetime?, all_day?, location?, agenda_ref?, notes?)
+- `ApiCalendarEvent extends RecordModel, CalendarEventData`
+- `getEvents()` — `getFullList` sorted by `start_datetime`
+- `getEventsByMonth(year, month)` — filter by `start_datetime >= startOfMonth && start_datetime < startOfNextMonth`
+- `getEvent(id)` — `getOne`
+- `createEvent(data)` — `create` + logActivity
+- `updateEvent(id, data)` — `update` + logActivity
+- `deleteEvent(id)` — fetch, delete, logActivity
 
-const COLLECTION = 'visitor_logs'
+- [ ] **Step 2: Create CalendarPage**
 
-export interface VisitorData {
-  visitor_name: string
-  contact_number?: string
-  purpose: string
-  person_to_visit?: string
-  time_out?: string
-}
+Create `src/features/calendar/CalendarPage.tsx`:
+- Month/year header with prev/next buttons
+- CSS 7-column grid calendar (Sun-Sat headers, day cells)
+- Events per day shown as colored dots (color by event_type)
+- Today highlighted with gold ring
+- Selected day highlighted with gold bg
+- Click day → right panel shows events for that day
+- Event cards in right panel: type dot + label, title, time/date, location, Edit/Delete buttons (admin/staff only)
+- Slide-over form: Title *, Description, Event Type *, Start datetime-local *, End datetime-local, All-day checkbox, Location, Link to Meeting dropdown (upcoming meetings from getMeetings), Notes
+- All roles can view; admin/staff can CRUD
+- Skeleton loading, error banner, ConfirmDialog for delete
 
-export interface ApiVisitor extends RecordModel {
-  visitor_name: string
-  contact_number: string
-  purpose: string
-  person_to_visit: string
-  time_in: string
-  time_out: string
-  updated: string
-}
+- [ ] **Step 3: Verify build passes**
 
-export async function getVisitors(): Promise<ApiVisitor[]> {
-  try {
-    return await getClient().collection(COLLECTION).getFullList<ApiVisitor>({ sort: '-time_in' })
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
+Run: `npm run build`
 
-export async function getVisitor(id: string): Promise<ApiVisitor> {
-  try {
-    return await getClient().collection(COLLECTION).getOne<ApiVisitor>(id)
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
+Expected: builds cleanly (all API deps from Task 3 are available)
 
-export async function createVisitor(data: VisitorData): Promise<ApiVisitor> {
-  try {
-    const result = await getClient().collection(COLLECTION).create<ApiVisitor>(data)
-    logActivity('create', COLLECTION, result.id, `Visitor logged in: ${result.visitor_name}`)
-    return result
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
+- [ ] **Step 4: Commit**
 
-export async function updateVisitor(id: string, data: Partial<VisitorData>): Promise<ApiVisitor> {
-  try {
-    const result = await getClient().collection(COLLECTION).update<ApiVisitor>(id, data)
-    logActivity('update', COLLECTION, id, `Updated visitor: ${result.visitor_name}`)
-    return result
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
-
-export async function deleteVisitor(id: string): Promise<boolean> {
-  try {
-    await getClient().collection(COLLECTION).delete(id)
-    logActivity('delete', COLLECTION, id, `Deleted visitor log`)
-    return true
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
-
-export async function checkOutVisitor(id: string): Promise<ApiVisitor> {
-  try {
-    const result = await getClient().collection(COLLECTION).update<ApiVisitor>(id, {
-      time_out: new Date().toISOString(),
-    })
-    logActivity('update', COLLECTION, id, `Visitor checked out: ${result.visitor_name}`)
-    return result
-  } catch (err) {
-    throw handleApiError(err)
-  }
-}
 ```
-
-- [ ] **Step 2: Create `src/features/logs/VisitorLogPage.tsx`**
-
-Key specs:
-- Follows ResidentsPage pattern: table + slide-over form + ConfirmDialog
-- Table columns: Visitor Name, Contact, Purpose, Person to Visit, Time In, Time Out, Actions
-- Search filter: by name or purpose
-- "Show active only" toggle (filters visitors with no time_out)
-- Create/edit form: Visitor Name*, Contact, Purpose*, Person to Visit
-- Inline "Check Out" button for visitors without time_out (sets time_out to now)
-- Once checked out, show time_out timestamp
-- Empty state: "No visitors logged yet."
-
-- [ ] **Step 3: Create `src/features/logs/index.ts`**
-
-```typescript
-export { default as ActivityPage } from './ActivityPage'
-export { default as VisitorLogPage } from './VisitorLogPage'
+git add src/api/calendar.ts src/features/calendar/CalendarPage.tsx
+git commit -m "feat: add Calendar API and page with CSS month grid"
 ```
 
 ---

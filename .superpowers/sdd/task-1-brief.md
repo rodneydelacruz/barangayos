@@ -1,71 +1,131 @@
-### Task 1: Migration JSON + Cloudinary utility
+# Task 1: Reports API module
 
 **Files:**
-- Create: `pocketbase/migrations/004_assets_calendar_agenda.json`
-- Create: `src/api/upload.ts`
-- Modify: `.env.local`, `.env.local.example`, `.env.production`, `.env.production.example`
+- Create: `src/api/reports.ts`
 
 **Interfaces:**
-- Consumes: nothing
-- Produces: `uploadImage(file: File): Promise<string>` — returns Cloudinary URL
+- Consumes: `getResidents()` → `ApiResident[]` from `@/api/residents`
+- Consumes: `getDocuments()` → `ApiDocument[]` from `@/api/documents`
+- Consumes: `getBlotters()` → `ApiBlotter[]` from `@/api/blotter`
+- Consumes: `getAssets()` → `ApiAsset[]` from `@/api/assets`
+- Consumes: `getVisitors()` → `ApiVisitor[]` from `@/api/visitors`
+- Produces: exported types and functions below
 
-- [ ] **Step 1: Create migration JSON**
+## Global Constraints Reminder
+- Zero new JS dependencies — use only what's in package.json
+- Error handling: report functions return zeroed shapes on failure, never throw
+- `cn()` utility (`@/lib/utils`) available if needed
+- All existing API signatures are at `@/api/residents`, `@/api/documents`, `@/api/blotter`, `@/api/assets`, `@/api/visitors`
 
-Write `pocketbase/migrations/004_assets_calendar_agenda.json` with 4 collections: `assets`, `calendar_events`, `meetings`, `agenda_items`. Schema matches the spec exactly.
+## Steps
 
-- [ ] **Step 2: Create Cloudinary upload utility**
+### Step 1: Create `src/api/reports.ts`
 
-Create `src/api/upload.ts`:
+Write the file with these interfaces and functions:
 
 ```typescript
-const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+import { getResidents, type ApiResident } from './residents'
+import { getDocuments, type ApiDocument } from './documents'
+import { getBlotters, type ApiBlotter } from './blotter'
+import { getAssets, type ApiAsset } from './assets'
+import { getVisitors, type ApiVisitor } from './visitors'
 
-export async function uploadImage(file: File): Promise<string> {
-  if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
-  }
+// --- Demographics ---
 
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('upload_preset', uploadPreset)
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: formData,
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || 'Failed to upload image')
-  }
-
-  const data = await res.json()
-  return data.secure_url as string
+export interface DemographicsReport {
+  total: number
+  byPurok: Record<string, number>
+  byGender: { male: number; female: number }
+  byCivilStatus: Record<string, number>
+  voters: number
+  senior: number
+  pwd: number
+  fourPs: number
+  ageGroups: { under18: number; adult: number; senior: number }
 }
+
+export async function getDemographicsReport(): Promise<DemographicsReport>
+// Fetches all residents, computes: total, byPurok, byGender, byCivilStatus,
+// voters, senior, pwd, fourPs, ageGroups (under18=age<18, adult=18-59, senior=60+)
+// On catch: return zeroed shape
+
+// --- Documents ---
+
+export interface DocumentsReport {
+  total: number
+  byStatus: Record<string, number>
+  byType: Record<string, number>
+  todayRequests: number
+}
+
+export async function getDocumentsReport(): Promise<DocumentsReport>
+// Fetches all documents, computes: total, byStatus, byType, todayRequests
+// todayRequests checks if requested_at starts with today's YYYY-MM-DD
+// On catch: return zeroed shape
+
+// --- Blotter ---
+
+export interface BlotterReport {
+  total: number
+  byStatus: Record<string, number>
+  byIncidentType: Record<string, number>
+}
+
+export async function getBlotterReport(): Promise<BlotterReport>
+// Fetches all blotters, computes: total, byStatus, byIncidentType
+// On catch: return zeroed shape
+
+// --- Assets ---
+
+export interface AssetsReport {
+  total: number
+  byType: Record<string, number>
+  byCondition: Record<string, number>
+  byStatus: Record<string, number>
+  totalValue: number
+}
+
+export async function getAssetsReport(): Promise<AssetsReport>
+// Fetches all assets, computes: total, byType, byCondition, byStatus, totalValue
+// totalValue sums current_value for each asset
+// On catch: return zeroed shape
+
+// --- Visitors ---
+
+export interface VisitorsReport {
+  total: number
+  activeVisits: number
+  byPurpose: Record<string, number>
+}
+
+export async function getVisitorsReport(): Promise<VisitorsReport>
+// Fetches all visitors, computes: total, activeVisits (time_out is falsy), byPurpose
+// On catch: return zeroed shape
+
+// --- Overview (composite) ---
+
+export interface OverviewReport {
+  demographics: DemographicsReport
+  documents: DocumentsReport
+  blotter: BlotterReport
+  assets: AssetsReport
+  visitors: VisitorsReport
+}
+
+export async function getOverviewReport(): Promise<OverviewReport>
+// Runs all 5 report functions in parallel via Promise.all
+// Returns combined result
 ```
 
-- [ ] **Step 3: Update env files**
-
-Add to `.env.local`, `.env.local.example`, `.env.production`, `.env.production.example`:
-
-```
-VITE_CLOUDINARY_CLOUD_NAME=
-VITE_CLOUDINARY_UPLOAD_PRESET=
-```
-
-- [ ] **Step 4: Verify build passes**
+### Step 2: Verify build passes
 
 Run: `npm run build`
 
-Expected: builds cleanly
+Expected: builds cleanly (imports match existing API modules)
 
-- [ ] **Step 5: Commit**
+### Step 3: Commit
 
+```bash
+git add src/api/reports.ts
+git commit -m "feat: add Reports API module with aggregation functions"
 ```
-git add pocketbase/migrations/004_assets_calendar_agenda.json src/api/upload.ts .env.local .env.local.example .env.production .env.production.example
-git commit -m "feat: add Group D migration for assets/calendar/agenda + Cloudinary upload utility"
-```
-
----
-

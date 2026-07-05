@@ -20,3 +20,17 @@
 - Asset summary counts by type/condition/status for potential dashboard integration
 - Image thumbnail shows `size-10` (40x40) rounded image, or Camera icon placeholder when no image
 - Used em-dash (—) for empty location cells
+
+## Review Fix Commit
+
+### Status: DONE
+
+### Files Changed
+- `src/api/assets.ts` — Changed `ApiAsset` to extends `RecordModel, AssetData`; removed redundant field declarations; fixed `byStatus` index to handle optional `status`
+- `src/features/assets/AssetsPage.tsx` — Changed "Location" column header to "Assigned To"; added `residentMap` lookup for assigned resident names; removed invalid `fbold` CSS class; fixed optional field handling in `openEditPanel` and status badge template
+
+### Build Result
+- Clean build — TypeScript and Vite both passed without errors
+
+### Commit SHA
+- `2f5f624` — fix: address review findings for Asset API and page (ApiAsset inheritance, Assigned To column, CSS)
