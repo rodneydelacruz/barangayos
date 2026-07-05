@@ -36,7 +36,7 @@ function TagInput({ items, placeholder, onChange }: TagInputProps) {
         {items.map((item, i) => (
           <span
             key={item}
-            className="inline-flex animate-scale-in items-center gap-1 rounded-md border bg-secondary/50 px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+            className="inline-flex motion-scale-in items-center gap-1 rounded-md border bg-secondary/50 px-2 py-0.5 text-xs font-medium text-secondary-foreground"
           >
             {item}
             <button
@@ -101,6 +101,10 @@ function SettingsField({ label, value, onChange, required, placeholder }: Settin
       />
     </div>
   )
+}
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-md bg-muted', className)} />
 }
 
 interface Toast {
@@ -232,17 +236,32 @@ export default function SystemSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      <div className="mx-auto max-w-7xl">
+        <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists." />
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-lg border bg-card shadow-sm p-4 space-y-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+              <SkeletonBlock className="h-4 w-40" />
+              <SkeletonBlock className="h-8 w-full" />
+              <div className="grid grid-cols-2 gap-3">
+                <SkeletonBlock className="h-8 w-full" />
+                <SkeletonBlock className="h-8 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
-        <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={loadSettings}>Retry</Button>
+      <div className="mx-auto max-w-7xl">
+        <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists." />
+        <div className="mx-auto max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={loadSettings}>Retry</Button>
+        </div>
       </div>
     )
   }
@@ -251,7 +270,7 @@ export default function SystemSettings() {
     <div className="mx-auto max-w-7xl">
       <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists.">
         {autoSaving && (
-          <span className="flex animate-fade-in items-center gap-1.5 text-xs text-muted-foreground/60">
+          <span className="flex motion-fade-in items-center gap-1.5 text-xs text-muted-foreground/60">
             <Loader2 className="size-3 animate-spin" />
             Saving...
           </span>
@@ -259,15 +278,14 @@ export default function SystemSettings() {
       </PageHeader>
 
       <div className="space-y-3">
-        {/* Barangay Information */}
-        <section className="rounded-lg border bg-card shadow-sm animate-fade-in-up" style={{ animationDelay: '0ms' }}>
+        <section className="rounded-lg border bg-card shadow-sm motion-fade-in motion-slide-up" style={{ animationDelay: '0ms' }}>
           <div className="flex items-center gap-2 border-b border-bamboo/40 px-4 py-2.5 dark:border-bamboo/20">
             <Building2 className="size-4 text-muted-foreground/60" />
             <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
               Barangay Information
             </h2>
           </div>
-          <div className="space-y-3 p-4">
+          <div className="space-y-3 p-3">
             <div className="grid grid-cols-2 gap-3">
               <SettingsField label="Barangay Name" value={barangayName} onChange={onChange(setBarangayName)} required />
               <SettingsField label="Municipality / City" value={municipalityCity} onChange={onChange(setMunicipalityCity)} required />
@@ -281,30 +299,28 @@ export default function SystemSettings() {
           </div>
         </section>
 
-        {/* Barangay Officials */}
-        <section className="rounded-lg border bg-card shadow-sm animate-fade-in-up" style={{ animationDelay: '75ms' }}>
+        <section className="rounded-lg border bg-card shadow-sm motion-fade-in motion-slide-up" style={{ animationDelay: '75ms' }}>
           <div className="flex items-center gap-2 border-b border-bamboo/40 px-4 py-2.5 dark:border-bamboo/20">
             <Users className="size-4 text-muted-foreground/60" />
             <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
               Barangay Officials
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-3 p-4">
+          <div className="grid grid-cols-3 gap-3 p-3">
             <SettingsField label="Barangay Captain" value={barangayCaptain} onChange={onChange(setBarangayCaptain)} placeholder="Full name" />
             <SettingsField label="Barangay Secretary" value={barangaySecretary} onChange={onChange(setBarangaySecretary)} placeholder="Full name" />
             <SettingsField label="Barangay Treasurer" value={barangayTreasurer} onChange={onChange(setBarangayTreasurer)} placeholder="Full name" />
           </div>
         </section>
 
-        {/* Purok Options */}
-        <section className="rounded-lg border bg-card shadow-sm animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <section className="rounded-lg border bg-card shadow-sm motion-fade-in motion-slide-up" style={{ animationDelay: '150ms' }}>
           <div className="flex items-center gap-2 border-b border-bamboo/40 px-4 py-2.5 dark:border-bamboo/20">
             <MapPin className="size-4 text-muted-foreground/60" />
             <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
               Purok Options
             </h2>
           </div>
-          <div className="p-4">
+          <div className="p-3">
             <p className="mb-2.5 text-[11px] text-muted-foreground/60">
               Puroks and sitios available when assigning locations on records.
             </p>
@@ -312,15 +328,14 @@ export default function SystemSettings() {
           </div>
         </section>
 
-        {/* Incident Types */}
-        <section className="rounded-lg border bg-card shadow-sm animate-fade-in-up" style={{ animationDelay: '225ms' }}>
+        <section className="rounded-lg border bg-card shadow-sm motion-fade-in motion-slide-up" style={{ animationDelay: '225ms' }}>
           <div className="flex items-center gap-2 border-b border-bamboo/40 px-4 py-2.5 dark:border-bamboo/20">
             <ShieldAlert className="size-4 text-muted-foreground/60" />
             <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
               Incident Types
             </h2>
           </div>
-          <div className="p-4">
+          <div className="p-3">
             <p className="mb-2.5 text-[11px] text-muted-foreground/60">
               Categories used to classify incidents and complaints.
             </p>
@@ -329,15 +344,12 @@ export default function SystemSettings() {
         </section>
       </div>
 
-      {/* Toast */}
       {toast && (
-        <div className="fixed right-4 top-4 z-50 animate-slide-in-right">
+        <div className="fixed bottom-4 right-4 z-50 motion-slide-up">
           <div
             className={cn(
               'flex items-center gap-2 rounded-lg border bg-card px-4 py-3 text-sm text-foreground shadow-lg backdrop-blur-sm',
-              toast.type === 'success'
-                ? 'border-emerald-500/30'
-                : 'border-destructive/30',
+              toast.type === 'success' ? 'border-emerald-500/30' : 'border-destructive/30',
             )}
           >
             {toast.type === 'success' ? (
