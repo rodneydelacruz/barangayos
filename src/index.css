@@ -64,13 +64,13 @@
   to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes theme-spin {
-  from { transform: rotate(-90deg) scale(0.5); opacity: 0; }
+@keyframes theme-swirl {
+  from { transform: rotate(-90deg) scale(0.6); opacity: 0; }
   to { transform: rotate(0deg) scale(1); opacity: 1; }
 }
 
 .theme-icon-enter {
-  animation: theme-spin 0.3s ease;
+  animation: theme-swirl 0.3s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
