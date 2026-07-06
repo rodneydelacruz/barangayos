@@ -5,6 +5,7 @@ import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { exportWorkbook, type ExportCollection, type DateRange } from './useExportWorkbook'
+import { toast } from '@/lib/toast'
 
 const COLLECTION_MAP: Record<string, ExportCollection> = {
   demographics: 'residents',
@@ -47,11 +48,11 @@ export default function ExportBar({ activeTab }: { activeTab: string }) {
     let dateRange: DateRange
     if (preset === 'custom') {
       if (!from || !to) {
-        window.alert('Please select both start and end dates.')
+        toast.error('Please select both start and end dates.')
         return
       }
       if (from > to) {
-        window.alert('Start date must be before end date.')
+        toast.error('Start date must be before end date.')
         return
       }
       dateRange = { preset: 'custom', from, to }
@@ -63,7 +64,7 @@ export default function ExportBar({ activeTab }: { activeTab: string }) {
     try {
       await exportWorkbook(collection, dateRange)
     } catch {
-      window.alert('An error occurred while exporting.')
+      toast.error('An error occurred while exporting.')
     } finally {
       setExporting(false)
       setOpen(false)

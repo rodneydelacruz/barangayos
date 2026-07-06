@@ -6,6 +6,7 @@ import { getBlotters } from '@/api/blotter'
 import { getAssets } from '@/api/assets'
 import { getVisitors } from '@/api/visitors'
 import { getActivities } from '@/api/activity'
+import { toast } from '@/lib/toast'
 
 export type DateRange =
   | { preset: 'all' }
@@ -243,7 +244,7 @@ export async function exportWorkbook(collection: ExportCollection, dateRange: Da
   const filtered = filterByDateRange(allData, dateField, bounds)
 
   if (filtered.length === 0) {
-    window.alert('No records found for the selected period.')
+    toast.info('No records found for the selected period.')
     return
   }
 
