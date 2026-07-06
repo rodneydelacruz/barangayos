@@ -51,12 +51,13 @@ function calculateAge(birthDate: string): number {
 
 const purokOptions = ['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5', 'Purok 6', 'Purok 7']
 
-const tagKeys = ['is_voter', 'is_4ps', 'is_senior', 'is_pwd'] as const
+const tagKeys = ['is_voter', 'is_4ps', 'is_senior', 'is_pwd', 'is_deceased'] as const
 const tagLabels: Record<string, string> = {
   is_voter: 'Voter',
   is_4ps: '4Ps',
   is_senior: 'Senior',
   is_pwd: 'PWD',
+  is_deceased: 'Deceased',
 }
 
 
@@ -78,6 +79,7 @@ function emptyForm() {
     is_4ps: false,
     is_senior: false,
     is_pwd: false,
+    is_deceased: false,
     blood_type: '',
     notes: '',
   }
@@ -268,7 +270,7 @@ export default function ResidentsPage() {
     if (!form.first_name.trim() || !form.last_name.trim()) return
 
     try {
-      const payload = { ...form, age }
+      const payload = { ...form, age: calculateAge(form.birth_date) }
       for (const key of ['household_id', 'gender', 'civil_status', 'blood_type', 'suffix', 'middle_name', 'contact_number', 'occupation', 'nationality', 'notes'] as const) {
         if (payload[key] === '') (payload as Record<string, unknown>)[key] = null
       }
@@ -314,10 +316,11 @@ export default function ResidentsPage() {
       is_4ps: record.is_4ps,
       is_senior: record.is_senior,
       is_pwd: record.is_pwd,
+      is_deceased: record.is_deceased,
       blood_type: record.blood_type,
       notes: record.notes,
     })
-    setAge(record.age)
+    setAge(calculateAge(record.birth_date))
     setPanelOpen(true)
     setError(null)
   }
@@ -475,7 +478,7 @@ export default function ResidentsPage() {
                         {r.first_name} {r.last_name}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{r.purok}</td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{r.age}</td>
+                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{r.birth_date ? calculateAge(r.birth_date) : '—'}</td>
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">{r.civil_status}</td>
                       <td className="hidden px-4 py-3 sm:table-cell sm:px-6">
                         <div className="flex flex-wrap gap-1">
@@ -565,7 +568,7 @@ export default function ResidentsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="panel-age">Age</Label>
-                  <Input id="panel-age" type="number" value={age || ''} onChange={(e) => setAge(Number(e.target.value))} />
+                  <Input id="panel-age" type="number" value={age || ''} disabled className="opacity-70" />
                 </div>
               </div>
 
@@ -695,7 +698,7 @@ export default function ResidentsPage() {
             <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutResident!.first_name} {flyoutResident!.last_name}</span></div>
             <div><span className="text-muted-foreground">Middle Name:</span> {flyoutResident!.middle_name || '—'}</div>
             <div><span className="text-muted-foreground">Suffix:</span> {flyoutResident!.suffix || '—'}</div>
-            <div><span className="text-muted-foreground">Age:</span> {flyoutResident!.age || '—'}</div>
+            <div><span className="text-muted-foreground">Age:</span> {flyoutResident!.birth_date ? calculateAge(flyoutResident!.birth_date) : '—'}</div>
             <div><span className="text-muted-foreground">Gender:</span> {flyoutResident!.gender ? (flyoutResident!.gender.charAt(0).toUpperCase() + flyoutResident!.gender.slice(1)) : '—'}</div>
             <div><span className="text-muted-foreground">Birth Date:</span> {formatDate(flyoutResident!.birth_date)}</div>
             <div><span className="text-muted-foreground">Contact:</span> {flyoutResident!.contact_number || '—'}</div>

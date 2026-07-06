@@ -24,6 +24,7 @@ export interface ResidentData {
   is_4ps?: boolean
   is_senior?: boolean
   is_pwd?: boolean
+  is_deceased?: boolean
   blood_type?: string
   notes?: string
 }
