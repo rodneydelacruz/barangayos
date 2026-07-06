@@ -9,9 +9,9 @@ import {
   LogOut,
   Users,
   Home,
-  ClipboardList,
   CheckSquare,
   ClipboardCheck,
+  ClipboardList,
   DoorOpen,
   Package,
   Calendar,
@@ -60,6 +60,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Finance',
     items: [
       { to: '/finance/budget', label: 'Budget Overview', icon: Landmark, roles: ['admin', 'staff'] },
+      { to: '/finance/appropriations', label: 'Appropriations', icon: ClipboardList, roles: ['admin', 'staff'] },
       { to: '/finance/revenues', label: 'Revenue Tracking', icon: TrendingUp, roles: ['admin', 'staff'] },
       { to: '/finance/funds', label: 'Fund Sources', icon: Wallet, roles: ['admin', 'staff'] },
       { to: '/finance/disbursements', label: 'Disbursements', icon: ArrowUpFromLine, roles: ['admin', 'staff'] },
