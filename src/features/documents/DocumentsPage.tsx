@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
-import { Plus, ChevronDown, Search, FileText, Clock, User, CheckCircle2, RotateCcw, Ban } from 'lucide-react'
+import { Plus, ChevronDown, Search, FileText, Clock, User, CheckCircle2, RotateCcw, Ban, DollarSign } from 'lucide-react'
 import { getDocuments, createDocument, updateDocument, deleteDocument, getDailyQueueNumber, type ApiDocument } from '@/api/documents'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -135,7 +135,7 @@ export default function DocumentsPage() {
         setDocs((prev) => prev.map((d) => (d.id === editingId ? updated : d)))
       } else {
         const qn = await getDailyQueueNumber()
-        const created = await createDocument({ ...form, queue_number: qn, status: 'pending' })
+        const created = await createDocument({ ...form, queue_number: qn, status: 'pending', payment_status: 'unpaid' })
         setDocs((prev) => [created, ...prev])
       }
       closePanel()
@@ -296,6 +296,7 @@ export default function DocumentsPage() {
                     <th className="px-4 py-3 sm:px-6">Resident</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Document Type</th>
                     <th className="px-4 py-3 sm:px-6">Status</th>
+                    <th className="hidden px-4 py-3 lg:table-cell sm:px-6">Payment</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Requested</th>
                   </tr>
                 </thead>
@@ -319,6 +320,15 @@ export default function DocumentsPage() {
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                         <span className={cn('inline-flex rounded-md px-3.5 py-0.5 text-xs font-bold', statusColors[d.status])}>
                           {statusLabels[d.status]}
+                        </span>
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-3 lg:table-cell sm:px-6">
+                        <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', {
+                          'bg-amber-100 text-amber-800': d.payment_status === 'unpaid',
+                          'bg-emerald-100 text-emerald-800': d.payment_status === 'paid',
+                          'bg-muted text-muted-foreground': d.payment_status === 'waived' || !d.payment_status,
+                        })}>
+                          {d.payment_status === 'unpaid' ? 'Unpaid' : d.payment_status === 'paid' ? 'Paid' : 'Waived'}
                         </span>
                       </td>
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
@@ -455,6 +465,28 @@ export default function DocumentsPage() {
 
             <DetailSection icon={<FileText className="size-3" />} title="Purpose">
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutDoc.purpose}</p>
+            </DetailSection>
+
+            <DetailSection icon={<DollarSign className="size-3" />} title="Payment">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-muted-foreground">Status:</span>{' '}
+                  <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-bold', {
+                    'bg-amber-100 text-amber-800': flyoutDoc.payment_status === 'unpaid',
+                    'bg-emerald-100 text-emerald-800': flyoutDoc.payment_status === 'paid',
+                    'bg-muted text-muted-foreground': flyoutDoc.payment_status === 'waived',
+                  })}>
+                    {flyoutDoc.payment_status === 'unpaid' ? 'Unpaid' : flyoutDoc.payment_status === 'paid' ? 'Paid' : 'Waived'}
+                  </span>
+                </div>
+                {flyoutDoc.payment_status === 'paid' && (
+                  <>
+                    <div><span className="text-muted-foreground">Amount:</span> ₱{flyoutDoc.payment_amount.toFixed(2)}</div>
+                    {flyoutDoc.or_no && <div className="col-span-2"><span className="text-muted-foreground">O.R. #:</span> {flyoutDoc.or_no}</div>}
+                    <div className="col-span-2"><span className="text-muted-foreground">Date:</span> {flyoutDoc.payment_date ? formatDate(flyoutDoc.payment_date) : '-'}</div>
+                  </>
+                )}
+              </div>
             </DetailSection>
 
             {flyoutDoc.notes && (

@@ -7,6 +7,12 @@ import { createVisitor } from '@/api/visitors'
 import { createMeeting } from '@/api/meetings'
 import { createAgendaItem } from '@/api/agenda'
 import { createEvent } from '@/api/calendar'
+import { createIncomeAccount } from '@/api/incomeAccounts'
+import { createFundSource } from '@/api/fundSources'
+import { createAppropriation } from '@/api/appropriations'
+import { createObligation } from '@/api/obligations'
+import { createDisbursement } from '@/api/disbursements'
+import { createRevenue } from '@/api/revenues'
 import { getClient } from '@/api/client'
 
 export interface CollectionDef {
@@ -24,6 +30,12 @@ export const AVAILABLE_COLLECTIONS: CollectionDef[] = [
   { id: 'meetings', label: 'Meetings & Agenda' },
   { id: 'calendar', label: 'Calendar Events' },
   { id: 'activity', label: 'Activity Logs' },
+  { id: 'income_accounts', label: 'Income Accounts' },
+  { id: 'fund_sources', label: 'Fund Sources' },
+  { id: 'appropriations', label: 'Appropriations' },
+  { id: 'obligations', label: 'Obligations' },
+  { id: 'disbursements', label: 'Disbursements' },
+  { id: 'revenues', label: 'Revenues' },
 ]
 
 const LAST_NAMES = [
@@ -178,6 +190,67 @@ const CALENDAR_EVENT_TITLES = [
   'Barangay Assembly',
   'Kiddie Day Celebration',
   'Feast of Barangay Patron Saint',
+]
+
+const INCOME_ACCOUNTS_SEED: { coa_code: string; name: string }[] = [
+  { coa_code: '4-01-01-010', name: 'National Tax Allotment (NTA)' },
+  { coa_code: '4-02-01-010', name: 'Local Taxes' },
+  { coa_code: '4-03-01-010', name: 'Service / User Fees' },
+  { coa_code: '4-03-01-020', name: 'Clearance Fees' },
+  { coa_code: '4-03-01-030', name: 'Business Permit Fees' },
+  { coa_code: '4-03-01-040', name: 'Certification Fees' },
+  { coa_code: '4-04-01-010', name: 'Miscellaneous Income' },
+  { coa_code: '4-05-01-010', name: 'Grants and Donations' },
+  { coa_code: '4-06-01-010', name: 'Other Receipts' },
+]
+
+const FUND_SOURCE_SEEDS: { name: string; code: string; rule: 'none' | '20%_DF' | 'SK' | 'BDRRMF' | 'GAD' }[] = [
+  { name: 'General Fund', code: 'GF', rule: 'none' },
+  { name: 'Development Fund', code: 'DF', rule: '20%_DF' },
+  { name: 'Sangguniang Kabataan Fund', code: 'SKF', rule: 'SK' },
+  { name: 'Barangay Disaster Risk Reduction and Management Fund', code: 'BDRRMF', rule: 'BDRRMF' },
+  { name: 'Gender and Development Fund', code: 'GAD', rule: 'GAD' },
+]
+
+const PS_ITEMS = [
+  'Salaries and Wages',
+  'Honoraria',
+  'PERA / Additional Compensation',
+  'Year-End Bonus',
+  'Cash Gift',
+]
+
+const MOOE_ITEMS = [
+  'Office Supplies',
+  'Electricity',
+  'Water',
+  'Telecommunications',
+  'Transportation / Travel',
+  'Repair and Maintenance',
+  'Training and Seminars',
+  'Fiesta / Celebration Expenses',
+  'Medical and Dental Supplies',
+  'Blood Donation / Feeding Program',
+  'Barangay Assembly Expenses',
+]
+
+const CO_ITEMS = [
+  'Office Furniture and Equipment',
+  'IT Equipment',
+  'Office Renovation / Improvement',
+]
+
+const PAYEES = [
+  'Meralco',
+  'Maynilad Water Services',
+  'PLDT Telecom',
+  'National Bookstore',
+  'LGU General Services Office',
+  'Barangay Supplies and Services',
+  'Jollibee Foods Corp (Catering)',
+  'Grab Transport Services',
+  'Laptop World Trading',
+  'Furniture Depot',
 ]
 
 function pick<T>(arr: readonly T[]): T {
@@ -366,8 +439,10 @@ export async function seedCollections(
 
   if (seedSet.has('documents') && residentIds.length > 0) {
     onProgress('Seeding document requests...')
+    const paymentStatuses = ['unpaid', 'paid', 'waived'] as const
     for (let i = 0; i < 50; i++) {
       try {
+        const pStatus = pick(paymentStatuses)
         await createDocument({
           queue_number: String(i + 1).padStart(3, '0'),
           resident_id: pick(residentIds),
@@ -375,6 +450,12 @@ export async function seedCollections(
           document_type: pick(DOCUMENT_TYPES) as string,
           purpose: pick(DOCUMENT_PURPOSES),
           status: pick(DOCUMENT_STATUSES) as string,
+          payment_status: pStatus,
+          ...(pStatus === 'paid' ? {
+            payment_amount: Math.floor(50 + Math.random() * 500),
+            or_no: `DOC-OR-${String(i + 1).padStart(4, '0')}`,
+            payment_date: randomDate(30),
+          } : {}),
         })
         total++
       } catch (e) {
@@ -453,6 +534,148 @@ export async function seedCollections(
     }
   }
 
+  const incomeAccountIds: string[] = []
+  if (seedSet.has('income_accounts')) {
+    onProgress('Seeding income accounts...')
+    for (const acct of INCOME_ACCOUNTS_SEED) {
+      try {
+        const created = await createIncomeAccount({
+          coa_code: acct.coa_code,
+          name: acct.name,
+          fiscal_year: 2026,
+          budgeted_amount: Math.floor(50000 + Math.random() * 500000),
+        })
+        incomeAccountIds.push(created.id)
+        total++
+      } catch (e) {
+        errors.push(`Income account ${acct.coa_code}: ${extractError(e)}`)
+      }
+    }
+  }
+
+  const fundSourceIds: string[] = []
+  if (seedSet.has('fund_sources')) {
+    onProgress('Seeding fund sources...')
+    for (const fs of FUND_SOURCE_SEEDS) {
+      try {
+        const created = await createFundSource({
+          name: fs.name,
+          code: fs.code,
+          description: `${fs.name} — statutory fund for Barangay Poblacion.`,
+          statutory_rule: fs.rule,
+          current_balance: Math.floor(100000 + Math.random() * 900000),
+          fiscal_year: 2026,
+          is_active: true,
+        })
+        fundSourceIds.push(created.id)
+        total++
+      } catch (e) {
+        errors.push(`Fund source ${fs.code}: ${extractError(e)}`)
+      }
+    }
+  }
+
+  const appropriationIds: string[] = []
+  if (seedSet.has('appropriations') && fundSourceIds.length > 0) {
+    onProgress('Seeding appropriations...')
+    const allItems: { class: 'PS' | 'MOOE' | 'CO'; name: string; amount: number }[] = [
+      ...PS_ITEMS.map((n) => ({ class: 'PS' as const, name: n, amount: Math.floor(15000 + Math.random() * 80000) })),
+      ...MOOE_ITEMS.map((n) => ({ class: 'MOOE' as const, name: n, amount: Math.floor(10000 + Math.random() * 60000) })),
+      ...CO_ITEMS.map((n) => ({ class: 'CO' as const, name: n, amount: Math.floor(20000 + Math.random() * 150000) })),
+    ]
+    for (const item of allItems) {
+      try {
+        const created = await createAppropriation({
+          fiscal_year: 2026,
+          fund_source: pick(fundSourceIds),
+          expense_class: item.class,
+          item_name: item.name,
+          appropriated_amount: item.amount,
+          obligated_amount: 0,
+          disbursed_amount: 0,
+          status: 'active',
+        })
+        appropriationIds.push(created.id)
+        total++
+      } catch (e) {
+        errors.push(`Appropriation ${item.name}: ${extractError(e)}`)
+      }
+    }
+  }
+
+  if (seedSet.has('obligations') && appropriationIds.length > 0) {
+    onProgress('Seeding obligations...')
+    const obligationCount = Math.min(15, appropriationIds.length * 2)
+    for (let i = 0; i < obligationCount; i++) {
+      try {
+        const apprId = pick(appropriationIds)
+        const amt = Math.floor(2000 + Math.random() * 50000)
+        await createObligation({
+          appropriation: apprId,
+          obligation_date: randomDate(60),
+          payee: pick(PAYEES),
+          particulars: `Obligation for barangay expenses — ${pick(MOOE_ITEMS)}`,
+          amount: amt,
+          disbursed_amount: 0,
+          status: 'pending',
+        })
+        total++
+      } catch (e) {
+        errors.push(`Obligation ${i + 1}: ${extractError(e)}`)
+      }
+    }
+  }
+
+  if (seedSet.has('disbursements')) {
+    onProgress('Seeding disbursements...')
+    const pb = getClient()
+    let obligationRecords: { id: string; amount: number }[] = []
+    try {
+      obligationRecords = await pb.collection('obligations').getFullList<{ id: string; amount: number }>({ requestKey: null })
+    } catch { }
+    const dispCount = Math.min(10, obligationRecords.length)
+    for (let i = 0; i < dispCount; i++) {
+      try {
+        const obl = obligationRecords[i]
+        await createDisbursement({
+          obligation: obl.id,
+          disbursement_date: randomDate(30),
+          amount: Math.floor(obl.amount * 0.5),
+          check_no: `CKB-${String(i + 1).padStart(5, '0')}`,
+          or_no: `OR-${String(i + 1).padStart(5, '0')}`,
+          particular: 'Partial disbursement for obligated expense',
+        })
+        total++
+      } catch (e) {
+        errors.push(`Disbursement ${i + 1}: ${extractError(e)}`)
+      }
+    }
+  }
+
+  if (seedSet.has('revenues') && incomeAccountIds.length > 0) {
+    onProgress('Seeding revenues...')
+    const revCount = 20
+    for (let i = 0; i < revCount; i++) {
+      try {
+        const incomeAcct = pick(incomeAccountIds)
+        const fsId = fundSourceIds.length > 0 ? pick(fundSourceIds) : undefined
+        await createRevenue({
+          revenue_date: randomDate(90),
+          income_account: incomeAcct,
+          fund_source: fsId,
+          category: 'other_receipt',
+          source: `Revenue collection — ${pick(INCOME_ACCOUNTS_SEED).name}`,
+          amount: Math.floor(500 + Math.random() * 20000),
+          or_no: `REV-OR-${String(i + 1).padStart(4, '0')}`,
+          remarks: 'Seeded demo revenue entry',
+        })
+        total++
+      } catch (e) {
+        errors.push(`Revenue ${i + 1}: ${extractError(e)}`)
+      }
+    }
+  }
+
   return { total, errors }
 }
 
@@ -468,6 +691,12 @@ export async function eraseCollections(
   const eraseOrder: { id: string; collection: string }[] = [
     { id: 'activity', collection: 'activity_logs' },
     { id: 'calendar', collection: 'calendar_events' },
+    { id: 'revenues', collection: 'revenues' },
+    { id: 'disbursements', collection: 'disbursements' },
+    { id: 'obligations', collection: 'obligations' },
+    { id: 'appropriations', collection: 'appropriations' },
+    { id: 'fund_sources', collection: 'fund_sources' },
+    { id: 'income_accounts', collection: 'income_accounts' },
     { id: 'documents', collection: 'document_requests' },
     { id: 'visitors', collection: 'visitor_logs' },
     { id: 'blotter', collection: 'blotter_records' },

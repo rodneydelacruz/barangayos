@@ -16,6 +16,11 @@ import {
   Package,
   Calendar,
   BarChart3,
+  Landmark,
+  TrendingUp,
+  Wallet,
+  ArrowUpFromLine,
+  ScrollText,
 } from 'lucide-react'
 import { getCurrentUser, logout, type Role } from '@/auth/session'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -49,6 +54,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { to: '/documents', label: 'Document Queue', icon: ClipboardList, roles: ['admin', 'staff'] },
       { to: '/documents/release', label: 'Document Release', icon: CheckSquare, roles: ['admin', 'staff'] },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { to: '/finance/budget', label: 'Budget Overview', icon: Landmark, roles: ['admin', 'staff'] },
+      { to: '/finance/revenues', label: 'Revenue Tracking', icon: TrendingUp, roles: ['admin', 'staff'] },
+      { to: '/finance/funds', label: 'Fund Sources', icon: Wallet, roles: ['admin', 'staff'] },
+      { to: '/finance/disbursements', label: 'Disbursements', icon: ArrowUpFromLine, roles: ['admin', 'staff'] },
+      { to: '/finance/audit', label: 'Finance Audit', icon: ScrollText, roles: ['admin', 'staff'] },
     ],
   },
   {

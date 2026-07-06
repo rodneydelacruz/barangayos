@@ -155,3 +155,24 @@ Core PocketBase collections (defined in `pocketbase/pb_migrations/`):
 | `visitors` | base | Visitor check-in/out log |
 | `activity_log` | base | System audit trail |
 | `system_settings` | base | Key-value configuration store |
+| `appropriations` | base | Budget appropriations with expense class (PS/MOOE/CO) |
+| `fund_sources` | base | Fund sources with statutory rules (20% DF, SK, etc.) |
+| `revenues` | base | Revenue collections linked to income accounts |
+| `disbursements` | base | Disbursement records linked to obligations |
+| `obligations` | base | Obligation requests linked to appropriations |
+| `income_accounts` | base | Chart of accounts for revenue tracking |
+| `finance_audit_logs` | base | Finance-specific audit trail (separate from activity_log) |
+
+## Finance Audit Trail
+
+The finance module has a dedicated audit trail that logs every create/update/delete operation across all 6 finance collections. This is completely separate from the general `activity_log` system.
+
+**Architecture decision:** Audit logging is implemented on the **frontend side** rather than in PocketBase hooks. Testing revealed that PocketBase 0.39.5's hook events (`onRecordAfterCreate`, `onRecordAfterCreateRequest`, etc.) do not fire for REST API requests made through the JS SDK — they only fire for Admin UI operations or internal `dao.saveRecord()` calls.
+
+**How it works:**
+1. Each mutation function in `src/api/*.ts` (e.g., `createAppropriation`) first performs the main API call
+2. On success, it calls `createFinanceAuditLog()` from `src/api/financeAudit.ts`
+3. The audit entry is written to the `finance_audit_logs` collection with: action, collection name, record ID, details, amount, user name, and timestamp
+4. Audit failures are intentionally silent — they never block the main operation
+
+**Viewing:** The `FinanceAudit` page at `/finance/audit` displays the trail with collection filter, pagination, and a detail flyout showing user/timestamp info.

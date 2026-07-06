@@ -81,6 +81,13 @@ src/
     errorHandler.ts  Centralized error handling
     residents.ts     Resident CRUD operations
     documents.ts     Document request operations
+    financeAudit.ts  Finance audit trail logging
+    appropriations.ts Budget appropriations
+    fundSources.ts   Fund sources
+    revenues.ts      Revenue tracking
+    disbursements.ts Disbursement records
+    obligations.ts   Obligation requests
+    incomeAccounts.ts Income accounts
     ...              One file per collection
   auth/              Authentication and authorization
     session.ts       Login/logout, role checking, token management
@@ -102,6 +109,7 @@ src/
     assets/          Asset inventory
     calendar/        Event calendar
     agenda/          Meeting agenda
+    finance/         Finance module (budget, revenues, disbursements, audit)
     settings/        System settings
   lib/               Shared utilities
     apiConfig.ts     API URL resolution logic

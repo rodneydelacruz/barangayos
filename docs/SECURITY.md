@@ -83,6 +83,7 @@ Server-side rules in PocketBase migration files (`pocketbase/pb_migrations/`) us
 5. **Database backups** — Enable Litestream replication and verify backups periodically.
 
 6. **Monitor logs** — Check PocketBase logs regularly for unusual activity.
+7. **Audit trail** — The finance module has a dedicated audit trail (`finance_audit_logs`) that records every financial create/update/delete operation with user attribution. Review it periodically for unauthorized changes.
 
 ## Dependency Security
 

@@ -1,7 +1,0 @@
-dbs:
-  - path: D:\BARANGAYCC\barangay-system\pb_data\data.db
-    replicas:
-      - url: s3://barangay-db-backup.r2.cloudflarestorage.com/pocketbase
-        access-key-id: <R2_ACCESS_KEY_ID>
-        secret-access-key: <R2_SECRET_ACCESS_KEY>
-        endpoint: https://<ACCOUNT_ID>.r2.cloudflarestorage.com

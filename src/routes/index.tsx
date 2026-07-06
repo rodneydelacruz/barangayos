@@ -13,6 +13,7 @@ import { AssetsPage } from '@/features/assets'
 import { CalendarPage } from '@/features/calendar'
 import { AgendaPage } from '@/features/agenda'
 import { ReportsPage } from '@/features/reports'
+import { BudgetOverview, RevenueTracking, FundSources, Disbursements, FinanceAudit } from '@/features/finance'
 
 export default function AppRoutes() {
   return (
@@ -111,6 +112,46 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute roles={['admin', 'staff']}>
               <AgendaPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="finance/budget"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <BudgetOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="finance/revenues"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <RevenueTracking />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="finance/funds"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <FundSources />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="finance/disbursements"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <Disbursements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="finance/audit"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <FinanceAudit />
             </ProtectedRoute>
           }
         />

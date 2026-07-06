@@ -17,6 +17,10 @@ export interface DocumentData {
   notes?: string
   released_at?: string
   received_by?: string
+  payment_status?: string
+  payment_date?: string
+  payment_amount?: number
+  or_no?: string
 }
 
 export interface ApiDocument extends RecordModel {
@@ -32,6 +36,10 @@ export interface ApiDocument extends RecordModel {
   requested_at: string
   released_at: string
   received_by: string
+  payment_status: string
+  payment_amount: number
+  or_no: string
+  payment_date: string
   updated: string
 }
 
@@ -98,6 +106,16 @@ export async function getDocumentsPage(
   } catch (err) {
     throw handleApiError(err)
   }
+}
+
+export async function getDocumentFee(documentType: string): Promise<number> {
+  try {
+    const { getFinanceConfig } = await import('./settings')
+    const config = await getFinanceConfig()
+    if (!config?.document_fees) return 0
+    const fee = (config.document_fees as unknown as Record<string, number>)[documentType]
+    return fee ?? 0
+  } catch { return 0 }
 }
 
 export async function getDailyQueueNumber(): Promise<string> {

@@ -21,6 +21,8 @@ A modern, offline-capable web application for managing barangay records, residen
 - **Visitor Log** — Digital visitor check-in/out
 - **Activity Logs** — Audit trail of system actions
 - **Reports Dashboard** — Aggregated statistics and data visualization
+- **Finance Module** — Budget appropriations, fund sources, revenue tracking, disbursements, obligations, and income accounts
+- **Finance Audit Trail** — Dedicated audit log for all financial transactions with user attribution
 - **Offline Mode** — IndexedDB write queue; queues data when connection drops, auto-flushes on reconnect
 - **Role-Based Access** — Admin, Staff, and Viewer roles with granular permissions
 - **Dark Mode** — Light/dark theme toggle with system preference detection
@@ -65,10 +67,10 @@ The app runs at `http://localhost:8080` and proxies API calls to PocketBase at `
 
 ```
 src/
-  api/             PocketBase client API modules
+  api/             PocketBase client API modules (one per collection)
   auth/            Authentication, guards, session management
   components/      Shared UI components (shadcn/ui)
-  features/        Domain feature modules (records, residents, etc.)
+  features/        Domain feature modules (records, residents, finance, etc.)
   lib/             Utilities (API config, export, theme, health)
   offline/         IndexedDB queue, sync manager
   pages/           Page-level components (Dashboard)

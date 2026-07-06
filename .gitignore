@@ -46,3 +46,12 @@ pocketbase-service.xml
 # Runtime output
 pb_err.txt
 pb_out.txt
+
+# AI agent / tooling artifacts
+.superpowers/
+
+# Infrastructure config
+litestream.yml
+
+# Production staging area (DO NOT COMMIT)
+prod/
