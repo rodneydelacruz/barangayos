@@ -1,7 +1,6 @@
 import { type ReactNode } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Spinner } from '@/components/ui/spinner'
 import Pagination from '@/components/ui/Pagination'
 
 export interface Column<T> {
@@ -9,7 +8,6 @@ export interface Column<T> {
   label: string
   sortable?: boolean
   render?: (item: T) => ReactNode
-  hideBelow?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
@@ -68,6 +66,7 @@ export function DataTable<T>({
                     col.className,
                   )}
                   onClick={() => col.sortable && onSort?.(col.key)}
+                  aria-sort={col.sortable && sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   <div className="flex items-center gap-1">
                     {col.label}
@@ -84,6 +83,9 @@ export function DataTable<T>({
               <tr
                 key={rowKey(item)}
                 onClick={() => onRowClick?.(item)}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onRowClick) { e.preventDefault(); onRowClick(item) } }}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
                 className={cn(
                   'border-b last:border-0 transition-colors',
                   onRowClick ? 'cursor-pointer hover:bg-muted/50' : '',
@@ -106,6 +108,9 @@ export function DataTable<T>({
           <div
             key={rowKey(item)}
             onClick={() => onRowClick?.(item)}
+            onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onRowClick) { e.preventDefault(); onRowClick(item) } }}
+            tabIndex={onRowClick ? 0 : undefined}
+            role={onRowClick ? 'button' : undefined}
             className={cn(
               'rounded-lg border bg-card p-4 space-y-2',
               onRowClick ? 'cursor-pointer hover:bg-muted/30' : '',
@@ -113,7 +118,7 @@ export function DataTable<T>({
           >
             {columns.map((col) => {
               const value = col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')
-              if (!value) return null
+              if (value === null || value === undefined) return null
               return (
                 <div key={col.key} className="flex justify-between gap-2 text-sm">
                   <span className="text-muted-foreground shrink-0">{col.label}</span>
