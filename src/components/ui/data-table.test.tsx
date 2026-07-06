@@ -4,7 +4,7 @@ import { DataTable } from './data-table'
 
 interface Item { id: string; name: string; role: string }
 
-const columns = [
+const columns: { key: string; label: string; sortable?: boolean; render?: (item: Item) => React.ReactNode }[] = [
   { key: 'name', label: 'Name', sortable: true },
   { key: 'role', label: 'Role' },
 ]

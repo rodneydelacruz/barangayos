@@ -287,7 +287,7 @@ export default function AssetsPage() {
       ) },
     { key: 'status', label: 'Status',
       render: (a) => (
-        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${assetStatusColors[a.status] ?? ''}`}>{a.status}</span>
+        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${assetStatusColors[a.status!] ?? ''}`}>{a.status}</span>
       ) },
     { key: 'assigned_to', label: 'Assigned To', render: (a) => a.assigned_to ?? '—', hideBelow: 'sm' },
   ]

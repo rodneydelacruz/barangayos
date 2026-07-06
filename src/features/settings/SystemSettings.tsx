@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AVAILABLE_COLLECTIONS, seedCollections, eraseCollections } from './demoData'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { toast } from '@/lib/toast'
+import { toast as showToast } from '@/lib/toast'
 
 interface TagInputProps {
   items: string[]
@@ -265,7 +265,7 @@ export default function SystemSettings() {
 
   async function handleSeed() {
     const ids = [...selectedCollections]
-    if (ids.length === 0) { toast.error('Select at least one collection.'); return }
+    if (ids.length === 0) { showToast.error('Select at least one collection.'); return }
     setSeeding(true)
     setProgress([])
     const result = await seedCollections(ids, addProgress)

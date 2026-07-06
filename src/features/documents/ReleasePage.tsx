@@ -13,22 +13,6 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { documentStatusColors } from '@/lib/statusStyles'
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-amber-200 text-amber-900 border border-amber-400 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800/30',
-  processing: 'bg-blue-200 text-blue-900 border border-blue-400 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800/30',
-  for_release: 'bg-emerald-200 text-emerald-900 border border-emerald-400 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/30',
-  released: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-200 text-red-900 border border-red-400 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800/30',
-}
-
-const statusLabels: Record<string, string> = {
-  pending: 'Pending',
-  processing: 'Processing',
-  for_release: 'For Release',
-  released: 'Released',
-  cancelled: 'Cancelled',
-}
-
 export default function ReleasePage() {
   const today = () => new Date().toISOString().split('T')[0]
   const [docs, setDocs] = useState<ApiDocument[]>([])
