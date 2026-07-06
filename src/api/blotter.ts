@@ -2,6 +2,7 @@ import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import { logActivity } from './activity'
+import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'blotter_records'
 
@@ -78,6 +79,28 @@ export async function deleteBlotter(id: string): Promise<boolean> {
     await getClient().collection(COLLECTION).delete(id)
     logActivity('delete', COLLECTION, id, `Deleted blotter case`)
     return true
+  } catch (err) {
+    throw handleApiError(err)
+  }
+}
+
+export async function getBlottersPage(
+  page = 1,
+  perPage = 25,
+  options: { search?: string; status?: string; incidentType?: string } = {},
+): Promise<PaginatedResult<ApiBlotter>> {
+  try {
+    const filters: string[] = []
+    if (options.search) {
+      const q = options.search.replace(/"/g, '\\"')
+      filters.push(`(complainant_name ~ "${q}" || respondent_name ~ "${q}" || case_number ~ "${q}")`)
+    }
+    if (options.status) filters.push(`status = "${options.status}"`)
+    if (options.incidentType) filters.push(`incident_type = "${options.incidentType}"`)
+    const query: Record<string, unknown> = { sort: '-incident_date' }
+    if (filters.length > 0) query.filter = filters.join(' && ')
+    const result = await getClient().collection(COLLECTION).getList<ApiBlotter>(page, perPage, query)
+    return { items: result.items, totalItems: result.totalItems, totalPages: result.totalPages }
   } catch (err) {
     throw handleApiError(err)
   }

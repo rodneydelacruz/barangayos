@@ -2,6 +2,7 @@ import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import { logActivity } from './activity'
+import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'assets'
 
@@ -73,6 +74,29 @@ export async function deleteAsset(id: string): Promise<boolean> {
     await getClient().collection(COLLECTION).delete(id)
     logActivity('delete', COLLECTION, id, `Deleted asset: ${name}`)
     return true
+  } catch (err) {
+    throw handleApiError(err)
+  }
+}
+
+export async function getAssetsPage(
+  page = 1,
+  perPage = 25,
+  options: { search?: string; type?: string; condition?: string; status?: string } = {},
+): Promise<PaginatedResult<ApiAsset>> {
+  try {
+    const filters: string[] = []
+    if (options.search) {
+      const q = options.search.replace(/"/g, '\\"')
+      filters.push(`(name ~ "${q}" || serial_number ~ "${q}")`)
+    }
+    if (options.type) filters.push(`asset_type = "${options.type}"`)
+    if (options.condition) filters.push(`condition = "${options.condition}"`)
+    if (options.status) filters.push(`status = "${options.status}"`)
+    const query: Record<string, unknown> = { sort: '-id' }
+    if (filters.length > 0) query.filter = filters.join(' && ')
+    const result = await getClient().collection(COLLECTION).getList<ApiAsset>(page, perPage, query)
+    return { items: result.items, totalItems: result.totalItems, totalPages: result.totalPages }
   } catch (err) {
     throw handleApiError(err)
   }

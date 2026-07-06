@@ -1,6 +1,12 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+export interface PaginatedResult<T> {
+  items: T[]
+  totalItems: number
+  totalPages: number
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

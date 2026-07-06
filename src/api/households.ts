@@ -2,6 +2,7 @@ import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import { logActivity } from './activity'
+import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'households'
 
@@ -36,6 +37,27 @@ export async function getNextHouseholdNumber(): Promise<string> {
     return `H-${String(max + 1).padStart(4, '0')}`
   } catch {
     return 'H-0001'
+  }
+}
+
+export async function getHouseholdsPage(
+  page = 1,
+  perPage = 25,
+  options: { search?: string; purok?: string } = {},
+): Promise<PaginatedResult<ApiHousehold>> {
+  try {
+    const filters: string[] = []
+    if (options.search) {
+      const q = options.search.replace(/"/g, '\\"')
+      filters.push(`(head_name ~ "${q}" || household_number ~ "${q}")`)
+    }
+    if (options.purok) filters.push(`purok = "${options.purok}"`)
+    const query: Record<string, unknown> = { sort: 'household_number' }
+    if (filters.length > 0) query.filter = filters.join(' && ')
+    const result = await getClient().collection(COLLECTION).getList<ApiHousehold>(page, perPage, query)
+    return { items: result.items, totalItems: result.totalItems, totalPages: result.totalPages }
+  } catch (err) {
+    throw handleApiError(err)
   }
 }
 

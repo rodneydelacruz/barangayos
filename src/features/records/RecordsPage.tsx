@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select'
 import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
+import Pagination from '@/components/ui/Pagination'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 
@@ -67,6 +68,8 @@ export default function RecordsPage() {
   const [error, setError] = useState<string | null>(null)
   const [flyoutBlotter, setFlyoutBlotter] = useState<ApiBlotter | null>(null)
   const [sortBy, setSortBy] = useState('-created')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     getBlotters()
@@ -98,6 +101,11 @@ export default function RecordsPage() {
       return true
     })
   }, [blotters, search, statusFilter, typeFilter, sortBy])
+
+  const totalPages = Math.ceil(filteredBlotters.length / PAGE_SIZE)
+  const paginatedBlotters = filteredBlotters.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -272,11 +280,10 @@ export default function RecordsPage() {
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Incident Type</th>
                     <th className="px-4 py-3 sm:px-6">Status</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Date</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className={filteredBlotters.length === 0 ? 'hidden' : ''}>
-                  {filteredBlotters.map((b, i) => {
+                <tbody className={paginatedBlotters.length === 0 ? 'hidden' : ''}>
+                  {paginatedBlotters.map((b, i) => {
                     const cfg = statusConfig[b.status]
                     return (
                       <tr
@@ -305,30 +312,6 @@ export default function RecordsPage() {
                         <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
                           {formatDate(b.incident_date)}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
-                          {canModify && (
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 p-0"
-                                onClick={() => openEditPanel(b)}
-                                aria-label="Edit"
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDelete(b.id)}
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                        </td>
                       </tr>
                     )
                   })}
@@ -339,6 +322,7 @@ export default function RecordsPage() {
                   <p className="text-sm text-muted-foreground">No blotter cases match your filters.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredBlotters.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -486,6 +470,7 @@ export default function RecordsPage() {
         onClose={closeFlyout}
         title={flyoutBlotter ? `Case #${flyoutBlotter.case_number}` : ''}
         onEdit={canModify && flyoutBlotter ? () => { openEditPanel(flyoutBlotter); closeFlyout() } : undefined}
+        onDelete={canModify && flyoutBlotter ? () => handleDelete(flyoutBlotter.id) : undefined}
       >
         {flyoutBlotter && (() => {
           const cfg = statusConfig[flyoutBlotter.status]

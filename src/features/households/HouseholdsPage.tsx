@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Home, Users } from 'lucide-react'
+import Pagination from '@/components/ui/Pagination'
 import { getHouseholds, getNextHouseholdNumber, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
 import { getResidents, type ApiResident } from '@/api/residents'
 import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
@@ -59,6 +60,8 @@ export default function HouseholdsPage() {
   const [purokFilter, setPurokFilter] = useState('')
   const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
   const [sortBy, setSortBy] = useState('-created')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -192,6 +195,11 @@ export default function HouseholdsPage() {
     })
   }, [households, search, purokFilter, sortBy])
 
+  const totalPages = Math.ceil(filteredHouseholds.length / PAGE_SIZE)
+  const paginatedHouseholds = filteredHouseholds.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, purokFilter, sortBy])
+
   return (
     <>
       <PageHeader title="Households" subtitle="Manage household records and view member information.">
@@ -257,11 +265,10 @@ export default function HouseholdsPage() {
                     <th className="px-4 py-3 sm:px-6">Purok</th>
                     <th className="px-4 py-3 sm:px-6">Head Name</th>
                     <th className="px-4 py-3 sm:px-6">Members</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredHouseholds.map((h, i) => {
+                  {paginatedHouseholds.map((h, i) => {
                     const members = residentsMap.get(h.id) || []
                     return (
                       <tr
@@ -279,30 +286,6 @@ export default function HouseholdsPage() {
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.purok}</td>
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.head_name}</td>
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{members.length}</td>
-                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          {canModify && (
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 p-0"
-                                onClick={() => openEditPanel(h)}
-                                aria-label="Edit"
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDelete(h.id)}
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                        </td>
                       </tr>
                     )
                   })}
@@ -313,6 +296,7 @@ export default function HouseholdsPage() {
                   <p className="text-sm text-muted-foreground">No households match your search.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredHouseholds.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -390,6 +374,7 @@ export default function HouseholdsPage() {
         onClose={closeFlyout}
         title={flyoutHousehold ? `Household #${flyoutHousehold.household_number}` : ''}
         onEdit={canModify && flyoutHousehold ? () => { openEditPanel(flyoutHousehold); closeFlyout() } : undefined}
+        onDelete={canModify && flyoutHousehold ? () => handleDelete(flyoutHousehold.id) : undefined}
       >
         {flyoutHousehold && (() => {
           const members = residentsMap.get(flyoutHousehold.id) || []

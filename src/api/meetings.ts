@@ -3,6 +3,7 @@ import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import { logActivity } from './activity'
 import { getAgendaItems, type ApiAgendaItem } from './agenda'
+import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'meetings'
 
@@ -66,6 +67,27 @@ export async function deleteMeeting(id: string): Promise<boolean> {
     await getClient().collection(COLLECTION).delete(id)
     logActivity('delete', COLLECTION, id, `Deleted meeting: ${title}`)
     return true
+  } catch (err) {
+    throw handleApiError(err)
+  }
+}
+
+export async function getMeetingsPage(
+  page = 1,
+  perPage = 25,
+  options: { search?: string; status?: string } = {},
+): Promise<PaginatedResult<ApiMeeting>> {
+  try {
+    const filters: string[] = []
+    if (options.search) {
+      const q = options.search.replace(/"/g, '\\"')
+      filters.push(`title ~ "${q}"`)
+    }
+    if (options.status) filters.push(`status = "${options.status}"`)
+    const query: Record<string, unknown> = { sort: '-meeting_date' }
+    if (filters.length > 0) query.filter = filters.join(' && ')
+    const result = await getClient().collection(COLLECTION).getList<ApiMeeting>(page, perPage, query)
+    return { items: result.items, totalItems: result.totalItems, totalPages: result.totalPages }
   } catch (err) {
     throw handleApiError(err)
   }

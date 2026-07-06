@@ -14,6 +14,7 @@ import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
+import Pagination from '@/components/ui/Pagination'
 
 const assetTypeOptions = [
   { value: 'equipment', label: 'Equipment' },
@@ -94,6 +95,8 @@ export default function AssetsPage() {
   const [uploading, setUploading] = useState(false)
   const [flyoutAsset, setFlyoutAsset] = useState<ApiAsset | null>(null)
   const [sortBy, setSortBy] = useState('-created')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     Promise.all([
@@ -133,6 +136,11 @@ export default function AssetsPage() {
       return true
     })
   }, [assets, search, typeFilter, conditionFilter, statusFilter, sortBy])
+
+  const totalPages = Math.ceil(filteredAssets.length / PAGE_SIZE)
+  const paginatedAssets = filteredAssets.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, typeFilter, conditionFilter, statusFilter, sortBy])
 
   const filteredResidents = useMemo(() => {
     if (!residentSearch) return residents.slice(0, 10)
@@ -366,11 +374,10 @@ export default function AssetsPage() {
                     <th className="px-4 py-3 sm:px-6">Condition</th>
                     <th className="px-4 py-3 sm:px-6">Status</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Assigned To</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className={filteredAssets.length === 0 ? 'hidden' : ''}>
-                  {filteredAssets.map((a, i) => (
+                <tbody className={paginatedAssets.length === 0 ? 'hidden' : ''}>
+                  {paginatedAssets.map((a, i) => (
                     <tr
                       key={a.id}
                       className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
@@ -405,30 +412,6 @@ export default function AssetsPage() {
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
                         {a.assigned_to ? (residentMap[a.assigned_to] || '\u2014') : '\u2014'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
-                        {isAdmin && (
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0"
-                              onClick={() => openEditPanel(a)}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(a.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -438,6 +421,7 @@ export default function AssetsPage() {
                   <p className="text-sm text-muted-foreground">No assets match your filters.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredAssets.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -685,6 +669,7 @@ export default function AssetsPage() {
         onClose={closeFlyout}
         title={flyoutAsset?.name ?? ''}
         onEdit={isAdmin && flyoutAsset ? () => { openEditPanel(flyoutAsset); closeFlyout() } : undefined}
+        onDelete={isAdmin && flyoutAsset ? () => handleDelete(flyoutAsset.id) : undefined}
       >
         {flyoutAsset && (
           <>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { X, Pencil } from 'lucide-react'
+import { X, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DetailPanelProps {
@@ -7,11 +7,12 @@ interface DetailPanelProps {
   onClose: () => void
   title: string
   onEdit?: () => void
+  onDelete?: () => void
   loading?: boolean
   children?: ReactNode
 }
 
-export function DetailPanel({ open, onClose, title, onEdit, loading, children }: DetailPanelProps) {
+export function DetailPanel({ open, onClose, title, onEdit, onDelete, loading, children }: DetailPanelProps) {
   if (!open) return null
 
   return (
@@ -29,6 +30,15 @@ export function DetailPanel({ open, onClose, title, onEdit, loading, children }:
               >
                 <Pencil className="size-3" />
                 Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3" />
               </button>
             )}
             <button

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Search, FileText, Clock, User } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Search, FileText, Clock, User, CheckCircle2, RotateCcw, Ban } from 'lucide-react'
 import { getDocuments, createDocument, updateDocument, deleteDocument, getDailyQueueNumber, type ApiDocument } from '@/api/documents'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
+import Pagination from '@/components/ui/Pagination'
 
 const documentTypeOptions = [
   { value: 'barangay_clearance', label: 'Barangay Clearance' },
@@ -67,6 +68,8 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [flyoutDoc, setFlyoutDoc] = useState<ApiDocument | null>(null)
   const [sortBy, setSortBy] = useState('-created')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     getDocuments()
@@ -94,6 +97,11 @@ export default function DocumentsPage() {
       return true
     })
   }, [docs, search, statusFilter, typeFilter, sortBy])
+
+  const totalPages = Math.ceil(filteredDocs.length / PAGE_SIZE)
+  const paginatedDocs = filteredDocs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => {
@@ -275,11 +283,10 @@ export default function DocumentsPage() {
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Document Type</th>
                     <th className="px-4 py-3 sm:px-6">Status</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Requested</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className={filteredDocs.length === 0 ? 'hidden' : ''}>
-                  {filteredDocs.map((d, i) => (
+                <tbody className={paginatedDocs.length === 0 ? 'hidden' : ''}>
+                  {paginatedDocs.map((d, i) => (
                     <tr
                       key={d.id}
                       className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
@@ -303,60 +310,6 @@ export default function DocumentsPage() {
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
                         {formatDate(d.requested_at)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
-                        {canModify && (
-                          <div className="flex justify-end gap-1">
-                            {d.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => handleStatusChange(d.id, 'processing')}
-                              >
-                                Process
-                              </Button>
-                            )}
-                            {d.status === 'processing' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => handleStatusChange(d.id, 'for_release')}
-                              >
-                                Ready
-                              </Button>
-                            )}
-                            {d.status !== 'released' && d.status !== 'cancelled' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
-                                onClick={() => handleStatusChange(d.id, 'cancelled')}
-                              >
-                                Cancel
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0"
-                              onClick={() => openEditPanel(d)}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(d.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -366,6 +319,7 @@ export default function DocumentsPage() {
                   <p className="text-sm text-muted-foreground">No requests match your filters.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredDocs.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -466,6 +420,7 @@ export default function DocumentsPage() {
         onClose={closeFlyout}
         title={flyoutDoc ? `#${flyoutDoc.queue_number} - ${flyoutDoc.resident_name}` : ''}
         onEdit={canModify && flyoutDoc ? () => { openEditPanel(flyoutDoc); closeFlyout() } : undefined}
+        onDelete={canModify && flyoutDoc ? () => handleDelete(flyoutDoc.id) : undefined}
       >
         {flyoutDoc && (
           <>
@@ -491,6 +446,29 @@ export default function DocumentsPage() {
             {flyoutDoc.notes && (
               <DetailSection title="Notes">
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{flyoutDoc.notes}</p>
+              </DetailSection>
+            )}
+
+            {canModify && flyoutDoc.status !== 'released' && flyoutDoc.status !== 'cancelled' && (
+              <DetailSection icon={<RotateCcw className="size-3" />} title="Actions">
+                <div className="flex flex-wrap gap-2">
+                  {flyoutDoc.status === 'pending' && (
+                    <Button size="sm" className="gap-1.5" onClick={() => { handleStatusChange(flyoutDoc.id, 'processing'); closeFlyout() }}>
+                      <CheckCircle2 className="size-3.5" />
+                      Process
+                    </Button>
+                  )}
+                  {flyoutDoc.status === 'processing' && (
+                    <Button size="sm" className="gap-1.5" onClick={() => { handleStatusChange(flyoutDoc.id, 'for_release'); closeFlyout() }}>
+                      <CheckCircle2 className="size-3.5" />
+                      Ready for Release
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="gap-1.5 text-destructive" onClick={() => { handleStatusChange(flyoutDoc.id, 'cancelled'); closeFlyout() }}>
+                    <Ban className="size-3.5" />
+                    Cancel
+                  </Button>
+                </div>
               </DetailSection>
             )}
 

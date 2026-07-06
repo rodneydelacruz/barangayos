@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { hasRole } from '@/auth/session'
+import Pagination from '@/components/ui/Pagination'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 
 function statusClass(value: string, type: 'document' | 'blotter' | 'activity'): string {
@@ -209,6 +210,8 @@ export default function ResidentsPage() {
   const [flyoutBlotters, setFlyoutBlotters] = useState<ApiBlotter[]>([])
   const [flyoutActivities, setFlyoutActivities] = useState<ApiActivity[]>([])
   const [flyoutLoading, setFlyoutLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     getResidents()
@@ -231,6 +234,11 @@ export default function ResidentsPage() {
       return true
     })
   }, [residents, search, purokFilter, tagFilter])
+
+  const totalPages = Math.ceil(filteredResidents.length / PAGE_SIZE)
+  const paginatedResidents = filteredResidents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, purokFilter, tagFilter])
 
   function updateField(field: string, value: string | boolean) {
     setForm((prev) => {
@@ -443,11 +451,10 @@ export default function ResidentsPage() {
                     <th className="px-4 py-3 sm:px-6">Age</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Civil Status</th>
                     <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Tags</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className={filteredResidents.length === 0 ? 'hidden' : ''}>
-                  {filteredResidents.map((r, i) => (
+                <tbody className={paginatedResidents.length === 0 ? 'hidden' : ''}>
+                  {paginatedResidents.map((r, i) => (
                     <tr
                       key={r.id}
                       className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer"
@@ -474,30 +481,6 @@ export default function ResidentsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
-                        {canModify && (
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0"
-                              onClick={() => openEditPanel(r)}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(r.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -507,6 +490,7 @@ export default function ResidentsPage() {
                   <p className="text-sm text-muted-foreground">No residents match your filters.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredResidents.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -691,6 +675,7 @@ export default function ResidentsPage() {
         onClose={closeFlyout}
         title={flyoutResident ? `${flyoutResident.first_name} ${flyoutResident.last_name}` : ''}
         onEdit={canModify && flyoutResident ? () => { openEditPanel(flyoutResident!); closeFlyout() } : undefined}
+        onDelete={canModify && flyoutResident ? () => handleDelete(flyoutResident!.id) : undefined}
         loading={flyoutLoading}
       >
         {flyoutResident && (
