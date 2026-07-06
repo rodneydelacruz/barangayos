@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, Search, ArrowLeft } from 'lucide-react'
 import { getMeetings, getMeeting, createMeeting, updateMeeting, deleteMeeting, type ApiMeeting, type MeetingData, type MeetingWithItems } from '@/api/meetings'
 import { createAgendaItem, updateAgendaItem, deleteAgendaItem, type ApiAgendaItem, type AgendaItemData } from '@/api/agenda'
@@ -19,9 +20,9 @@ const meetingTypeOptions = [
 ]
 
 const meetingTypeColors: Record<string, string> = {
-  regular: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  special: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  emergency: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  regular: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
+  special: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30',
+  emergency: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30',
 }
 
 const statusOptions = ['scheduled', 'ongoing', 'adjourned']
@@ -33,8 +34,8 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColors: Record<string, string> = {
-  scheduled: 'bg-slate-200 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
-  ongoing: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  scheduled: 'bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700/50',
+  ongoing: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
   adjourned: 'bg-muted text-muted-foreground',
 }
 
@@ -47,9 +48,9 @@ const agendaStatusLabels: Record<string, string> = {
 }
 
 const agendaStatusColors: Record<string, string> = {
-  pending: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  discussed: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  deferred: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  pending: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30',
+  discussed: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
+  deferred: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
 }
 
 function minutesStatus(items: ApiAgendaItem[]) {
@@ -105,6 +106,19 @@ export default function AgendaPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load meetings'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && meetings.length > 0) {
+      const record = meetings.find(m => m.id === selectedId)
+      if (record) {
+        openMeetingDetail(record.id)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, meetings])
 
   const filteredMeetings = useMemo(() => {
     return meetings.filter((m) => {
@@ -319,10 +333,10 @@ export default function AgendaPage() {
         <div className="mb-6 motion-fade-in">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">{fmtDate(selectedMeeting.meeting_date)}</span>
-            <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[selectedMeeting.meeting_type])}>
+            <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[selectedMeeting.meeting_type])}>
               {meetingTypeOptions.find((t) => t.value === selectedMeeting.meeting_type)?.label || selectedMeeting.meeting_type}
             </span>
-            <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[selectedMeeting.status])}>
+            <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', statusColors[selectedMeeting.status])}>
               {statusLabels[selectedMeeting.status]}
             </span>
             {selectedMeeting.location && (
@@ -424,7 +438,7 @@ export default function AgendaPage() {
                           )}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                          <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', agendaStatusColors[item.status])}>
+                          <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', agendaStatusColors[item.status])}>
                             {agendaStatusLabels[item.status]}
                           </span>
                         </td>
@@ -673,12 +687,12 @@ export default function AgendaPage() {
                         {fmtDate(m.meeting_date)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[m.meeting_type])}>
+                        <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', meetingTypeColors[m.meeting_type])}>
                           {meetingTypeOptions.find((t) => t.value === m.meeting_type)?.label || m.meeting_type}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[m.status])}>
+                        <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', statusColors[m.status])}>
                           {statusLabels[m.status]}
                         </span>
                       </td>

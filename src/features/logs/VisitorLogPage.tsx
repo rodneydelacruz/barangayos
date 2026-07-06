@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, DoorOpen, Circle, Clock, User } from 'lucide-react'
+import { useSearchParams } from 'react-router'
+import { Plus, Pencil, Trash2, ChevronDown, DoorOpen, Circle, Clock, User, LogOut } from 'lucide-react'
 import { getVisitors, createVisitor, updateVisitor, deleteVisitor, checkOutVisitor, type ApiVisitor, type VisitorData } from '@/api/visitors'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { hasRole } from '@/auth/session'
 import { cn, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
+import Pagination from '@/components/ui/Pagination'
 
 function emptyForm(): VisitorData {
   return {
@@ -43,6 +45,8 @@ export default function VisitorLogPage() {
   const [error, setError] = useState<string | null>(null)
   const [flyoutVisitor, setFlyoutVisitor] = useState<ApiVisitor | null>(null)
   const [sortBy, setSortBy] = useState('-time_in')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     getVisitors()
@@ -50,6 +54,19 @@ export default function VisitorLogPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load visitors'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && visitors.length > 0) {
+      const record = visitors.find(v => v.id === selectedId)
+      if (record) {
+        setFlyoutVisitor(record)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, visitors])
 
   const filteredVisitors = useMemo(() => {
     const sorted = [...visitors].sort((a, b) => {
@@ -69,6 +86,11 @@ export default function VisitorLogPage() {
       return true
     })
   }, [visitors, search, activeOnly, sortBy])
+
+  const totalPages = Math.ceil(filteredVisitors.length / PAGE_SIZE)
+  const paginatedVisitors = filteredVisitors.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, activeOnly, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -224,19 +246,16 @@ export default function VisitorLogPage() {
                 <thead>
                   <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
                     <th className="px-4 py-3 sm:px-6">Visitor Name</th>
-                    <th className="px-4 py-3 sm:px-6">Contact</th>
-                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Purpose</th>
-                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Person to Visit</th>
+                    <th className="px-4 py-3 sm:px-6">Purpose</th>
                     <th className="px-4 py-3 sm:px-6">Time In</th>
-                    <th className="px-4 py-3 sm:px-6">Time Out</th>
-                    <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
+                    <th className="px-4 py-3 sm:px-6">Status</th>
                   </tr>
                 </thead>
-                <tbody className={filteredVisitors.length === 0 ? 'hidden' : ''}>
-                  {filteredVisitors.map((v, i) => (
+                <tbody className={paginatedVisitors.length === 0 ? 'hidden' : ''}>
+                  {paginatedVisitors.map((v, i) => (
                     <tr
                       key={v.id}
-                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
+                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30 transition-colors"
                       style={{ '--stagger-index': i } as React.CSSProperties}
                       onClick={() => setFlyoutVisitor(v)}
                     >
@@ -244,59 +263,19 @@ export default function VisitorLogPage() {
                         {v.visitor_name}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {v.contact_number || '—'}
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
                         {v.purpose}
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                        {v.person_to_visit || '—'}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
                         {formatTime(v.time_in)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {v.time_out ? formatTime(v.time_out) : (
+                      <td className="whitespace-nowrap px-4 py-3 sm:px-6">
+                        {v.time_out ? (
+                          <span className="text-sm text-muted-foreground">{formatTime(v.time_out)}</span>
+                        ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                             <Circle className="size-2 fill-current" />
                             Active
                           </span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-right">
-                        {canModify && (
-                          <div className="flex justify-end gap-1">
-                            {!v.time_out && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
-                                onClick={() => handleCheckOut(v.id)}
-                                aria-label="Check out"
-                                title="Check out"
-                              >
-                                <DoorOpen className="size-3.5" />
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0"
-                              onClick={() => openEditPanel(v)}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(v.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
                         )}
                       </td>
                     </tr>
@@ -308,6 +287,7 @@ export default function VisitorLogPage() {
                   <p className="text-sm text-muted-foreground">No visitors match your filters.</p>
                 </div>
               )}
+              <Pagination page={page} totalPages={totalPages} totalItems={filteredVisitors.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
             </div>
           )}
         </CardContent>
@@ -369,9 +349,19 @@ export default function VisitorLogPage() {
         onClose={closeFlyout}
         title={flyoutVisitor?.visitor_name ?? ''}
         onEdit={canModify && flyoutVisitor ? () => { openEditPanel(flyoutVisitor); closeFlyout() } : undefined}
+        onDelete={canModify && flyoutVisitor ? () => handleDelete(flyoutVisitor.id) : undefined}
       >
         {flyoutVisitor && (
           <>
+            {canModify && !flyoutVisitor.time_out && (
+              <DetailSection icon={<LogOut className="size-3" />} title="Quick Actions">
+                <Button size="sm" className="gap-1.5" onClick={() => { handleCheckOut(flyoutVisitor.id); closeFlyout() }}>
+                  <DoorOpen className="size-3.5" />
+                  Check Out
+                </Button>
+              </DetailSection>
+            )}
+
             <DetailSection icon={<User className="size-3" />} title="Visitor Info">
               <div className="grid grid-cols-2 gap-2">
                 <div className="col-span-2"><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutVisitor.visitor_name}</span></div>

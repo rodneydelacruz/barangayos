@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, Search, Camera, X, ClipboardList, Tag, MapPin } from 'lucide-react'
 import { getAssets, createAsset, updateAsset, deleteAsset, type ApiAsset } from '@/api/assets'
-import { getResidents, type ApiResident } from '@/api/residents'
+
 import { uploadImage } from '@/api/upload'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -38,11 +39,11 @@ const conditionLabels: Record<string, string> = {
 }
 
 const conditionColors: Record<string, string> = {
-  new: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  good: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  fair: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  poor: 'bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-  damaged: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  new: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
+  good: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
+  fair: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30',
+  poor: 'bg-orange-100 text-orange-800 border border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800/30',
+  damaged: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30',
   disposed: 'bg-muted text-muted-foreground',
 }
 
@@ -55,8 +56,8 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColors: Record<string, string> = {
-  available: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  assigned: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  available: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
+  assigned: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
   disposed: 'bg-muted text-muted-foreground',
 }
 
@@ -80,7 +81,7 @@ function emptyForm() {
 
 export default function AssetsPage() {
   const [assets, setAssets] = useState<ApiAsset[]>([])
-  const [residents, setResidents] = useState<ApiResident[]>([])
+
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -91,7 +92,7 @@ export default function AssetsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [residentSearch, setResidentSearch] = useState('')
+
   const [uploading, setUploading] = useState(false)
   const [flyoutAsset, setFlyoutAsset] = useState<ApiAsset | null>(null)
   const [sortBy, setSortBy] = useState('-created')
@@ -99,17 +100,24 @@ export default function AssetsPage() {
   const PAGE_SIZE = 25
 
   useEffect(() => {
-    Promise.all([
-      getAssets(),
-      getResidents(),
-    ])
-      .then(([assetsData, residentsData]) => {
-        setAssets(assetsData)
-        setResidents(residentsData)
-      })
+    getAssets()
+      .then((assetsData) => setAssets(assetsData))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load data'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && assets.length > 0) {
+      const record = assets.find(a => a.id === selectedId)
+      if (record) {
+        openFlyout(record)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, assets])
 
   const filteredAssets = useMemo(() => {
     const sorted = [...assets].sort((a, b) => {
@@ -142,19 +150,7 @@ export default function AssetsPage() {
 
   useEffect(() => { setPage(1) }, [search, typeFilter, conditionFilter, statusFilter, sortBy])
 
-  const filteredResidents = useMemo(() => {
-    if (!residentSearch) return residents.slice(0, 10)
-    const q = residentSearch.toLowerCase()
-    return residents.filter((r) =>
-      `${r.first_name} ${r.last_name} ${r.middle_name}`.toLowerCase().includes(q),
-    ).slice(0, 10)
-  }, [residents, residentSearch])
 
-  const residentMap = useMemo(() => {
-    const map: Record<string, string> = {}
-    residents.forEach((r) => { map[r.id] = `${r.first_name} ${r.last_name}` })
-    return map
-  }, [residents])
 
   function updateField(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -247,11 +243,6 @@ export default function AssetsPage() {
     setEditingId(null)
     setForm(emptyForm())
     setError(null)
-  }
-
-  function selectResident(r: ApiResident) {
-    updateField('assigned_to', r.id)
-    setResidentSearch(`${r.first_name} ${r.last_name}`)
   }
 
   const isAdmin = hasRole('admin')
@@ -400,17 +391,17 @@ export default function AssetsPage() {
                         {assetTypeOptions.find((t) => t.value === a.asset_type)?.label || a.asset_type}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', conditionColors[a.condition])}>
+                        <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', conditionColors[a.condition])}>
                           {conditionLabels[a.condition]}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[a.status ?? ''])}>
+                        <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', statusColors[a.status ?? ''])}>
                           {statusLabels[a.status ?? '']}
                         </span>
                       </td>
                       <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">
-                        {a.assigned_to ? (residentMap[a.assigned_to] || '\u2014') : '\u2014'}
+                        {a.assigned_to || '\u2014'}
                       </td>
                     </tr>
                   ))}
@@ -563,41 +554,12 @@ export default function AssetsPage() {
 
               <div className="space-y-2">
                 <Label>Assigned To</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search resident..."
-                    value={residentSearch}
-                    onChange={(e) => {
-                      setResidentSearch(e.target.value)
-                      if (!e.target.value) {
-                        updateField('assigned_to', '')
-                      }
-                    }}
-                    className="h-9 pl-8 text-sm"
-                  />
-                  {residentSearch && !editingId && (
-                    <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border bg-card shadow-lg">
-                      {filteredResidents.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-muted-foreground">No residents found</p>
-                      ) : (
-                        filteredResidents.map((r) => (
-                          <button
-                            key={r.id}
-                            type="button"
-                            className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
-                            onClick={() => selectResident(r)}
-                          >
-                            {r.first_name} {r.last_name}
-                            {r.purok && (
-                              <span className="ml-auto text-xs text-muted-foreground">{r.purok}</span>
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
+                <Input
+                  placeholder="Enter name..."
+                  value={form.assigned_to}
+                  onChange={(e) => updateField('assigned_to', e.target.value)}
+                  className="h-9 text-sm"
+                />
               </div>
 
               <div className="space-y-2">
@@ -686,8 +648,8 @@ export default function AssetsPage() {
                 <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutAsset.name}</span></div>
                 <div><span className="text-muted-foreground">Type:</span> {assetTypeOptions.find((t) => t.value === flyoutAsset.asset_type)?.label || flyoutAsset.asset_type}</div>
                 <div><span className="text-muted-foreground">Serial #:</span> {flyoutAsset.serial_number || '—'}</div>
-                <div><span className="text-muted-foreground">Condition:</span> <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', conditionColors[flyoutAsset.condition])}>{conditionLabels[flyoutAsset.condition]}</span></div>
-                <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[flyoutAsset.status ?? ''])}>{statusLabels[flyoutAsset.status ?? '']}</span></div>
+                <div><span className="text-muted-foreground">Condition:</span> <span className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-medium', conditionColors[flyoutAsset.condition])}>{conditionLabels[flyoutAsset.condition]}</span></div>
+                <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-medium', statusColors[flyoutAsset.status ?? ''])}>{statusLabels[flyoutAsset.status ?? '']}</span></div>
               </div>
             </DetailSection>
 
@@ -701,7 +663,7 @@ export default function AssetsPage() {
 
             <DetailSection icon={<MapPin className="size-3" />} title="Assignment">
               <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Assigned To:</span> {flyoutAsset.assigned_to ? (residentMap[flyoutAsset.assigned_to] || '—') : '—'}</div>
+                <div><span className="text-muted-foreground">Assigned To:</span> {flyoutAsset.assigned_to || '—'}</div>
                 <div><span className="text-muted-foreground">Location:</span> {flyoutAsset.location || '—'}</div>
               </div>
             </DetailSection>

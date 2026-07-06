@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { X, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,15 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ open, onClose, title, onEdit, onDelete, loading, children }: DetailPanelProps) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
   if (!open) return null
 
   return (

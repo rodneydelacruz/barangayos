@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Home, Users } from 'lucide-react'
 import Pagination from '@/components/ui/Pagination'
 import { getHouseholds, getNextHouseholdNumber, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
@@ -36,10 +37,10 @@ const tagLabels: Record<string, string> = {
   is_pwd: 'PWD',
 }
 const tagColors: Record<string, string> = {
-  is_voter: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  is_4ps: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  is_senior: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  is_pwd: 'bg-purple-200 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  is_voter: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
+  is_4ps: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
+  is_senior: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30',
+  is_pwd: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/30',
 }
 
 function emptyForm() {
@@ -89,6 +90,19 @@ export default function HouseholdsPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load households'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && households.length > 0) {
+      const record = households.find(h => h.id === selectedId)
+      if (record) {
+        setFlyoutHousehold(record)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, households])
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -401,7 +415,7 @@ export default function HouseholdsPage() {
                         <div className="flex gap-1 flex-wrap">
                           {tagKeys.map((tag) =>
                             (m as Record<string, unknown>)[tag] ? (
-                              <span key={tag} className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
+                              <span key={tag} className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
                                 {tagLabels[tag]}
                               </span>
                             ) : null,

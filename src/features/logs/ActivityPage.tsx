@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { User, Clock, Database, FileText } from 'lucide-react'
 import { getActivities, type ApiActivity } from '@/api/activity'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
+import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { cn, formatDateTime } from '@/lib/utils'
 
 const collectionOptions = [
@@ -30,6 +32,11 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('-id')
   const [collectionFilter, setCollectionFilter] = useState('')
+  const [flyoutActivity, setFlyoutActivity] = useState<ApiActivity | null>(null)
+
+  function closeFlyout() {
+    setFlyoutActivity(null)
+  }
 
   async function fetchActivities(
     p: number,
@@ -150,8 +157,9 @@ export default function ActivityPage() {
                   {activities.map((a, i) => (
                     <tr
                       key={a.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up"
+                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30 transition-colors"
                       style={{ '--stagger-index': i } as React.CSSProperties}
+                      onClick={() => setFlyoutActivity(a)}
                     >
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                         <span
@@ -195,6 +203,39 @@ export default function ActivityPage() {
           )}
         </CardContent>
       </Card>
+
+      <DetailPanel
+        open={flyoutActivity !== null}
+        onClose={closeFlyout}
+        title={flyoutActivity ? `${flyoutActivity.action} — ${flyoutActivity.collection}` : ''}
+      >
+        {flyoutActivity && (
+          <>
+            <DetailSection icon={<FileText className="size-3" />} title="Action">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Action:</span> <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', actionColors[flyoutActivity.action] || 'bg-muted text-muted-foreground')}>{flyoutActivity.action}</span></div>
+                <div><span className="text-muted-foreground">Collection:</span> <span className="capitalize">{flyoutActivity.collection.replace(/_/g, ' ')}</span></div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Database className="size-3" />} title="Details">
+              <p className="text-sm text-foreground whitespace-pre-wrap">{flyoutActivity.details}</p>
+            </DetailSection>
+
+            <DetailSection icon={<User className="size-3" />} title="User">
+              <p className="text-sm text-foreground">{flyoutActivity.user_name}</p>
+            </DetailSection>
+
+            <DetailSection icon={<Clock className="size-3" />} title="Timestamp">
+              <p className="text-sm text-foreground">{formatDateTime(flyoutActivity.created)}</p>
+            </DetailSection>
+
+            <DetailSection title="Record ID">
+              <p className="text-xs text-muted-foreground font-mono">{flyoutActivity.record_id}</p>
+            </DetailSection>
+          </>
+        )}
+      </DetailPanel>
     </>
   )
 }

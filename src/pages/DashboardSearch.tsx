@@ -75,7 +75,7 @@ export default function DashboardSearch() {
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => { navigate(item.link); setOpen(false); setQuery('') }}
+                        onClick={() => { navigate(`${item.link}?selected=${item.id}`); setOpen(false); setQuery('') }}
                         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
                       >
                         <ExternalLink className="size-3 shrink-0 text-muted-foreground/60" />

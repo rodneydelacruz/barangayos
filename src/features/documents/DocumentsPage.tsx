@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, Search, FileText, Clock, User, CheckCircle2, RotateCcw, Ban } from 'lucide-react'
 import { getDocuments, createDocument, updateDocument, deleteDocument, getDailyQueueNumber, type ApiDocument } from '@/api/documents'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -28,11 +29,11 @@ const documentTypeOptions = [
 const statusOptions = ['pending', 'processing', 'for_release', 'released', 'cancelled']
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  processing: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  for_release: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  pending: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30',
+  processing: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30',
+  for_release: 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
   released: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  cancelled: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30',
 }
 
 const statusLabels: Record<string, string> = {
@@ -77,6 +78,19 @@ export default function DocumentsPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load data'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && docs.length > 0) {
+      const record = docs.find(d => d.id === selectedId)
+      if (record) {
+        setFlyoutDoc(record)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, docs])
 
   const filteredDocs = useMemo(() => {
     const sorted = [...docs].sort((a, b) => {
@@ -303,7 +317,7 @@ export default function DocumentsPage() {
                         {d.document_type.replace(/_/g, ' ')}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[d.status])}>
+                        <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', statusColors[d.status])}>
                           {statusLabels[d.status]}
                         </span>
                       </td>
@@ -429,7 +443,7 @@ export default function DocumentsPage() {
                 <div><span className="text-muted-foreground">Queue #:</span> <span className="font-medium">#{flyoutDoc.queue_number}</span></div>
                 <div><span className="text-muted-foreground">Type:</span> <span className="capitalize">{flyoutDoc.document_type.replace(/_/g, ' ')}</span></div>
                 {flyoutDoc.other_document_type && <div className="col-span-2"><span className="text-muted-foreground">Specified:</span> {flyoutDoc.other_document_type}</div>}
-                <div className="col-span-2"><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[flyoutDoc.status])}>{statusLabels[flyoutDoc.status]}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium', statusColors[flyoutDoc.status])}>{statusLabels[flyoutDoc.status]}</span></div>
               </div>
             </DetailSection>
 

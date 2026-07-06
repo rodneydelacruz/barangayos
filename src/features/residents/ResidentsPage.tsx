@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, Search, Home, FileText, BookOpen, Activity } from 'lucide-react'
 import { getResidents, createResident, updateResident, deleteResident, type ApiResident } from '@/api/residents'
 import { searchHouseholds, getHousehold, type ApiHousehold } from '@/api/households'
@@ -16,25 +17,26 @@ import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { hasRole } from '@/auth/session'
 import Pagination from '@/components/ui/Pagination'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
+import { tagColors } from '@/lib/statusStyles'
 
 function statusClass(value: string, type: 'document' | 'blotter' | 'activity'): string {
   if (type === 'document') {
     if (value === 'released') return 'bg-muted text-muted-foreground'
-    if (value === 'cancelled') return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-    if (value === 'for_release') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    if (value === 'processing') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-    return 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+    if (value === 'cancelled') return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30'
+    if (value === 'for_release') return 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30'
+    if (value === 'processing') return 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30'
+    return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30'
   }
   if (type === 'blotter') {
-    if (value === 'settled') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    if (value === 'hearing') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-    if (value === 'dismissed') return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-    if (value === 'escalated') return 'bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-    return 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+    if (value === 'settled') return 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30'
+    if (value === 'hearing') return 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30'
+    if (value === 'dismissed') return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30'
+    if (value === 'escalated') return 'bg-orange-100 text-orange-800 border border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800/30'
+    return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30'
   }
-  if (value === 'create') return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-  if (value === 'update') return 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-  return 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+  if (value === 'create') return 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30'
+  if (value === 'update') return 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30'
+  return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/30'
 }
 
 function calculateAge(birthDate: string): number {
@@ -56,12 +58,7 @@ const tagLabels: Record<string, string> = {
   is_senior: 'Senior',
   is_pwd: 'PWD',
 }
-const tagColors: Record<string, string> = {
-  is_voter: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  is_4ps: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  is_senior: 'bg-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  is_pwd: 'bg-purple-200 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-}
+
 
 function emptyForm() {
   return {
@@ -219,6 +216,19 @@ export default function ResidentsPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load residents'))
       .finally(() => setLoading(false))
   }, [])
+
+  const [searchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
+
+  useEffect(() => {
+    if (selectedId && residents.length > 0) {
+      const record = residents.find(r => r.id === selectedId)
+      if (record) {
+        openFlyout(record)
+      }
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [selectedId, residents])
 
   const filteredResidents = useMemo(() => {
     return residents.filter((r) => {
@@ -404,7 +414,7 @@ export default function ResidentsPage() {
               type="button"
               onClick={() => toggleTagFilter(tag)}
               className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                'rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors',
                 tagFilter.includes(tag)
                   ? tagColors[tag]
                   : 'bg-muted text-muted-foreground hover:bg-muted/80',
@@ -457,7 +467,7 @@ export default function ResidentsPage() {
                   {paginatedResidents.map((r, i) => (
                     <tr
                       key={r.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer"
+                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer hover:bg-muted/30 transition-colors"
                       style={{ '--stagger-index': i } as React.CSSProperties}
                       onClick={() => openFlyout(r)}
                     >
@@ -473,7 +483,7 @@ export default function ResidentsPage() {
                             (r as Record<string, unknown>)[tag] ? (
                               <span
                                 key={tag}
-                                className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}
+                                className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-medium', tagColors[tag])}
                               >
                                 {tagLabels[tag]}
                               </span>
@@ -638,7 +648,7 @@ export default function ResidentsPage() {
                       type="button"
                       onClick={() => updateField(tag, !(form as Record<string, unknown>)[tag])}
                       className={cn(
-                        'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                        'rounded-md px-3 py-1 text-xs font-medium transition-colors',
                         (form as Record<string, unknown>)[tag]
                           ? tagColors[tag]
                           : 'bg-muted text-muted-foreground hover:bg-muted/80',
@@ -697,7 +707,7 @@ export default function ResidentsPage() {
             <div className="col-span-2 flex gap-1 flex-wrap">
               {tagKeys.map((tag) =>
                 (flyoutResident as Record<string, unknown>)[tag] ? (
-                  <span key={tag} className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
+                  <span key={tag} className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-medium', tagColors[tag])}>
                     {tagLabels[tag]}
                   </span>
                 ) : null,
@@ -728,7 +738,7 @@ export default function ResidentsPage() {
                 <div key={d.id} className="flex items-center justify-between text-sm gap-2">
                   <span className="font-medium shrink-0">#{d.queue_number}</span>
                   <span className="capitalize text-muted-foreground flex-1 truncate">{d.document_type.replace(/_/g, ' ')}</span>
-                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(d.status, 'document'))}>{d.status.replace(/_/g, ' ')}</span>
+                  <span className={cn('inline-flex shrink-0 rounded-md px-2 py-0.5 text-xs font-medium', statusClass(d.status, 'document'))}>{d.status.replace(/_/g, ' ')}</span>
                 </div>
               ))}
             </div>
@@ -744,7 +754,7 @@ export default function ResidentsPage() {
                 <div key={b.id} className="flex items-center justify-between text-sm gap-2">
                   <span className="font-medium shrink-0">{b.case_number}</span>
                   <span className="text-muted-foreground flex-1 truncate">{b.complainant_name} vs {b.respondent_name || '—'}</span>
-                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(b.status, 'blotter'))}>{b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+                  <span className={cn('inline-flex shrink-0 rounded-md px-2 py-0.5 text-xs font-medium', statusClass(b.status, 'blotter'))}>{b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
                 </div>
               ))}
             </div>
@@ -758,7 +768,7 @@ export default function ResidentsPage() {
             <div className="space-y-1.5 max-h-48 overflow-y-auto">
               {flyoutActivities.map((a) => (
                 <div key={a.id} className="flex items-center justify-between text-sm gap-2">
-                  <span className={cn('inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', statusClass(a.action, 'activity'))}>{a.action}</span>
+                  <span className={cn('inline-flex shrink-0 rounded-md px-2 py-0.5 text-xs font-medium', statusClass(a.action, 'activity'))}>{a.action}</span>
                   <span className="flex-1 px-2 text-muted-foreground truncate">{a.details}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(a.created)}</span>
                 </div>

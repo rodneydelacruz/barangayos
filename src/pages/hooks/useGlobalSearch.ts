@@ -93,7 +93,7 @@ export function useGlobalSearch(): UseGlobalSearchReturn {
               collectionLabel: col.label,
               title: String(record[col.titleField] ?? ''),
               subtitle: String(record[col.subtitleField] ?? ''),
-              link: `${col.link}/${record.id}`,
+              link: col.link,
             }))
             return { label: col.label, link: col.link, items }
           } catch {
