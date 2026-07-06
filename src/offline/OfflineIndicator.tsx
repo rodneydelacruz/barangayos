@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { queueSize } from './queue'
+import { toast } from '@/lib/toast'
 import { onSyncStatusChange, flushQueue, type SyncStatus } from './syncManager'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,17 @@ export default function OfflineIndicator() {
   const [count, setCount] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+
+  useEffect(() => {
+    function handleOnline() { toast.success('Back online — changes will sync automatically.') }
+    function handleOffline() { toast.error('You are offline. Changes will be saved locally.') }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     const updateCount = async () => setCount(await queueSize())
