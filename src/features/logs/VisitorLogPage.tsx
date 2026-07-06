@@ -12,7 +12,7 @@ import { hasRole } from '@/auth/session'
 import { cn, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
-import Pagination from '@/components/ui/Pagination'
+import { DataTable, type Column } from '@/components/ui/data-table'
 
 function emptyForm(): VisitorData {
   return {
@@ -32,6 +32,22 @@ function formatTime(iso: string): string {
     minute: '2-digit',
   })
 }
+
+const columns: Column<ApiVisitor>[] = [
+  { key: 'visitor_name', label: 'Visitor Name', sortable: true },
+  { key: 'purpose', label: 'Purpose' },
+  { key: 'time_in', label: 'Time In', sortable: true,
+    render: (v) => v.time_in ? formatTime(v.time_in) : '' },
+  { key: 'time_out', label: 'Status',
+    render: (v) => v.time_out ? (
+      <span className="text-sm text-muted-foreground">{formatTime(v.time_out)}</span>
+    ) : (
+      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30">
+        <Circle className="size-2 fill-current" />
+        Active
+      </span>
+    ) },
+]
 
 export default function VisitorLogPage() {
   const [visitors, setVisitors] = useState<ApiVisitor[]>([])
@@ -179,6 +195,21 @@ export default function VisitorLogPage() {
     setFlyoutVisitor(null)
   }
 
+  const desc = sortBy.startsWith('-')
+  const currentSortKey = desc ? sortBy.slice(1) : sortBy
+  const currentSortDir = desc ? 'desc' : 'asc'
+
+  function handleSort(key: string) {
+    setSortBy((prev) => {
+      const prevDesc = prev.startsWith('-')
+      const prevKey = prevDesc ? prev.slice(1) : prev
+      if (prevKey === key) {
+        return prevDesc ? key : `-${key}`
+      }
+      return key
+    })
+  }
+
   return (
     <>
       <PageHeader title="Visitor Logs" subtitle="Track and manage visitor entries.">
@@ -221,15 +252,7 @@ export default function VisitorLogPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="space-y-2 p-4 sm:p-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded border p-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                  <div className="h-4 flex-1 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-                  <div className="h-8 w-20 animate-pulse rounded bg-muted" />
-                </div>
-              ))}
-            </div>
+            <DataTable columns={columns} data={[]} loading rowKey={(v) => v.id} />
           ) : visitors.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <p className="text-sm text-muted-foreground">No visitors logged yet.</p>
@@ -241,54 +264,25 @@ export default function VisitorLogPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    <th className="px-4 py-3 sm:px-6">Visitor Name</th>
-                    <th className="px-4 py-3 sm:px-6">Purpose</th>
-                    <th className="px-4 py-3 sm:px-6">Time In</th>
-                    <th className="px-4 py-3 sm:px-6">Status</th>
-                  </tr>
-                </thead>
-                <tbody className={paginatedVisitors.length === 0 ? 'hidden' : ''}>
-                  {paginatedVisitors.map((v, i) => (
-                    <tr
-                      key={v.id}
-                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30 transition-colors"
-                      style={{ '--stagger-index': i } as React.CSSProperties}
-                      onClick={() => setFlyoutVisitor(v)}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
-                        {v.visitor_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {v.purpose}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {formatTime(v.time_in)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        {v.time_out ? (
-                          <span className="text-sm text-muted-foreground">{formatTime(v.time_out)}</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30">
-                            <Circle className="size-2 fill-current" />
-                            Active
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredVisitors.length === 0 && visitors.length > 0 && (
+            <DataTable
+              columns={columns}
+              data={paginatedVisitors}
+              sortKey={currentSortKey}
+              sortDir={currentSortDir}
+              onSort={handleSort}
+              onRowClick={(v) => setFlyoutVisitor(v)}
+              emptyState={
                 <div className="flex flex-col items-center py-12 text-center">
                   <p className="text-sm text-muted-foreground">No visitors match your filters.</p>
                 </div>
-              )}
-              <Pagination page={page} totalPages={totalPages} totalItems={filteredVisitors.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
-            </div>
+              }
+              page={page}
+              totalPages={totalPages}
+              totalItems={filteredVisitors.length}
+              onPageChange={setPage}
+              pageSize={PAGE_SIZE}
+              rowKey={(v) => v.id}
+            />
           )}
         </CardContent>
       </Card>

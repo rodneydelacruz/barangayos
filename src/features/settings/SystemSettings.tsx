@@ -295,7 +295,7 @@ export default function SystemSettings() {
     return (
       <div className="mx-auto max-w-7xl">
         <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists." />
-        <div className="space-y-3">
+      <div className="space-y-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="rounded-lg border bg-card shadow-sm p-4 space-y-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
               <SkeletonBlock className="h-4 w-40" />

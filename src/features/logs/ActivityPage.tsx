@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { cn, formatDateTime } from '@/lib/utils'
+import { DataTable, type Column } from '@/components/ui/data-table'
 
 const collectionOptions = [
   { value: '', label: 'All Collections' },
@@ -22,15 +23,28 @@ const actionColors: Record<string, string> = {
   delete: 'bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 }
 
-const sortFields = ['collection', 'user_name', 'created'] as const
-type SortField = (typeof sortFields)[number]
+const columns: Column<ApiActivity>[] = [
+  { key: 'action', label: 'Action',
+    render: (a) => (
+      <span className={cn('inline-flex rounded-md px-3.5 py-0.5 text-xs font-bold', actionColors[a.action] || 'bg-muted text-muted-foreground')}>
+        {a.action}
+      </span>
+    ) },
+  { key: 'collection', label: 'Collection', sortable: true,
+    render: (a) => a.collection?.replace(/_/g, ' ') ?? '—' },
+  { key: 'details', label: 'Details', render: (a) => a.details ?? '—' },
+  { key: 'user_name', label: 'User', sortable: true },
+  { key: 'created', label: 'Timestamp', sortable: true,
+    render: (a) => a.created ? formatDateTime(a.created) : '' },
+]
 
 export default function ActivityPage() {
   const [activities, setActivities] = useState<ApiActivity[]>([])
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState('-id')
+  const [sortKey, setSortKey] = useState<string>('created')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [collectionFilter, setCollectionFilter] = useState('')
   const [flyoutActivity, setFlyoutActivity] = useState<ApiActivity | null>(null)
 
@@ -60,29 +74,24 @@ export default function ActivityPage() {
   useEffect(() => {
     setPage(1)
     setActivities([])
-    fetchActivities(1, sortBy, collectionFilter)
-  }, [sortBy, collectionFilter])
+    const apiSort = sortDir === 'desc' ? `-${sortKey}` : sortKey
+    fetchActivities(1, apiSort, collectionFilter)
+  }, [sortKey, sortDir, collectionFilter])
 
-  function handleSort(field: SortField) {
-    if (sortBy === field) {
-      setSortBy(`-${field}`)
-    } else if (sortBy === `-${field}`) {
-      setSortBy(field)
+  function handleSort(key: string) {
+    if (key === sortKey) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortBy(field)
+      setSortKey(key)
+      setSortDir('asc')
     }
   }
 
   function handleLoadMore() {
     const nextPage = page + 1
     if (nextPage > totalPages) return
-    fetchActivities(nextPage, sortBy, collectionFilter, true)
-  }
-
-  function sortIndicator(field: SortField) {
-    if (sortBy === field) return ' ▲'
-    if (sortBy === `-${field}`) return ' ▼'
-    return ''
+    const apiSort = sortDir === 'desc' ? `-${sortKey}` : sortKey
+    fetchActivities(nextPage, apiSort, collectionFilter, true)
   }
 
   return (
@@ -108,97 +117,31 @@ export default function ActivityPage() {
           <CardTitle>Activity Log</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading && activities.length === 0 ? (
-            <div className="space-y-2 p-4 sm:p-6">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 rounded border p-3 motion-fade-in"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  <div className="h-4 flex-1 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-                  <div className="h-8 w-20 animate-pulse rounded bg-muted" />
-                </div>
-              ))}
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    <th className="px-4 py-3 sm:px-6">Action</th>
-                    <th
-                      className="cursor-pointer select-none px-4 py-3 sm:px-6 hover:text-foreground"
-                      onClick={() => handleSort('collection')}
-                    >
-                      Collection{sortIndicator('collection')}
-                    </th>
-                    <th className="px-4 py-3 sm:px-6">Details</th>
-                    <th
-                      className="cursor-pointer select-none px-4 py-3 sm:px-6 hover:text-foreground"
-                      onClick={() => handleSort('user_name')}
-                    >
-                      User{sortIndicator('user_name')}
-                    </th>
-                    <th
-                      className="cursor-pointer select-none px-4 py-3 sm:px-6 hover:text-foreground"
-                      onClick={() => handleSort('created')}
-                    >
-                      Timestamp{sortIndicator('created')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activities.map((a, i) => (
-                    <tr
-                      key={a.id}
-                      className="cursor-pointer border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30 transition-colors"
-                      style={{ '--stagger-index': i } as React.CSSProperties}
-                      onClick={() => setFlyoutActivity(a)}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6">
-                        <span
-                          className={cn(
-                            'inline-flex rounded-md px-3.5 py-0.5 text-xs font-bold',
-                            actionColors[a.action] || 'bg-muted text-muted-foreground',
-                          )}
-                        >
-                          {a.action}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {a.collection}
-                      </td>
-                      <td className="max-w-xs truncate px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {a.details}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {a.user_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">
-                        {formatDateTime(a.created)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {page < totalPages && (
-                <div className="flex justify-center p-4">
-                  <button
-                    type="button"
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 motion-press"
-                  >
-                    {loading ? 'Loading...' : 'Load more'}
-                  </button>
-                </div>
-              )}
+          <DataTable
+            columns={columns}
+            data={activities}
+            loading={loading && activities.length === 0}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            onRowClick={(a) => setFlyoutActivity(a)}
+            emptyState={
+              <div className="flex flex-col items-center py-12 text-center">
+                <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+              </div>
+            }
+            rowKey={(a) => a.id}
+          />
+          {activities.length > 0 && page < totalPages && (
+            <div className="flex justify-center p-4 border-t">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 motion-press"
+              >
+                {loading ? 'Loading...' : 'Load more'}
+              </button>
             </div>
           )}
         </CardContent>

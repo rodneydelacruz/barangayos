@@ -5,6 +5,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { Tabs } from '@/components/ui/tabs'
 import {
   getDemographicsReport,
   getDocumentsReport,
@@ -23,19 +24,13 @@ import ExportBar from './ExportBar'
 
 type TabId = 'overview' | 'demographics' | 'documents' | 'blotter' | 'assets' | 'visitors'
 
-interface Tab {
-  id: TabId
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-}
-
-const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'demographics', label: 'Demographics', icon: Users },
-  { id: 'documents', label: 'Documents', icon: ClipboardList },
-  { id: 'blotter', label: 'Blotter', icon: FileText },
-  { id: 'assets', label: 'Assets', icon: Package },
-  { id: 'visitors', label: 'Visitors', icon: DoorOpen },
+const REPORT_TABS = [
+  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="size-3.5" /> },
+  { id: 'demographics', label: 'Demographics', icon: <Users className="size-3.5" /> },
+  { id: 'documents', label: 'Documents', icon: <ClipboardList className="size-3.5" /> },
+  { id: 'blotter', label: 'Blotter', icon: <FileText className="size-3.5" /> },
+  { id: 'assets', label: 'Assets', icon: <Package className="size-3.5" /> },
+  { id: 'visitors', label: 'Visitors', icon: <DoorOpen className="size-3.5" /> },
 ]
 
 function StatCard({ label, value, icon: Icon, color }: {
@@ -419,30 +414,8 @@ export default function ReportsPage() {
     <>
       <PageHeader title="Reports Dashboard" subtitle="Summary and insights across all barangay data" />
 
-      {/* Tab bar */}
-      <div className="mb-6 flex items-center justify-between border-b border-bamboo/40">
-        <div className="flex gap-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const active = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
-                  active
-                    ? 'border-gold text-gold'
-                    : 'border-transparent text-muted-foreground hover:text-foreground',
-                )}
-              >
-                <Icon className="size-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
+      <div className="mb-6 flex items-center justify-between">
+        <Tabs tabs={REPORT_TABS} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} className="border-bamboo/40" />
         <ExportBar activeTab={activeTab} />
       </div>
 
