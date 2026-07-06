@@ -11,6 +11,7 @@ export interface FundSourceData {
   description?: string
   statutory_rule?: 'none' | '20%_DF' | 'SK' | 'BDRRMF' | 'GAD'
   current_balance?: number
+  original_balance?: number
   fiscal_year?: number
   is_active?: boolean
   notes?: string
@@ -22,6 +23,7 @@ export interface ApiFundSource extends RecordModel {
   description: string
   statutory_rule: 'none' | '20%_DF' | 'SK' | 'BDRRMF' | 'GAD'
   current_balance: number
+  original_balance: number
   fiscal_year: number
   is_active: boolean
   notes: string
@@ -43,11 +45,32 @@ export async function getFundSource(id: string): Promise<ApiFundSource> {
 
 export async function createFundSource(data: FundSourceData): Promise<ApiFundSource> {
   try {
-    const result = await getClient().collection<ApiFundSource>(COLLECTION).create(data)
+    const payload = { ...data, original_balance: data.original_balance ?? data.current_balance ?? 0 }
+    const result = await getClient().collection<ApiFundSource>(COLLECTION).create(payload)
     createFinanceAuditLog('create', COLLECTION, result.id, `created fund_sources: ${result.name}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
+}
+
+export async function deductFundSourceBalance(id: string, amount: number, details: string): Promise<ApiFundSource> {
+  try {
+    const fs = await getFundSource(id)
+    const newBalance = (fs.current_balance || 0) - amount
+    const result = await getClient().collection<ApiFundSource>(COLLECTION).update(id, { current_balance: newBalance })
+    createFinanceAuditLog('update', COLLECTION, id, details, amount)
+    return result
+  } catch (e) { throw handleApiError(e) }
+}
+
+export async function restoreFundSourceBalance(id: string, amount: number, details: string): Promise<ApiFundSource> {
+  try {
+    const fs = await getFundSource(id)
+    const newBalance = (fs.current_balance || 0) + amount
+    const result = await getClient().collection<ApiFundSource>(COLLECTION).update(id, { current_balance: newBalance })
+    createFinanceAuditLog('update', COLLECTION, id, details, amount)
+    return result
+  } catch (e) { throw handleApiError(e) }
 }
 
 export async function updateFundSource(id: string, data: Partial<FundSourceData>): Promise<ApiFundSource> {
