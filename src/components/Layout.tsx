@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router'
 import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import OfflineIndicator from '@/offline/OfflineIndicator'
+import { Toaster } from '@/components/ui/toast'
 
 const STORAGE_KEY = 'barangayos-sidebar-pinned'
 
@@ -45,6 +46,7 @@ export default function Layout() {
           <Outlet />
         </div>
         <OfflineIndicator />
+        <Toaster position="bottom-right" richColors closeButton />
       </main>
     </div>
   )
