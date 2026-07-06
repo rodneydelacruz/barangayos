@@ -33,8 +33,17 @@
   --color-bamboo: var(--bamboo);
   --color-red-pinoy: var(--red-pinoy);
 
-  --font-display: 'Outfit', system-ui, sans-serif;
-  --font-body: 'Outfit', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.08), 0 8px 10px rgba(0, 0, 0, 0.04);
+  --shadow-ring: 0 0 0 1px var(--color-ring);
+  --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(201, 149, 62, 0.08);
 }
 
 @utility motion-fade-in {
@@ -64,7 +73,7 @@
 @utility motion-lift {
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -108,6 +117,21 @@
   }
 }
 
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--shimmer-from, var(--secondary)) 25%,
+    var(--shimmer-to, var(--muted)) 50%,
+    var(--shimmer-from, var(--secondary)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 @keyframes motion-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -121,6 +145,11 @@
 @keyframes motion-scale-in {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
 
 @keyframes theme-swirl {
@@ -149,7 +178,7 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
 :root {
   color-scheme: light;
 
-  --bg: #F8F5F0;
+  --bg: #F6F2EB;
   --fg: #1A1513;
   --card: #FFFFFF;
   --card-fg: #1A1513;
@@ -190,11 +219,11 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   --card-fg: #E5DCD0;
   --popover: #141211;
   --popover-fg: #E5DCD0;
-  --primary: #608B99;
+  --primary: #6B9BAB;
   --primary-fg: #0B0A09;
   --secondary: #1C1917;
   --secondary-fg: #E5DCD0;
-  --muted: #1C1917;
+  --muted: #1A1714;
   --muted-fg: #948A7E;
   --accent: #1C1917;
   --accent-fg: #E5DCD0;
@@ -215,13 +244,13 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   --surface-overlay: rgba(0, 0, 0, 0.6);
   --text-subtle: #7A7064;
 
-  --shadow-sm: inset 0 1px 0 rgba(255,255,255,0.03);
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .dark .elevated {
   background-color: #141211;
   border-color: #2A2622;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96,139,153,0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(107, 155, 171, 0.08);
   backdrop-filter: blur(8px);
 }
 
@@ -234,6 +263,8 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-body);
   transition: background-color 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html {
@@ -285,4 +316,3 @@ html::-webkit-scrollbar-thumb:hover {
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
   background: var(--color-border);
 }
-
