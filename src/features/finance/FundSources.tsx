@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Landmark, DollarSign, Calendar, FileText } from 'lucide-react'
+import { Plus, Landmark, DollarSign, Calendar, FileText, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +11,7 @@ import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FiscalYearSelector } from '@/components/finance/FiscalYearSelector'
 import { getFundSources, createFundSource, updateFundSource, deleteFundSource, type ApiFundSource, type FundSourceData } from '@/api/fundSources'
+import { getFinanceAuditLogs, type ApiFinanceAudit } from '@/api/financeAudit'
 
 const STATUTORY_LABELS: Record<string, string> = {
   none: 'General',
@@ -29,6 +30,7 @@ export function FundSources() {
   const [editing, setEditing] = useState<ApiFundSource | null>(null)
   const [page, setPage] = useState(1)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [auditLogs, setAuditLogs] = useState<ApiFinanceAudit[]>([])
   const PAGE_SIZE = 25
   const [form, setForm] = useState<FundSourceData>({
     name: '', code: '', statutory_rule: 'none', current_balance: 0, fiscal_year: year, is_active: true, description: '', notes: '',
@@ -43,6 +45,13 @@ export function FundSources() {
   }
 
   useEffect(() => { setPage(1); load() }, [year])
+
+  async function loadAuditLogs(fundId: string) {
+    try {
+      const result = await getFinanceAuditLogs(1, 50, '-created', 'fund_sources')
+      setAuditLogs(result.items.filter((l) => l.record_id === fundId))
+    } catch (_) {}
+  }
 
   function openEditPanel(s: ApiFundSource) {
     setEditing(s)
@@ -111,7 +120,7 @@ export function FundSources() {
         columns={columns}
         data={paginatedSources}
         loading={loading}
-        onRowClick={(s) => setFlyout(s)}
+          onRowClick={(s) => { setFlyout(s); loadAuditLogs(s.id) }}
         emptyState={<p className="text-center text-muted-foreground py-6">No fund sources for {year}. Create one to get started.</p>}
         page={page}
         totalPages={totalPages}
@@ -129,15 +138,21 @@ export function FundSources() {
       >
         {flyout && (() => (
           <>
-            <DetailSection icon={<DollarSign className="size-3.5" />} title="Financial Info">
+            <DetailSection icon={<DollarSign className="size-3.5" />} title="Balance Breakdown">
               <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Original Balance</span>
+                  <span className="font-semibold">₱{flyout.original_balance?.toLocaleString() ?? '—'}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Current Balance</span>
                   <span className="font-semibold">₱{flyout.current_balance?.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fiscal Year</span>
-                  <span>{flyout.fiscal_year}</span>
+                <div className="border-t pt-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Total Deducted</span>
+                    <span className="font-semibold text-destructive">-₱{((flyout.original_balance || 0) - (flyout.current_balance || 0)).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </DetailSection>
@@ -158,6 +173,23 @@ export function FundSources() {
                   </span>
                 </div>
               </div>
+            </DetailSection>
+            <DetailSection icon={<Scale className="size-3.5" />} title="Deduction History">
+              {auditLogs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No deductions recorded</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {auditLogs.filter((l) => l.details?.toLowerCase().includes('disburs') || l.details?.toLowerCase().includes('restor')).map((l) => (
+                    <div key={l.id} className="flex justify-between items-center text-xs border-b pb-1 last:border-0">
+                      <div>
+                        <span className={`inline-flex items-center rounded px-1 py-0.5 text-xs font-semibold ${l.action === 'create' ? 'bg-green-100 text-green-700' : l.action === 'update' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>{l.action}</span>
+                        <span className="ml-1 text-muted-foreground">{l.details}</span>
+                      </div>
+                      {l.amount ? <span className="font-semibold">₱{l.amount.toLocaleString()}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              )}
             </DetailSection>
             {flyout.description && (
               <DetailSection icon={<FileText className="size-3.5" />} title="Description">
@@ -206,6 +238,10 @@ export function FundSources() {
                 <div>
                   <Label>Current Balance</Label>
                   <Input type="number" value={form.current_balance || 0} onChange={(e) => setForm({ ...form, current_balance: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label>Original Balance (set once)</Label>
+                  <Input type="number" value={form.original_balance ?? form.current_balance ?? 0} onChange={(e) => setForm({ ...form, original_balance: Number(e.target.value) })} />
                 </div>
                 <div>
                   <Label>Description</Label>
