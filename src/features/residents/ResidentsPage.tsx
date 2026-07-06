@@ -15,9 +15,10 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { hasRole } from '@/auth/session'
-import Pagination from '@/components/ui/Pagination'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { tagColors } from '@/lib/statusStyles'
+import { DataTable, type Column } from '@/components/ui/data-table'
+import { EmptyState } from '@/components/ui/empty-state'
 
 function statusClass(value: string, type: 'document' | 'blotter' | 'activity'): string {
   if (type === 'document') {
@@ -211,6 +212,17 @@ export default function ResidentsPage() {
   const [flyoutLoading, setFlyoutLoading] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
+  const [sortKey, setSortKey] = useState('last_name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
 
   useEffect(() => {
     getResidents()
@@ -233,19 +245,26 @@ export default function ResidentsPage() {
   }, [selectedId, residents])
 
   const filteredResidents = useMemo(() => {
-    return residents.filter((r) => {
-      if (search) {
-        const q = search.toLowerCase()
-        const name = `${r.first_name} ${r.last_name} ${r.middle_name}`.toLowerCase()
-        if (!name.includes(q)) return false
-      }
-      if (purokFilter && r.purok !== purokFilter) return false
-      if (tagFilter.length > 0) {
-        if (!tagFilter.some((tag) => (r as Record<string, unknown>)[tag])) return false
-      }
-      return true
-    })
-  }, [residents, search, purokFilter, tagFilter])
+    return residents
+      .filter((r) => {
+        if (search) {
+          const q = search.toLowerCase()
+          const name = `${r.first_name} ${r.last_name} ${r.middle_name}`.toLowerCase()
+          if (!name.includes(q)) return false
+        }
+        if (purokFilter && r.purok !== purokFilter) return false
+        if (tagFilter.length > 0) {
+          if (!tagFilter.some((tag) => (r as Record<string, unknown>)[tag])) return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        const aVal = String((a as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
+        const bVal = String((b as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
+        const cmp = aVal.localeCompare(bVal)
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+  }, [residents, search, purokFilter, tagFilter, sortKey, sortDir])
 
   const totalPages = Math.ceil(filteredResidents.length / PAGE_SIZE)
   const paginatedResidents = filteredResidents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -382,6 +401,26 @@ export default function ResidentsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
+  const columns: Column<ApiResident>[] = [
+    { key: 'last_name', label: 'Name', sortable: true,
+      render: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}` },
+    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm' },
+    { key: 'gender', label: 'Gender', hideBelow: 'sm' },
+    { key: 'birth_date', label: 'Age',
+      render: (r) => { if (r.birth_date) return calculateAge(r.birth_date).toString(); return '' }, hideBelow: 'md' },
+    { key: 'civil_status', label: 'Civil Status', hideBelow: 'md' },
+    { key: 'tags', label: 'Tags',
+      render: (r) => (
+        <div className="flex flex-wrap gap-1">
+          {tagKeys.filter((k) => (r as Record<string, unknown>)[k]).map((k) => (
+            <span key={k} className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors[k])}>
+              {tagLabels[k]}
+            </span>
+          ))}
+        </div>
+      ) },
+  ]
+
   return (
     <>
       <PageHeader title="Residents" subtitle="Manage resident profiles and demographic information.">
@@ -434,78 +473,26 @@ export default function ResidentsPage() {
           <CardTitle>Resident Profiles</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-4 sm:p-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded border p-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                  <div className="h-4 flex-1 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-                  <div className="h-8 w-20 animate-pulse rounded bg-muted" />
-                </div>
-              ))}
-            </div>
-          ) : residents.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <p className="text-sm text-muted-foreground">No residents yet. Add your first resident.</p>
-              {canModify && (
-                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={openCreatePanel}>
-                  <Plus className="size-3.5" />
-                  Create first resident
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    <th className="px-4 py-3 sm:px-6">Name</th>
-                    <th className="px-4 py-3 sm:px-6">Purok</th>
-                    <th className="px-4 py-3 sm:px-6">Age</th>
-                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Civil Status</th>
-                    <th className="hidden px-4 py-3 sm:table-cell sm:px-6">Tags</th>
-                  </tr>
-                </thead>
-                <tbody className={paginatedResidents.length === 0 ? 'hidden' : ''}>
-                  {paginatedResidents.map((r, i) => (
-                    <tr
-                      key={r.id}
-                      className="border-b last:border-b-0 even:bg-muted/20 motion-fade-in motion-slide-up cursor-pointer hover:bg-muted/30 transition-colors"
-                      style={{ '--stagger-index': i } as React.CSSProperties}
-                      onClick={() => openFlyout(r)}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
-                        {r.first_name} {r.last_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{r.purok}</td>
-                      <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{r.birth_date ? calculateAge(r.birth_date) : '—'}</td>
-                      <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6 text-sm text-muted-foreground">{r.civil_status}</td>
-                      <td className="hidden px-4 py-3 sm:table-cell sm:px-6">
-                        <div className="flex flex-wrap gap-1">
-                          {tagKeys.map((tag) =>
-                            (r as Record<string, unknown>)[tag] ? (
-                              <span
-                                key={tag}
-                                className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', tagColors[tag])}
-                              >
-                                {tagLabels[tag]}
-                              </span>
-                            ) : null,
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredResidents.length === 0 && residents.length > 0 && (
-                <div className="flex flex-col items-center py-12 text-center">
-                  <p className="text-sm text-muted-foreground">No residents match your filters.</p>
-                </div>
-              )}
-              <Pagination page={page} totalPages={totalPages} totalItems={filteredResidents.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
-            </div>
-          )}
+          <DataTable
+            columns={columns}
+            data={paginatedResidents}
+            loading={loading}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            onRowClick={(r) => openFlyout(r)}
+            emptyState={
+              residents.length === 0
+                ? <EmptyState title="No residents yet" description="Add your first resident." action={canModify ? { label: "Create first resident", onClick: openCreatePanel } : undefined} />
+                : <EmptyState variant="search" title="No residents match your filters." />
+            }
+            page={page}
+            totalPages={totalPages}
+            totalItems={filteredResidents.length}
+            onPageChange={setPage}
+            pageSize={PAGE_SIZE}
+            rowKey={(r) => r.id}
+          />
         </CardContent>
       </Card>
 

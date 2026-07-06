@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
-import { Plus, ChevronDown, ChevronRight, Home, Users } from 'lucide-react'
-import Pagination from '@/components/ui/Pagination'
+import { Plus, ChevronDown, Home, Users } from 'lucide-react'
 import { getHouseholds, getNextHouseholdNumber, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
 import { getResidents, type ApiResident } from '@/api/residents'
 import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
@@ -16,6 +15,8 @@ import { hasRole } from '@/auth/session'
 import { cn, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { SortSelect } from '@/components/ui/SortSelect'
+import { DataTable, type Column } from '@/components/ui/data-table'
+import { EmptyState } from '@/components/ui/empty-state'
 
 function calculateAge(birthDate: string): number {
   if (!birthDate) return 0
@@ -60,7 +61,8 @@ export default function HouseholdsPage() {
   const [search, setSearch] = useState('')
   const [purokFilter, setPurokFilter] = useState('')
   const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
-  const [sortBy, setSortBy] = useState('-created')
+  const [sortKey, setSortKey] = useState('household_number')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const [form, setForm] = useState(emptyForm())
@@ -173,6 +175,15 @@ export default function HouseholdsPage() {
     setError(null)
   }
 
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
   const canModify = hasRole('admin', 'staff')
 
   const sortFields = [
@@ -182,37 +193,46 @@ export default function HouseholdsPage() {
     { value: '-created', label: 'Newest' },
   ]
 
+  const sortBy = sortDir === 'desc' ? `-${sortKey}` : sortKey
+
+  const columns: Column<ApiHousehold>[] = [
+    { key: 'household_number', label: 'Household #', sortable: true },
+    { key: 'head_name', label: 'Head of Household', sortable: true },
+    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm' },
+    { key: 'member_count', label: 'Members',
+      render: (h) => (residentsMap.get(h.id)?.length ?? 0).toString() },
+  ]
+
   function closeFlyout() {
     setFlyoutHousehold(null)
   }
 
   const filteredHouseholds = useMemo(() => {
-    const sorted = [...households].sort((a, b) => {
-      const desc = sortBy.startsWith('-')
-      const field = desc ? sortBy.slice(1) : sortBy
-      const va: string = (a as Record<string, unknown>)[field] as string || ''
-      const vb: string = (b as Record<string, unknown>)[field] as string || ''
-      const cmp = va.localeCompare(vb)
-      return desc ? -cmp : cmp
-    })
-    return sorted.filter((h) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !h.household_number.toLowerCase().includes(q) &&
-          !h.head_name.toLowerCase().includes(q) &&
-          !(h.purok && h.purok.toLowerCase().includes(q))
-        ) return false
-      }
-      if (purokFilter && h.purok !== purokFilter) return false
-      return true
-    })
-  }, [households, search, purokFilter, sortBy])
+    return households
+      .filter((h) => {
+        if (search) {
+          const q = search.toLowerCase()
+          if (
+            !h.household_number.toLowerCase().includes(q) &&
+            !h.head_name.toLowerCase().includes(q) &&
+            !(h.purok && h.purok.toLowerCase().includes(q))
+          ) return false
+        }
+        if (purokFilter && h.purok !== purokFilter) return false
+        return true
+      })
+      .sort((a, b) => {
+        const aVal = String((a as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
+        const bVal = String((b as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
+        const cmp = aVal.localeCompare(bVal)
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+  }, [households, search, purokFilter, sortKey, sortDir])
 
   const totalPages = Math.ceil(filteredHouseholds.length / PAGE_SIZE)
   const paginatedHouseholds = filteredHouseholds.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  useEffect(() => { setPage(1) }, [search, purokFilter, sortBy])
+  useEffect(() => { setPage(1) }, [search, purokFilter, sortKey, sortDir])
 
   return (
     <>
@@ -242,7 +262,11 @@ export default function HouseholdsPage() {
             <option key={p} value={p}>{p}</option>
           ))}
         </Select>
-        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
+        <SortSelect options={sortFields} value={sortBy} onChange={(v) => {
+          const desc = v.startsWith('-')
+          setSortKey(desc ? v.slice(1) : v)
+          setSortDir(desc ? 'desc' : 'asc')
+        }} />
       </div>
 
       <Card>
@@ -250,69 +274,26 @@ export default function HouseholdsPage() {
           <CardTitle>Household Records</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-4 sm:p-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded border p-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                  <div className="h-4 flex-1 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-                  <div className="h-8 w-20 animate-pulse rounded bg-muted" />
-                </div>
-              ))}
-            </div>
-          ) : households.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <p className="text-sm text-muted-foreground">No households yet.</p>
-              {canModify && (
-                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={openCreatePanel}>
-                  <Plus className="size-3.5" />
-                  Create first household
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-left text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    <th className="px-4 py-3 sm:px-6">Household #</th>
-                    <th className="px-4 py-3 sm:px-6">Purok</th>
-                    <th className="px-4 py-3 sm:px-6">Head Name</th>
-                    <th className="px-4 py-3 sm:px-6">Members</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedHouseholds.map((h, i) => {
-                    const members = residentsMap.get(h.id) || []
-                    return (
-                      <tr
-                        key={h.id}
-                        className="cursor-pointer border-b even:bg-muted/20 motion-fade-in motion-slide-up hover:bg-muted/30"
-                        style={{ '--stagger-index': i } as React.CSSProperties}
-                        onClick={() => setFlyoutHousehold(h)}
-                      >
-                        <td className="px-4 py-3 sm:px-6 text-sm font-medium text-foreground">
-                          <span className="inline-flex items-center gap-1.5">
-                            <ChevronRight className="size-3.5 text-muted-foreground" />
-                            {h.household_number}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.purok}</td>
-                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{h.head_name}</td>
-                        <td className="whitespace-nowrap px-4 py-3 sm:px-6 text-sm text-muted-foreground">{members.length}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-              {filteredHouseholds.length === 0 && households.length > 0 && (
-                <div className="flex flex-col items-center py-12 text-center">
-                  <p className="text-sm text-muted-foreground">No households match your search.</p>
-                </div>
-              )}
-              <Pagination page={page} totalPages={totalPages} totalItems={filteredHouseholds.length} onPageChange={setPage} pageSize={PAGE_SIZE} />
-            </div>
-          )}
+          <DataTable
+            columns={columns}
+            data={paginatedHouseholds}
+            loading={loading}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            onRowClick={(h) => setFlyoutHousehold(h)}
+            emptyState={
+              households.length === 0
+                ? <EmptyState title="No households yet" description="Create your first household." action={canModify ? { label: "Create first household", onClick: openCreatePanel } : undefined} />
+                : <EmptyState variant="search" title="No households match your search." />
+            }
+            page={page}
+            totalPages={totalPages}
+            totalItems={filteredHouseholds.length}
+            onPageChange={setPage}
+            pageSize={PAGE_SIZE}
+            rowKey={(h) => h.id}
+          />
         </CardContent>
       </Card>
 

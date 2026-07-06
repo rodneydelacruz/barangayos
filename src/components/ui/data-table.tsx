@@ -8,6 +8,7 @@ export interface Column<T> {
   label: string
   sortable?: boolean
   render?: (item: T) => ReactNode
+  hideBelow?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
@@ -58,13 +59,14 @@ export function DataTable<T>({
           <thead>
             <tr className="border-b text-left">
               {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className={cn(
-                    'py-3 px-3 font-medium text-muted-foreground',
-                    col.sortable && 'cursor-pointer hover:text-foreground select-none',
-                    col.className,
-                  )}
+                  <th
+                    key={col.key}
+                    className={cn(
+                      'py-3 px-3 font-medium text-muted-foreground',
+                      col.sortable && 'cursor-pointer hover:text-foreground select-none',
+                      col.hideBelow && `hidden ${col.hideBelow}:table-cell`,
+                      col.className,
+                    )}
                   onClick={() => col.sortable && onSort?.(col.key)}
                   aria-sort={col.sortable && sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
@@ -92,7 +94,7 @@ export function DataTable<T>({
                 )}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={cn('py-3 px-3', col.className)}>
+                  <td key={col.key} className={cn('py-3 px-3', col.hideBelow && `hidden ${col.hideBelow}:table-cell`, col.className)}>
                     {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')}
                   </td>
                 ))}
@@ -117,6 +119,7 @@ export function DataTable<T>({
             )}
           >
             {columns.map((col) => {
+              if (col.hideBelow) return null
               const value = col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')
               if (value === null || value === undefined) return null
               return (
