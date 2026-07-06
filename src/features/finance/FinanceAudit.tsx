@@ -13,7 +13,6 @@ const FINANCE_COLLECTIONS = [
   'income_accounts',
   'fund_sources',
   'appropriations',
-  'obligations',
   'disbursements',
   'revenues',
 ] as const
@@ -22,7 +21,6 @@ const collectionLabels: Record<string, string> = {
   income_accounts: 'Income Accounts',
   fund_sources: 'Fund Sources',
   appropriations: 'Appropriations',
-  obligations: 'Obligations',
   disbursements: 'Disbursements',
   revenues: 'Revenues',
 }
