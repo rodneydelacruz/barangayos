@@ -10,7 +10,7 @@ export interface DashboardConfig {
   widgets: Record<string, WidgetState>
 }
 
-type Page = 'dashboard' | 'budget'
+export type Page = 'dashboard' | 'budget'
 
 const STORAGE_KEYS: Record<Page, string> = {
   dashboard: 'brgy-dashboard-config',
@@ -95,6 +95,10 @@ function saveConfig(page: Page, config: DashboardConfig) {
 
 export function useWidgetConfig(page: Page, role: string) {
   const [config, setConfig] = useState<DashboardConfig>(() => loadConfig(page, role))
+
+  useEffect(() => {
+    setConfig(loadConfig(page, role))
+  }, [page, role])
 
   useEffect(() => {
     saveConfig(page, config)
