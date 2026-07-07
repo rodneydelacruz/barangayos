@@ -1,4 +1,9 @@
 import { defineConfig } from '@playwright/test'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const root = path.resolve(__dirname, '..')
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,8 +25,9 @@ export default defineConfig({
   webServer: [
     {
       command: process.env.CI
-        ? 'node scripts/e2e-server.mjs'
+        ? `node scripts/e2e-server.mjs`
         : 'npm run dev',
+      cwd: process.env.CI ? root : __dirname,
       url: 'http://localhost:8080',
       reuseExistingServer: !process.env.CI,
       timeout: 60000,
