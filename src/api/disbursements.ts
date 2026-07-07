@@ -2,6 +2,8 @@ import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import type { ApiAppropriation } from './appropriations'
+import { getAppropriation } from './appropriations'
+import { deductFundSourceBalance, restoreFundSourceBalance } from './fundSources'
 import { getCurrentUser } from '@/auth/session'
 import { createFinanceAuditLog } from './financeAudit'
 
@@ -56,6 +58,14 @@ export async function createDisbursement(data: DisbursementData): Promise<ApiDis
       created_by: getCurrentUser()?.id,
     })
     createFinanceAuditLog('create', COLLECTION, result.id, `created disbursements: ${data.particular || ''}`, data.amount)
+    if (data.appropriation && data.amount && data.amount > 0) {
+      try {
+        const appr = await getAppropriation(data.appropriation)
+        if (appr.fund_source) {
+          await deductFundSourceBalance(appr.fund_source, data.amount, `disbursement: ${data.particular || appr.item_name}`)
+        }
+      } catch {}
+    }
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -72,8 +82,17 @@ export async function updateDisbursement(id: string, data: Partial<DisbursementD
 
 export async function deleteDisbursement(id: string): Promise<boolean> {
   try {
-    await getClient().collection(COLLECTION).delete(id)
+    const existing = await getDisbursement(id)
+    await getClient().collection<ApiDisbursement>(COLLECTION).delete(id)
     createFinanceAuditLog('delete', COLLECTION, id, `deleted disbursements`)
+    if (existing.appropriation && existing.amount > 0) {
+      try {
+        const appr = await getAppropriation(existing.appropriation)
+        if (appr.fund_source) {
+          await restoreFundSourceBalance(appr.fund_source, existing.amount, `disbursement deleted: ${existing.particular || appr.item_name}`)
+        }
+      } catch {}
+    }
     return true
   }
   catch (e) { throw handleApiError(e) }
