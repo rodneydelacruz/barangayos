@@ -25,7 +25,7 @@
 
 ---
 
-## 📋 About
+## About
 
 BarangayOS is a comprehensive, offline-capable web application purpose-built for **Philippine Barangay Local Government Units (LGUs)**. It replaces paper-based record keeping with a modern, digital system that works even when the internet is unreliable.
 
@@ -33,14 +33,14 @@ BarangayOS is a comprehensive, offline-capable web application purpose-built for
 
 ### Who is this for?
 
-- 🏛️ **Barangay Secretaries & Staff** — Manage residents, documents, blotter cases, and daily operations
-- 🏛️ **Barangay Captains & Councilors** — Access reports, approve documents, track finances
-- 🏛️ **IT Administrators** — Deploy, configure, and maintain the system
-- 🏛️ **Developers** — Contribute features, fix bugs, customize for local needs
+- **Barangay Secretaries & Staff** — Manage residents, documents, blotter cases, and daily operations
+- **Barangay Captains & Councilors** — Access reports, approve documents, track finances
+- **IT Administrators** — Deploy, configure, and maintain the system
+- **Developers** — Contribute features, fix bugs, customize for local needs
 
-## ✨ Features
+## Features
 
-### 📋 Records & Document Management
+### Records & Document Management
 
 | Feature | Description |
 |---------|-------------|
@@ -49,7 +49,7 @@ BarangayOS is a comprehensive, offline-capable web application purpose-built for
 | **Document Request & Release** | End-to-end document lifecycle — request, processing, and release tracking |
 | **Blotter / Incident Records** | Complaint tracking with hearing, settlement, and escalation workflow |
 
-### 🏛️ Governance & Operations
+### Governance & Operations
 
 | Feature | Description |
 |---------|-------------|
@@ -58,7 +58,7 @@ BarangayOS is a comprehensive, offline-capable web application purpose-built for
 | **Visitor Log** | Digital visitor check-in/out with timestamps |
 | **Activity Logs** | Comprehensive audit trail of all system actions |
 
-### 💰 Finance Module
+### Finance Module
 
 | Feature | Description |
 |---------|-------------|
@@ -68,20 +68,20 @@ BarangayOS is a comprehensive, offline-capable web application purpose-built for
 | **Disbursements & Obligations** | Full obligation and disbursement workflow |
 | **Finance Audit Trail** | Dedicated audit log for every financial transaction with user attribution |
 
-### ⚡ Platform Capabilities
+### Platform Capabilities
 
 | Feature | Description |
 |---------|-------------|
-| **🌐 Offline Mode** | IndexedDB write queue — queues data when connection drops, auto-flushes on reconnect |
-| **🔐 Role-Based Access** | Admin, Staff, and Viewer roles with granular, server-enforced permissions |
-| **🌙 Dark Mode** | Light/dark theme toggle with automatic system preference detection |
-| **🔒 Cloudflare Tunnel** | Secure public access without opening firewall ports |
-| **💾 Database Backup** | Automatic backups to S3-compatible storage (Cloudflare R2) via admin UI |
-| **📱 PWA Ready** | Mobile-friendly interface with service worker support |
-| **📊 Reports Dashboard** | Aggregated statistics and data visualization with interactive charts |
-| **⚡ Smart URL Resolution** | Automatic API URL selection based on network environment |
+| **Offline Mode** | IndexedDB write queue — queues data when connection drops, auto-flushes on reconnect |
+| **Role-Based Access** | Admin, Staff, and Viewer roles with granular, server-enforced permissions |
+| **Dark Mode** | Light/dark theme toggle with automatic system preference detection |
+| **Cloudflare Tunnel** | Secure public access without opening firewall ports |
+| **Database Backup** | Automatic backups to S3-compatible storage (Cloudflare R2) via admin UI |
+| **PWA Ready** | Mobile-friendly interface with service worker support |
+| **Reports Dashboard** | Aggregated statistics and data visualization with interactive charts |
+| **Smart URL Resolution** | Automatic API URL selection based on network environment |
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -95,7 +95,7 @@ BarangayOS is a comprehensive, offline-capable web application purpose-built for
 | **Linting** | [oxlint](https://oxc.rs/) with React + TypeScript plugins |
 | **Infrastructure** | [Docker](https://www.docker.com/), [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/), [GitHub Actions](https://github.com/features/actions) |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -144,7 +144,7 @@ docker compose up -d --build
 
 > **Note:** The `pocketbase-service.exe` binary in `backend/` is for local Windows testing only and is gitignored. In production, PocketBase runs inside a Docker container.
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 barangayos/
@@ -189,7 +189,7 @@ barangayos/
 └── LICENSE                    # MIT License
 ```
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -200,7 +200,7 @@ barangayos/
 | [Security Policy](docs/SECURITY.md) | Reporting vulnerabilities, security best practices |
 | [Changelog](CHANGELOG.md) | Version history and release notes |
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Unit tests (Vitest)
@@ -219,7 +219,7 @@ npm run test
 npm run build
 ```
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Core record management (residents, households, documents)
 - [x] Blotter / incident tracking with case workflow
@@ -236,21 +236,21 @@ npm run build
 
 > Suggest and vote on features via [GitHub Issues](https://github.com/YOUR_USER/barangayos/issues/new?template=feature_request.md).
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](docs/CONTRIBUTING.md) for details.
 
-- 🐛 [Report a bug](https://github.com/YOUR_USER/barangayos/issues/new?template=bug_report.md)
-- 💡 [Request a feature](https://github.com/YOUR_USER/barangayos/issues/new?template=feature_request.md)
-- 📖 Read the [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Report a bug](https://github.com/YOUR_USER/barangayos/issues/new?template=bug_report.md)
+- [Request a feature](https://github.com/YOUR_USER/barangayos/issues/new?template=feature_request.md)
+- Read the [Code of Conduct](CODE_OF_CONDUCT.md)
 
-## 📄 License
+## License
 
 This project is [MIT](LICENSE) licensed — see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Built with ❤️ for every Barangay in the Philippines
+- Built for every Barangay in the Philippines
 - [PocketBase](https://pocketbase.io/) — The lightweight backend that makes this possible
 - [Cloudflare](https://www.cloudflare.com/) — For their generous free-tier tunnel and R2 services
 - All barangay secretaries and staff who provided invaluable domain expertise
@@ -258,5 +258,5 @@ This project is [MIT](LICENSE) licensed — see the [LICENSE](LICENSE) file for 
 ---
 
 <p align="center">
-  <sub>Made with ❤️ for every Barangay in the Philippines</sub>
+  <sub>Made for every Barangay in the Philippines</sub>
 </p>

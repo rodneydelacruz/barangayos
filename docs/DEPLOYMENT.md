@@ -61,9 +61,9 @@ BarangayOS supports three deployment approaches:
 
 | Approach | Best for | Public access |
 |----------|----------|---------------|
-| **Cloudflare Tunnel** (recommended) | Barangay offices with intermittent internet | ✅ HTTPS via tunnel |
-| **Direct HTTPS** | Servers with a public IP | ✅ HTTPS via reverse proxy |
-| **LAN-only** | Internal network, no internet needed | ❌ Local network only |
+| **Cloudflare Tunnel** (recommended) | Barangay offices with intermittent internet | HTTPS via tunnel |
+| **Direct HTTPS** | Servers with a public IP | HTTPS via reverse proxy |
+| **LAN-only** | Internal network, no internet needed | Local network only |
 
 ---
 

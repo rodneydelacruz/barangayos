@@ -45,7 +45,7 @@ The app automatically selects the optimal API URL based on the client's network 
 ### Resolution algorithm
 
 1. If `VITE_LOCAL_API_URL` is empty (dev mode), use `VITE_API_URL` directly
-2. If the page was loaded over HTTPS, skip local fallback entirely (browsers block HTTPS → HTTP requests)
+2. If the page was loaded over HTTPS, skip local fallback entirely (browsers block HTTPS to HTTP requests)
 3. If the page is HTTP, probe `VITE_LOCAL_API_URL/api/health` with a 3-second timeout
 4. If the local server responds, use the LAN URL for zero-latency, offline-capable access
 5. If the local server is unreachable, fall back to the tunnel URL
@@ -153,15 +153,15 @@ Non-retryable errors (4xx except 429) are immediately passed to the error handle
 
 ```
 User Action
-  │
-  ├── Auth: frontend/src/auth/session.ts → PocketBase SDK → REST API
-  │
-  ├── API: frontend/src/api/{module}.ts → getClient() → PocketBase SDK → REST API
-  │
-  ├── Offline: On network error → enqueue() → IndexedDB
-  │   └── On reconnect → flushQueue() → REST API (FIFO order)
-  │
-  └── Error: handleApiError() → ApiError → UI notification (sonner toast)
+  |
+  +-- Auth: frontend/src/auth/session.ts -> PocketBase SDK -> REST API
+  |
+  +-- API: frontend/src/api/{module}.ts -> getClient() -> PocketBase SDK -> REST API
+  |
+  +-- Offline: On network error -> enqueue() -> IndexedDB
+  |   +-- On reconnect -> flushQueue() -> REST API (FIFO order)
+  |
+  +-- Error: handleApiError() -> ApiError -> UI notification (sonner toast)
 ```
 
 ## Data Model

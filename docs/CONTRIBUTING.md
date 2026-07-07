@@ -4,7 +4,7 @@ First off, thank you for considering contributing! This project helps Philippine
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the [BarangayOS Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
+This project and everyone participating in it is governed by the [BarangayOS Code of Conduct](../CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
 
 ## How Can I Contribute?
 
@@ -41,7 +41,7 @@ git clone https://github.com/YOUR_USERNAME/barangayos.git
 cd barangayos
 ```
 
-3. Set up the development environment — see [DEVELOPMENT.md](docs/DEVELOPMENT.md)
+3. Set up the development environment — see [DEVELOPMENT.md](DEVELOPMENT.md)
 4. Create a branch:
 
 ```bash
@@ -61,7 +61,7 @@ Use a descriptive prefix for your branch name:
 
 #### Development Workflow
 
-1. Make your changes following our [coding standards](docs/DEVELOPMENT.md#coding-standards)
+1. Make your changes following our [coding standards](DEVELOPMENT.md#coding-standards)
 2. Write or update tests as needed
 3. Run the verification pipeline:
 
@@ -105,7 +105,7 @@ We use [conventional commits](https://www.conventionalcommits.org/) for clear, m
 
 2. **Reference related issues** — Link to the issue your PR addresses: `Closes #123`
 
-3. **Describe your changes** — Include a clear description of what you changed and why. Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
+3. **Describe your changes** — Include a clear description of what you changed and why. Use the [PR template](../.github/PULL_REQUEST_TEMPLATE.md).
 
 4. **Ensure CI passes** — All lint, typecheck, test, and build checks must pass. CI runs automatically on every PR.
 
@@ -142,9 +142,9 @@ scripts/            Deploy and utility scripts
 ## Need Help?
 
 - Check existing [Issues](https://github.com/YOUR_USER/barangayos/issues) and [Discussions](https://github.com/YOUR_USER/barangayos/discussions)
-- Review the [Architecture Guide](docs/ARCHITECTURE.md) for system design context
-- Read the [Development Guide](docs/DEVELOPMENT.md) for setup and coding conventions
+- Review the [Architecture Guide](ARCHITECTURE.md) for system design context
+- Read the [Development Guide](DEVELOPMENT.md) for setup and coding conventions
 
 ---
 
-Thank you for helping make barangay governance more efficient! 🇵🇭
+Thank you for helping make barangay governance more efficient!

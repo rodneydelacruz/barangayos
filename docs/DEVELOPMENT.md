@@ -289,7 +289,7 @@ cd frontend && npm run build
 cd backend && docker compose up -d --build
 ```
 
-> See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete production deployment instructions, including Cloudflare Tunnel setup and database backup configuration.
+> See [DEPLOYMENT.md](DEPLOYMENT.md) for complete production deployment instructions, including Cloudflare Tunnel setup and database backup configuration.
 
 ## Troubleshooting
 
