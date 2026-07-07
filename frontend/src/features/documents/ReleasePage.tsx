@@ -150,7 +150,7 @@ export default function ReleasePage() {
       ] },
     { key: 'actions', label: '', className: 'w-24 text-right',
       render: (d) => (
-        <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={(e) => { e.stopPropagation(); openReleaseDialog(d) }}>
+        <Button size="sm" className="h-7 gap-1 px-2 text-xs w-20" onClick={(e) => { e.stopPropagation(); openReleaseDialog(d) }}>
           {d.payment_status === 'unpaid' ? <DollarSign className="size-3.5" /> : <Check className="size-3.5" />}
           {d.payment_status === 'unpaid' ? 'Collect' : 'Release'}
         </Button>
