@@ -96,12 +96,7 @@ export default function DashboardHero({ userName, stats }: DashboardHeroProps) {
                 Barangay {brgyName}{locationStr}
               </p>
             )}
-            <h1 className="mt-1 font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {getTimeGreeting()}, {userName}!
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {formatDate()}
-            </p>
+            
           </div>
           <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="size-3.5" />
