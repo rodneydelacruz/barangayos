@@ -39,7 +39,7 @@ export function ResidentCombobox({ value, onChange, placeholder = 'Type or searc
   }, [])
 
   useEffect(() => {
-    if (!query) { setResults([]); return }
+    if (!query || query.length < 3) { setResults([]); return }
     const timer = setTimeout(async () => {
       try {
         const all = await loadResidents()

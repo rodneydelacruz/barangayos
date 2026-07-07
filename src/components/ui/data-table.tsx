@@ -121,6 +121,7 @@ function DataTableInner<T>({
   )
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const [internalPagination, setInternalPagination] = useState({ pageIndex: 0, pageSize: externalPageSize })
   const [internalDense, setInternalDense] = useState(dense)
   const [columnHidden, setColumnHidden] = useState<Record<string, boolean>>({})
 
@@ -173,11 +174,12 @@ function DataTableInner<T>({
       rowSelection,
       pagination: hasExternalPagination
         ? { pageIndex: (externalPage ?? 1) - 1, pageSize: externalPageSize }
-        : { pageIndex: 0, pageSize: externalPageSize },
+        : internalPagination,
     },
     onSortingChange,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: hasExternalPagination ? undefined : setInternalPagination,
     getCoreRowModel: coreRowModel,
     getSortedRowModel: sortedRowModel,
     getFilteredRowModel: filteredRowModel,

@@ -91,31 +91,37 @@ export function Appropriations() {
   }
 
   async function handleSave() {
-    if (editId) {
-      await updateAppropriation(editId, form)
-    } else {
-      await createAppropriation(form)
-    }
-    setShowForm(false)
-    setEditId(null)
-    setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
-    load()
+    try {
+      if (editId) {
+        await updateAppropriation(editId, form)
+      } else {
+        await createAppropriation(form)
+      }
+      setShowForm(false)
+      setEditId(null)
+      setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
+      load()
+    } catch (_) {}
   }
 
   async function handleDelete() {
     if (!deleteId) return
-    await deleteAppropriation(deleteId)
-    setDeleteId(null)
-    setFlyout(null)
-    load()
+    try {
+      await deleteAppropriation(deleteId)
+      setDeleteId(null)
+      setFlyout(null)
+      load()
+    } catch (_) {}
   }
 
   async function handleObligate() {
     if (!obligateTarget) return
-    await markAppropriationAsObligated(obligateTarget.id, obligateForm)
-    setObligateTarget(null)
-    setObligateForm({ payee: '', obligated_date: new Date().toISOString().split('T')[0], obligation_notes: '' })
-    load()
+    try {
+      await markAppropriationAsObligated(obligateTarget.id, obligateForm)
+      setObligateTarget(null)
+      setObligateForm({ payee: '', obligated_date: new Date().toISOString().split('T')[0], obligation_notes: '' })
+      load()
+    } catch (_) {}
   }
 
   const columns: Column<ApiAppropriation>[] = [

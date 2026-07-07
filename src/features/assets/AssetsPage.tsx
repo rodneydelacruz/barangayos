@@ -142,12 +142,23 @@ export default function AssetsPage() {
     e.preventDefault()
     if (!form.name.trim() || !form.asset_type || !form.condition) return
 
+    const payload = {
+      ...form,
+      purchase_date: form.purchase_date || null,
+      serial_number: form.serial_number || null,
+      description: form.description || null,
+      assigned_to: form.assigned_to || null,
+      location: form.location || null,
+      image_url: form.image_url || null,
+      notes: form.notes || null,
+    }
+
     try {
       if (editingId) {
-        const updated = await updateAsset(editingId, form)
+        const updated = await updateAsset(editingId, payload)
         setAssets((prev) => prev.map((a) => (a.id === editingId ? updated : a)))
       } else {
-        const created = await createAsset(form)
+        const created = await createAsset(payload)
         setAssets((prev) => [created, ...prev])
       }
       closePanel()

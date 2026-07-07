@@ -126,8 +126,7 @@ export default function ReleasePage() {
       filterValue: (d) => `#${d.queue_number}`,
       render: (d) => `#${d.queue_number}` },
     { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
-      filterValue: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}`,
-      render: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}` },
+      render: (d) => d.resident_name },
     { key: 'document_type', label: 'Type', hideBelow: 'sm', filterType: 'select',
       filterOptions: [
         { label: 'Barangay Clearance', value: 'barangay_clearance' },
