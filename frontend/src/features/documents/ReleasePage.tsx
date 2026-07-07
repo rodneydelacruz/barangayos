@@ -289,10 +289,10 @@ export default function ReleasePage() {
             </div>
 
             <div className="mt-5 flex gap-2">
-              <Button onClick={confirmRelease} disabled={!receivedBy.trim() || (releaseDoc.payment_status === 'unpaid' && !fundSource)}>
+              <Button size="sm" onClick={confirmRelease} disabled={!receivedBy.trim() || (releaseDoc.payment_status === 'unpaid' && !fundSource)} className="px-4">
                 {releaseDoc.payment_status === 'unpaid' ? 'Collect & Release' : 'Confirm Release'}
               </Button>
-              <Button type="button" variant="outline" onClick={closeReleaseDialog}>
+              <Button type="button" variant="outline" size="sm" onClick={closeReleaseDialog} className="px-4">
                 Cancel
               </Button>
             </div>
