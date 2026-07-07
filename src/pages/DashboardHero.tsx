@@ -40,7 +40,7 @@ export default function DashboardHero({ userName, role, stats }: DashboardHeroPr
   ]
 
   return (
-    <div className="rounded-xl border border-border border-t-2 border-gold bg-card shadow-sm motion-fade-in motion-slide-up">
+    <div className="rounded-lg border border-border bg-card shadow-sm motion-fade-in motion-slide-up">
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">

@@ -51,7 +51,7 @@ export default function DashboardSystemStatus() {
   const StatusIcon = online ? Wifi : WifiOff
 
   return (
-    <Card className="motion-fade-in motion-slide-up" style={{ animationDelay: '200ms' }}>
+    <Card className="motion-fade-in motion-slide-up rounded-lg" style={{ animationDelay: '200ms' }}>
       <CardContent className="p-5">
         <h2 className="font-display text-sm font-semibold text-foreground">System Status</h2>
         <div className="mt-4 space-y-3">

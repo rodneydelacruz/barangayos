@@ -15,10 +15,8 @@ const collectionIcons: Record<string, React.ComponentType<{ className?: string }
 
 interface DashboardActivityProps {
   activities: ApiActivity[]
+  config?: Record<string, unknown>
 }
-
-const INITIAL_SHOW = 5
-const LOAD_MORE = 5
 
 function timeAgo(dateStr: string): string {
   const now = Date.now()
@@ -33,8 +31,10 @@ function timeAgo(dateStr: string): string {
   return `${days} araw ang nakalipas`
 }
 
-export default function DashboardActivity({ activities }: DashboardActivityProps) {
-  const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW)
+export default function DashboardActivity(props: DashboardActivityProps) {
+  const { activities, config } = props
+  const pageSize = (config?.pageSize as number) ?? 5
+  const [visibleCount, setVisibleCount] = useState(pageSize)
   const visible = activities.slice(0, visibleCount)
   const hasMore = visibleCount < activities.length
 
@@ -73,7 +73,7 @@ export default function DashboardActivity({ activities }: DashboardActivityProps
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setVisibleCount((prev) => Math.min(prev + LOAD_MORE, activities.length))}
+              onClick={() => setVisibleCount((prev) => Math.min(prev + pageSize, activities.length))}
               className="w-full gap-2 text-xs"
             >
               <ChevronDown className="size-3.5" />
