@@ -34,3 +34,24 @@ export async function getActivities(
     throw handleApiError(err)
   }
 }
+
+export async function createActivity(
+  action: 'create' | 'update' | 'delete',
+  collection: string,
+  recordId: string,
+  details: string,
+): Promise<void> {
+  try {
+    const user = getClient().authStore.model as Record<string, unknown> | null
+    const userName = (user?.name as string) ?? (user?.email as string) ?? 'System'
+    await getClient().collection('activity_logs').create({
+      action,
+      collection,
+      record_id: recordId,
+      details,
+      user_name: userName,
+    })
+  } catch {
+    // Silent — audit failure should not block the main operation
+  }
+}

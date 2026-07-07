@@ -7,6 +7,8 @@ import { deductFundSourceBalance, restoreFundSourceBalance } from './fundSources
 import { getCurrentUser } from '@/auth/session'
 import { createFinanceAuditLog } from './financeAudit'
 
+import { createActivity } from './activity'
+
 const COLLECTION = 'disbursements'
 
 export interface DisbursementData {
@@ -58,6 +60,7 @@ export async function createDisbursement(data: DisbursementData): Promise<ApiDis
       created_by: getCurrentUser()?.id,
     })
     createFinanceAuditLog('create', COLLECTION, result.id, `created disbursements: ${data.particular || ''}`, data.amount)
+    createActivity('create', COLLECTION, result.id, `Created disbursement: ${data.particular || ''} — ₱${data.amount}`)
     if (data.appropriation && data.amount && data.amount > 0) {
       try {
         const appr = await getAppropriation(data.appropriation)
@@ -75,6 +78,7 @@ export async function updateDisbursement(id: string, data: Partial<DisbursementD
   try {
     const result = await getClient().collection<ApiDisbursement>(COLLECTION).update(id, data)
     createFinanceAuditLog('update', COLLECTION, result.id, `updated disbursements`, result.amount)
+    createActivity('update', COLLECTION, id, `Updated disbursement: ₱${result.amount}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -85,6 +89,7 @@ export async function deleteDisbursement(id: string): Promise<boolean> {
     const existing = await getDisbursement(id)
     await getClient().collection<ApiDisbursement>(COLLECTION).delete(id)
     createFinanceAuditLog('delete', COLLECTION, id, `deleted disbursements`)
+    createActivity('delete', COLLECTION, id, 'Deleted disbursement')
     if (existing.appropriation && existing.amount > 0) {
       try {
         const appr = await getAppropriation(existing.appropriation)

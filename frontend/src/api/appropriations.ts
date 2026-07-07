@@ -4,6 +4,7 @@ import { handleApiError } from './errorHandler'
 import type { ApiFundSource } from './fundSources'
 import { getCurrentUser } from '@/auth/session'
 import { createFinanceAuditLog } from './financeAudit'
+import { createActivity } from './activity'
 
 const COLLECTION = 'appropriations'
 
@@ -59,6 +60,7 @@ export async function markAppropriationAsObligated(id: string, data: { payee: st
       obligation_notes: data.obligation_notes || '',
     })
     createFinanceAuditLog('update', COLLECTION, id, `marked appropriation as obligated: ${result.item_name} → ${data.payee}`)
+    createActivity('update', COLLECTION, id, `Marked appropriation as obligated: ${result.item_name}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -72,6 +74,7 @@ export async function createAppropriation(data: AppropriationData): Promise<ApiA
       created_by: getCurrentUser()?.id,
     })
     createFinanceAuditLog('create', COLLECTION, result.id, `created appropriations: ${result.item_name}`, result.appropriated_amount)
+    createActivity('create', COLLECTION, result.id, `Created appropriation: ${result.item_name} (${result.expense_class})`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -81,6 +84,7 @@ export async function updateAppropriation(id: string, data: Partial<Appropriatio
   try {
     const result = await getClient().collection<ApiAppropriation>(COLLECTION).update(id, data)
     createFinanceAuditLog('update', COLLECTION, result.id, `updated appropriations: ${result.item_name}`, result.appropriated_amount)
+    createActivity('update', COLLECTION, id, `Updated appropriation: ${result.item_name}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -90,6 +94,7 @@ export async function deleteAppropriation(id: string): Promise<boolean> {
   try {
     await getClient().collection(COLLECTION).delete(id)
     createFinanceAuditLog('delete', COLLECTION, id, `deleted appropriations`)
+    createActivity('delete', COLLECTION, id, 'Deleted appropriation')
     return true
   }
   catch (e) { throw handleApiError(e) }

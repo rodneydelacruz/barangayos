@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
+import { createActivity } from './activity'
 import { getAgendaItems, type ApiAgendaItem } from './agenda'
 import type { PaginatedResult } from '@/lib/utils'
 
@@ -42,6 +43,7 @@ export async function getMeeting(id: string): Promise<MeetingWithItems> {
 export async function createMeeting(data: MeetingData): Promise<ApiMeeting> {
   try {
     const result = await getClient().collection(COLLECTION).create<ApiMeeting>(data)
+    createActivity('create', COLLECTION, result.id, `Created meeting: ${result.title} (${result.meeting_type})`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -51,6 +53,7 @@ export async function createMeeting(data: MeetingData): Promise<ApiMeeting> {
 export async function updateMeeting(id: string, data: Partial<MeetingData>): Promise<ApiMeeting> {
   try {
     const result = await getClient().collection(COLLECTION).update<ApiMeeting>(id, data)
+    createActivity('update', COLLECTION, id, `Updated meeting: ${result.title} — status: ${result.status}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -61,6 +64,7 @@ export async function deleteMeeting(id: string): Promise<boolean> {
   try {
     await getClient().collection(COLLECTION).getOne<ApiMeeting>(id)
     await getClient().collection(COLLECTION).delete(id)
+    createActivity('delete', COLLECTION, id, 'Deleted meeting')
     return true
   } catch (err) {
     throw handleApiError(err)

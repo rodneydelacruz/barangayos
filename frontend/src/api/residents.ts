@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
+import { createActivity } from './activity'
 import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'residents'
@@ -74,6 +75,7 @@ export async function getResident(id: string): Promise<ApiResident> {
 export async function createResident(data: ResidentData): Promise<ApiResident> {
   try {
     const result = await getClient().collection(COLLECTION).create<ApiResident>(data)
+    createActivity('create', COLLECTION, result.id, `Created resident: ${result.first_name} ${result.last_name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -83,6 +85,7 @@ export async function createResident(data: ResidentData): Promise<ApiResident> {
 export async function updateResident(id: string, data: Partial<ResidentData>): Promise<ApiResident> {
   try {
     const result = await getClient().collection(COLLECTION).update<ApiResident>(id, data)
+    createActivity('update', COLLECTION, id, `Updated resident: ${result.first_name} ${result.last_name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -92,6 +95,7 @@ export async function updateResident(id: string, data: Partial<ResidentData>): P
 export async function deleteResident(id: string): Promise<boolean> {
   try {
     await getClient().collection(COLLECTION).delete(id)
+    createActivity('delete', COLLECTION, id, 'Deleted resident')
     return true
   } catch (err) {
     throw handleApiError(err)
