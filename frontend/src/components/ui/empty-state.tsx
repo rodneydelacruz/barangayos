@@ -20,7 +20,7 @@ export function EmptyState({ variant = 'default', title, description, action, cl
   const Icon = icons[variant]
   return (
     <div className={cn('flex flex-col items-center justify-center py-12 text-center motion-fade-in motion-scale-in', className)}>
-      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
+      <div className="mb-4 flex size-12 items-center justify-center bg-muted">
         <Icon className={cn('size-6', variant === 'error' ? 'text-destructive' : 'text-muted-foreground')} />
       </div>
       <h3 className="font-display text-sm font-semibold text-foreground">{title}</h3>

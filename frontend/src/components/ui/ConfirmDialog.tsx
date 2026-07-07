@@ -69,13 +69,13 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative w-full max-w-sm motion-scale-in rounded-lg border bg-card shadow-lg',
+          'relative w-full max-w-sm motion-scale-in border bg-card shadow-lg',
           destructive ? 'border-red-pinoy/20' : 'border-gold/20',
         )}
       >
         <div
           className={cn(
-            'h-1 rounded-t-lg',
+            'h-1',
             destructive ? 'bg-red-pinoy' : 'bg-gold',
           )}
         />
@@ -83,7 +83,7 @@ export function ConfirmDialog({
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-full',
+                'flex size-9 shrink-0 items-center justify-center',
                 destructive
                   ? 'bg-red-pinoy/10 text-red-pinoy'
                   : 'bg-gold/10 text-gold',

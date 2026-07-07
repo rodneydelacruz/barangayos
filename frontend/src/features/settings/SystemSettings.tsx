@@ -294,7 +294,7 @@ export default function SystemSettings() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl">
-        <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists." />
+        <PageHeader title="System Settings" />
       <div className="space-y-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="rounded-lg border bg-card shadow-sm p-4 space-y-3 motion-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
@@ -314,7 +314,7 @@ export default function SystemSettings() {
   if (error) {
     return (
       <div className="mx-auto max-w-7xl">
-        <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists." />
+        <PageHeader title="System Settings" />
         <div className="mx-auto max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
           <p className="text-sm text-destructive">{error}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={loadSettings}>Retry</Button>
@@ -325,7 +325,7 @@ export default function SystemSettings() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <PageHeader title="System Settings" subtitle="Configure the barangay identity and reference lists.">
+      <PageHeader title="System Settings">
         {autoSaving && (
           <span className="flex motion-fade-in items-center gap-1.5 text-xs text-muted-foreground/60">
             <Loader2 className="size-3 animate-spin" />

@@ -30,11 +30,10 @@ export default function Dashboard() {
   })
 
   return (
-    <>
+    <div className="font-display">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Dashboard</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Overview of barangay records and system activity</p>
         </div>
         <button
           onClick={() => setSheetOpen(true)}
@@ -71,6 +70,6 @@ export default function Dashboard() {
         onUpdateWidget={updateWidget}
         onReset={resetToDefaults}
       />
-    </>
+    </div>
   )
 }

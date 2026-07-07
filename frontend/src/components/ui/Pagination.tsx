@@ -25,7 +25,7 @@ export default function Pagination({ page, totalPages, totalItems, onPageChange,
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+          className="flex size-8 items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -40,7 +40,7 @@ export default function Pagination({ page, totalPages, totalItems, onPageChange,
                 type="button"
                 onClick={() => onPageChange(p)}
                 className={cn(
-                  'flex size-8 items-center justify-center rounded-md text-sm font-medium',
+                  'flex size-8 items-center justify-center text-sm font-medium',
                   p === page
                     ? 'bg-barangay text-white'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -54,7 +54,7 @@ export default function Pagination({ page, totalPages, totalItems, onPageChange,
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+          className="flex size-8 items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronRight className="size-4" />
         </button>

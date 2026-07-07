@@ -359,15 +359,16 @@ export default function ResidentsPage() {
       render: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}` },
     { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm', filterType: 'select',
       filterOptions: purokOptions.map(p => ({ label: p, value: p })) },
-    { key: 'gender', label: 'Gender', hideBelow: 'sm', filterType: 'select',
+    { key: 'gender', label: 'Gender', filterType: 'select',
       filterOptions: [{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }] },
     { key: 'birth_date', label: 'Age',
-      render: (r) => { if (r.birth_date) return calculateAge(r.birth_date).toString(); return '' }, hideBelow: 'md' },
-    { key: 'civil_status', label: 'Civil Status', hideBelow: 'md', filterType: 'select',
+      render: (r) => { if (r.birth_date) return calculateAge(r.birth_date).toString(); return '' } },
+    { key: 'civil_status', label: 'Civil Status', filterType: 'select',
       filterOptions: [
         { label: 'Single', value: 'single' }, { label: 'Married', value: 'married' },
         { label: 'Widowed', value: 'widowed' }, { label: 'Separated', value: 'separated' },
       ] },
+    { key: 'nationality', label: 'Nationality', filterType: 'text' },
     { key: 'tags', label: 'Tags',
       render: (r) => (
         <div className="flex flex-wrap gap-1">
@@ -382,7 +383,7 @@ export default function ResidentsPage() {
 
   return (
     <>
-      <PageHeader title="Residents" subtitle="Manage resident profiles and demographic information.">
+      <PageHeader title="Residents">
         {canModify && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />

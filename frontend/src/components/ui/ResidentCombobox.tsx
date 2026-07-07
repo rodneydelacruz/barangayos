@@ -85,7 +85,7 @@ export function ResidentCombobox({ value, onChange, placeholder = 'Type or searc
         )}
       </div>
       {open && query && results.length > 0 && (
-        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-background shadow-lg">
+        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto border bg-background shadow-lg">
           {results.map((r) => (
             <button
               key={r.id}

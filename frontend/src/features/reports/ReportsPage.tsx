@@ -412,7 +412,7 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Reports Dashboard" subtitle="Summary and insights across all barangay data" />
+      <PageHeader title="Reports Dashboard"/>
 
       <div className="mb-6 flex items-center justify-between">
         <Tabs tabs={REPORT_TABS} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} className="border-bamboo/40" />

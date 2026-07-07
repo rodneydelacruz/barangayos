@@ -42,7 +42,7 @@ export function DropdownMenu({ trigger, items, align = 'left' }: DropdownMenuPro
       {open && (
         <div
           className={cn(
-            'absolute z-50 mt-1 min-w-[10rem] overflow-hidden rounded-lg border bg-card p-1 shadow-lg motion-scale-in',
+            'absolute z-50 mt-1 min-w-[10rem] overflow-hidden border bg-card p-1 shadow-lg motion-scale-in',
             align === 'right' ? 'right-0' : 'left-0',
           )}
           role="menu"
@@ -55,7 +55,7 @@ export function DropdownMenu({ trigger, items, align = 'left' }: DropdownMenuPro
                 role="menuitem"
                 onClick={() => { item.onClick(); setOpen(false) }}
                 className={cn(
-                  'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                  'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
                   item.destructive
                     ? 'text-destructive hover:bg-destructive/10'
                     : 'text-foreground hover:bg-accent',

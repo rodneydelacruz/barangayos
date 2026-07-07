@@ -257,7 +257,7 @@ export default function AssetsPage() {
 
   return (
     <>
-      <PageHeader title="Assets" subtitle="Manage barangay equipment, furniture, vehicles, and other assets.">
+      <PageHeader title="Assets">
         {isAdmin && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />

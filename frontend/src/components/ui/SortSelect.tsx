@@ -35,7 +35,7 @@ export function SortSelect({ value, onChange, options }: SortSelectProps) {
       <button
         type="button"
         onClick={toggleDirection}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground motion-press"
+        className="inline-flex h-9 w-9 items-center justify-center border border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground motion-press"
         title={isDesc ? 'Sort ascending' : 'Sort descending'}
       >
         <ArrowUpDown className={cn('size-3.5', isDesc && 'rotate-180')} />

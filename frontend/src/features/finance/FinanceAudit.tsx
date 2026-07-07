@@ -83,7 +83,7 @@ export function FinanceAudit() {
 
   return (
     <>
-      <PageHeader title="Finance Audit Trail" subtitle="Track all financial transactions and changes." />
+      <PageHeader title="Finance Audit Trail"/>
 
       
 

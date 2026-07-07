@@ -40,6 +40,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Overview',
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'staff', 'viewer'] },
+      { to: '/logs/visitors', label: 'Visitor Log', icon: DoorOpen, roles: ['admin', 'staff'] },
+      { to: '/reports', label: 'Reports Dashboard', icon: BarChart3, roles: ['admin', 'staff'] },
     ],
   },
   {
@@ -74,13 +76,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'Logs',
-    items: [
-      { to: '/logs/activity', label: 'Activity Log', icon: ClipboardCheck, roles: ['admin', 'staff'] },
-      { to: '/logs/visitors', label: 'Visitor Log', icon: DoorOpen, roles: ['admin', 'staff'] },
-    ],
-  },
-  {
     label: 'Planning',
     items: [
       { to: '/calendar', label: 'Calendar', icon: Calendar, roles: ['admin', 'staff', 'viewer'] },
@@ -91,13 +86,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Administration',
     items: [
       { to: '/assets', label: 'Assets', icon: Package, roles: ['admin'] },
+      { to: '/logs/activity', label: 'Audit Logs', icon: ClipboardCheck, roles: ['admin', 'staff'] },
       { to: '/settings', label: 'System Settings', icon: Settings, roles: ['admin'] },
-    ],
-  },
-  {
-    label: 'Reports',
-    items: [
-      { to: '/reports', label: 'Reports Dashboard', icon: BarChart3, roles: ['admin', 'staff'] },
     ],
   },
 ]

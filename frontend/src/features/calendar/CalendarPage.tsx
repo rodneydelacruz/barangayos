@@ -226,7 +226,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <PageHeader title="Calendar" subtitle="View and manage barangay events, hearings, and meetings.">
+      <PageHeader title="Calendar">
         {canManage && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />

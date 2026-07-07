@@ -427,7 +427,7 @@ export default function AgendaPage() {
       </>
     ) : (
       <>
-      <PageHeader title="Meetings & Agenda" subtitle="Manage barangay meetings, agenda items, and minutes.">
+      <PageHeader title="Meetings & Agenda">
         {isAdmin && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreateMeetingPanel}>
             <Plus className="size-3.5" />

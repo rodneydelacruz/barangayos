@@ -204,7 +204,7 @@ export default function RecordsPage() {
 
   return (
     <>
-      <PageHeader title="Blotter Records" subtitle="Manage and track incident reports and complaints.">
+      <PageHeader title="Blotter Records">
         {canModify && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />

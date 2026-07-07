@@ -217,7 +217,7 @@ export default function DocumentsPage() {
 
   return (
     <>
-      <PageHeader title="Document Queue" subtitle="Manage document requests and track processing status.">
+      <PageHeader title="Document Queue">
         {canModify && (
           <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
             <Plus className="size-3.5" />

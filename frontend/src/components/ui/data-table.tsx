@@ -260,7 +260,7 @@ function DataTableInner<T>({
         <select
           value={value}
           onChange={(e) => tanCol.setFilterValue(e.target.value || undefined)}
-          className="h-7 w-full rounded border border-border/50 bg-transparent px-1 text-[11px] text-muted-foreground outline-none focus:border-ring cursor-pointer"
+          className="h-7 w-full border border-border/50 bg-transparent px-1 text-[11px] text-muted-foreground outline-none focus:border-ring cursor-pointer"
         >
           <option value="">All</option>
           {colDef.filterOptions.map(o => (
@@ -275,7 +275,7 @@ function DataTableInner<T>({
           type="date"
           value={value}
           onChange={(e) => tanCol.setFilterValue(e.target.value || undefined)}
-          className="h-7 w-full rounded border border-border/50 bg-transparent px-1 text-[11px] text-muted-foreground outline-none focus:border-ring"
+          className="h-7 w-full border border-border/50 bg-transparent px-1 text-[11px] text-muted-foreground outline-none focus:border-ring"
         />
       )
     }
@@ -300,7 +300,7 @@ function DataTableInner<T>({
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="flex gap-4">
             {columns.map((col) => (
-              <div key={col.key} className="h-4 animate-pulse rounded bg-muted flex-1" />
+              <div key={col.key} className="h-4 animate-pulse bg-muted flex-1" />
             ))}
           </div>
         ))}
@@ -316,7 +316,7 @@ function DataTableInner<T>({
   const showFilters = columns.some(c => c.filterType)
   return (
     <div className="motion-fade-in">
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
+      <div className="overflow-hidden border border-border/70 bg-card">
         {toolbar && (
           <DataTableToolbar
             selectedCount={table.getSelectedRowModel().rows.length}
@@ -332,7 +332,7 @@ function DataTableInner<T>({
         )}
         <div className="table-scroll overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 z-20 border-b border-border/70 bg-card">
+            <thead className="sticky top-0 z-20 border-b border-border/70 bg-muted/60">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
                 {hg.headers.map(h => {

@@ -2,8 +2,8 @@ import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect, useMemo } from 'react'
 import { Check, DollarSign } from 'lucide-react'
 import { getDocuments, updateDocument, getDocumentFee, type ApiDocument } from '@/api/documents'
-import { getIncomeAccounts } from '@/api/incomeAccounts'
 import { createRevenue } from '@/api/revenues'
+import { getFundSources, type ApiFundSource } from '@/api/fundSources'
 import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -17,14 +17,14 @@ import { documentStatusColors } from '@/lib/statusStyles'
 export default function ReleasePage() {
   const today = () => new Date().toISOString().split('T')[0]
   const [docs, setDocs] = useState<ApiDocument[]>([])
-  const [incomeAccounts, setIncomeAccounts] = useState<Array<{ id: string; coa_code: string; name: string }>>([])
+  const [fundSources, setFundSources] = useState<ApiFundSource[]>([])
   const [loading, setLoading] = useState(true)
   const [releaseDoc, setReleaseDoc] = useState<ApiDocument | null>(null)
   const [receivedBy, setReceivedBy] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [orNo, setOrNo] = useState('')
   const [paymentDate, setPaymentDate] = useState(today())
-  const [incomeAccount, setIncomeAccount] = useState('')
+  const [fundSource, setFundSource] = useState('')
   const [source, setSource] = useState('')
   const [remarks, setRemarks] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -34,14 +34,12 @@ export default function ReleasePage() {
   useEffect(() => {
     Promise.all([
       getDocuments(),
-      getIncomeAccounts().catch(() => []),
-    ])
-      .then(([d, accts]) => {
-        setDocs(d)
-        setIncomeAccounts(accts)
-        if (accts.length > 0) setIncomeAccount(accts[0].id)
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load data'))
+      getFundSources().catch(() => [] as ApiFundSource[]),
+    ]).then(([d, fs]) => {
+      setDocs(d)
+      setFundSources(fs)
+      if (fs.length > 0) setFundSource(fs[0].id)
+    }).catch((err) => setError(err instanceof Error ? err.message : 'Failed to load data'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -72,7 +70,7 @@ export default function ReleasePage() {
     setPaymentAmount('')
     setOrNo('')
     setPaymentDate(today())
-    setIncomeAccount(incomeAccounts.length > 0 ? incomeAccounts[0].id : '')
+    setFundSource(fundSources.length > 0 ? fundSources[0].id : '')
     setSource('')
     setRemarks('')
   }
@@ -96,11 +94,11 @@ export default function ReleasePage() {
     try {
       await updateDocument(releaseDoc.id, payload)
 
-      if (releaseDoc.payment_status === 'unpaid' && parseFloat(paymentAmount) > 0 && incomeAccount) {
+      if (releaseDoc.payment_status === 'unpaid' && parseFloat(paymentAmount) > 0) {
         try {
           await createRevenue({
             revenue_date: paymentDate,
-            income_account: incomeAccount,
+            fund_source: fundSource || undefined,
             category: 'document_fee',
             source: source || `Document fee — ${releaseDoc.document_type.replace(/_/g, ' ')} (#${releaseDoc.queue_number})`,
             amount: parseFloat(paymentAmount),
@@ -152,7 +150,7 @@ export default function ReleasePage() {
       ] },
     { key: 'actions', label: '', className: 'w-24 text-right',
       render: (d) => (
-        <Button size="sm" className="gap-1.5" onClick={(e) => { e.stopPropagation(); openReleaseDialog(d) }}>
+        <Button size="sm" className="h-7 gap-1 px-2 text-xs w-20" onClick={(e) => { e.stopPropagation(); openReleaseDialog(d) }}>
           {d.payment_status === 'unpaid' ? <DollarSign className="size-3.5" /> : <Check className="size-3.5" />}
           {d.payment_status === 'unpaid' ? 'Collect' : 'Release'}
         </Button>
@@ -161,7 +159,7 @@ export default function ReleasePage() {
 
   return (
     <>
-      <PageHeader title="Document Release" subtitle="Release completed documents to residents." />
+      <PageHeader title="Document Release"/>
 
       {successMsg && (
         <div className="mb-4 rounded-md bg-emerald-200 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-300 motion-fade-in">
@@ -258,11 +256,11 @@ export default function ReleasePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="income-account">Income Account *</Label>
-                        <Select value={incomeAccount} onValueChange={setIncomeAccount}>
-                          <option value="">Select income account</option>
-                          {incomeAccounts.map((a) => (
-                            <option key={a.id} value={a.id}>{a.coa_code} — {a.name}</option>
+                        <Label htmlFor="fund-source">Fund Source *</Label>
+                        <Select value={fundSource} onValueChange={setFundSource}>
+                          <option value="">Select fund source</option>
+                          {fundSources.map((fs) => (
+                            <option key={fs.id} value={fs.id}>{fs.name}</option>
                           ))}
                         </Select>
                       </div>
@@ -291,10 +289,10 @@ export default function ReleasePage() {
             </div>
 
             <div className="mt-5 flex gap-2">
-              <Button onClick={confirmRelease} disabled={!receivedBy.trim() || (releaseDoc.payment_status === 'unpaid' && !incomeAccount)}>
+              <Button size="sm" onClick={confirmRelease} disabled={!receivedBy.trim() || (releaseDoc.payment_status === 'unpaid' && !fundSource)} className="px-4">
                 {releaseDoc.payment_status === 'unpaid' ? 'Collect & Release' : 'Confirm Release'}
               </Button>
-              <Button type="button" variant="outline" onClick={closeReleaseDialog}>
+              <Button type="button" variant="outline" size="sm" onClick={closeReleaseDialog} className="px-4">
                 Cancel
               </Button>
             </div>

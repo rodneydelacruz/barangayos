@@ -8,14 +8,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
-    <div className="mb-6 motion-fade-in">
+    <div className="mb-5 motion-fade-in">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-1 w-1 h-8 shrink-0 rounded-full bg-gold" aria-hidden="true" />
-          <div>
-            <h1 className="font-display text-xl font-semibold text-foreground">{title}</h1>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-1 h-6 shrink-0 bg-gold" aria-hidden="true" />
+          <div className="min-w-0">
+            <h1 className="font-display text-lg font-semibold text-foreground truncate">{title}</h1>
             {subtitle && (
-              <p className="mt-0.5 text-sm text-muted-foreground/70">{subtitle}</p>
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
             )}
           </div>
         </div>
@@ -23,7 +23,7 @@ export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
           <div className="shrink-0">{children}</div>
         )}
       </div>
-      <div className="mt-4 border-b border-bamboo/40" />
+      <div className="mt-3 border-b border-bamboo/40" />
     </div>
   )
 }

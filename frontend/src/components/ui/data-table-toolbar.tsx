@@ -41,7 +41,7 @@ export function DataTableToolbar({
     <div className={cn('flex items-center justify-between gap-2 px-2 py-1.5 border-b border-border/60', className)}>
       <div className="flex items-center gap-2">
         {selectedCount > 0 && (
-          <div className="flex items-center gap-1.5 rounded-md bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold motion-fade-in">
+          <div className="flex items-center gap-1.5 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold motion-fade-in">
             <span>{selectedCount} selected</span>
             <button type="button" onClick={onClearSelection} className="hover:text-foreground transition-colors" aria-label="Clear selection">
               <X className="size-3" />
@@ -61,17 +61,17 @@ export function DataTableToolbar({
             <Columns2 className="size-4" />
           </Button>
           {columnOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 min-w-40 rounded-lg border bg-card p-1.5 shadow-lg motion-scale-in">
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-40 border bg-card p-1.5 shadow-lg motion-scale-in">
               {columns.map((col) => (
                 <label
                   key={col.key}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent cursor-pointer transition-colors"
+                  className="flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={col.visible}
                     onChange={(e) => onColumnVisibilityChange(col.key, e.target.checked)}
-                    className="size-3.5 accent-gold rounded"
+                    className="size-3.5 accent-gold"
                   />
                   {col.label}
                 </label>
