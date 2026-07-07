@@ -3,6 +3,7 @@ import { getClient } from './client'
 import { handleApiError } from './errorHandler'
 import { getCurrentUser } from '@/auth/session'
 import { createFinanceAuditLog } from './financeAudit'
+import { createActivity } from './activity'
 
 const COLLECTION = 'income_accounts'
 
@@ -44,6 +45,7 @@ export async function createIncomeAccount(data: IncomeAccountData): Promise<ApiI
       created_by: getCurrentUser()?.id,
     })
     createFinanceAuditLog('create', COLLECTION, result.id, `created income_accounts: ${result.name}`)
+    createActivity('create', COLLECTION, result.id, `Created income account: ${result.name} (${result.coa_code})`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -53,6 +55,7 @@ export async function updateIncomeAccount(id: string, data: Partial<IncomeAccoun
   try {
     const result = await getClient().collection<ApiIncomeAccount>(COLLECTION).update(id, data)
     createFinanceAuditLog('update', COLLECTION, result.id, `updated income_accounts: ${result.name}`)
+    createActivity('update', COLLECTION, id, `Updated income account: ${result.name}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -62,6 +65,7 @@ export async function deleteIncomeAccount(id: string): Promise<boolean> {
   try {
     await getClient().collection<ApiIncomeAccount>(COLLECTION).delete(id)
     createFinanceAuditLog('delete', COLLECTION, id, `deleted income_accounts`)
+    createActivity('delete', COLLECTION, id, 'Deleted income account')
     return true
   }
   catch (e) { throw handleApiError(e) }

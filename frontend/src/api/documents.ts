@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
+import { createActivity } from './activity'
 import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'document_requests'
@@ -62,6 +63,7 @@ export async function getDocument(id: string): Promise<ApiDocument> {
 export async function createDocument(data: DocumentData): Promise<ApiDocument> {
   try {
     const result = await getClient().collection(COLLECTION).create<ApiDocument>(data)
+    createActivity('create', COLLECTION, result.id, `Created document request: ${result.queue_number} — ${result.document_type}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -71,6 +73,7 @@ export async function createDocument(data: DocumentData): Promise<ApiDocument> {
 export async function updateDocument(id: string, data: Partial<DocumentData>): Promise<ApiDocument> {
   try {
     const result = await getClient().collection(COLLECTION).update<ApiDocument>(id, data)
+    createActivity('update', COLLECTION, id, `Updated document request: ${result.queue_number} — status: ${result.status}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -80,6 +83,7 @@ export async function updateDocument(id: string, data: Partial<DocumentData>): P
 export async function deleteDocument(id: string): Promise<boolean> {
   try {
     await getClient().collection(COLLECTION).delete(id)
+    createActivity('delete', COLLECTION, id, 'Deleted document request')
     return true
   } catch (err) {
     throw handleApiError(err)

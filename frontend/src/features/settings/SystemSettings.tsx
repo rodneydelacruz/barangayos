@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Loader2, X, Plus, Building2, Users, MapPin, ShieldAlert, CheckCircle2, AlertTriangle, Database, Trash2 } from 'lucide-react'
 import { getClient } from '@/api/client'
-import { updateSetting, type ApiSetting } from '@/api/settings'
+import { upsertSetting, type ApiSetting } from '@/api/settings'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -220,13 +220,15 @@ export default function SystemSettings() {
 
     try {
       setAutoSaving(true)
-      await Promise.all(
-        entries.map(([key, value]) => {
-          const id = s.settingIds[key]
-          if (!id) return Promise.resolve()
-          return updateSetting(id, key, value)
-        }),
+      const results = await Promise.all(
+        entries.map(([key, value]) => upsertSetting(key, value)),
       )
+      // Update setting IDs for future saves
+      setSettingIds((prev) => {
+        const next = { ...prev }
+        for (const r of results) next[r.key] = r.id
+        return next
+      })
       setToast({ type: 'success', message: 'Settings saved.' })
     } catch (err) {
       setToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to save' })

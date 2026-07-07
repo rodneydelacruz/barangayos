@@ -6,6 +6,7 @@ import type { ApiFundSource } from './fundSources'
 import { deductFundSourceBalance, restoreFundSourceBalance } from './fundSources'
 import { getCurrentUser } from '@/auth/session'
 import { createFinanceAuditLog } from './financeAudit'
+import { createActivity } from './activity'
 
 const COLLECTION = 'revenues'
 
@@ -72,6 +73,7 @@ export async function createRevenue(data: RevenueData): Promise<ApiRevenue> {
       created_by: getCurrentUser()?.id,
     })
     createFinanceAuditLog('create', COLLECTION, result.id, `created revenues: ${result.source || result.or_no || ''}`, result.amount)
+    createActivity('create', COLLECTION, result.id, `Created revenue: ${result.source || result.or_no || ''} — ₱${result.amount}`)
     if (result.fund_source && result.amount > 0) {
       await restoreFundSourceBalance(result.fund_source, result.amount, `revenue: ${result.source}`).catch(() => {})
     }
@@ -84,6 +86,7 @@ export async function updateRevenue(id: string, data: Partial<RevenueData>): Pro
   try {
     const result = await getClient().collection<ApiRevenue>(COLLECTION).update(id, data)
     createFinanceAuditLog('update', COLLECTION, result.id, `updated revenues`, result.amount)
+    createActivity('update', COLLECTION, id, `Updated revenue: ₱${result.amount}`)
     return result
   }
   catch (e) { throw handleApiError(e) }
@@ -94,6 +97,7 @@ export async function deleteRevenue(id: string): Promise<boolean> {
     const existing = await getRevenue(id)
     await getClient().collection<ApiRevenue>(COLLECTION).delete(id)
     createFinanceAuditLog('delete', COLLECTION, id, `deleted revenues`)
+    createActivity('delete', COLLECTION, id, 'Deleted revenue')
     if (existing.fund_source && existing.amount > 0) {
       await deductFundSourceBalance(existing.fund_source, existing.amount, `revenue deleted: ${existing.source}`).catch(() => {})
     }

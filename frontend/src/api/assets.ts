@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase'
 import { getClient } from './client'
 import { handleApiError } from './errorHandler'
+import { createActivity } from './activity'
 import type { PaginatedResult } from '@/lib/utils'
 
 const COLLECTION = 'assets'
@@ -49,6 +50,7 @@ export async function getAsset(id: string): Promise<ApiAsset> {
 export async function createAsset(data: AssetData): Promise<ApiAsset> {
   try {
     const result = await getClient().collection(COLLECTION).create<ApiAsset>(data)
+    createActivity('create', COLLECTION, result.id, `Created asset: ${result.name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -58,6 +60,7 @@ export async function createAsset(data: AssetData): Promise<ApiAsset> {
 export async function updateAsset(id: string, data: Partial<AssetData>): Promise<ApiAsset> {
   try {
     const result = await getClient().collection(COLLECTION).update<ApiAsset>(id, data)
+    createActivity('update', COLLECTION, id, `Updated asset: ${result.name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -68,6 +71,7 @@ export async function deleteAsset(id: string): Promise<boolean> {
   try {
     await getAsset(id)
     await getClient().collection(COLLECTION).delete(id)
+    createActivity('delete', COLLECTION, id, 'Deleted asset')
     return true
   } catch (err) {
     throw handleApiError(err)

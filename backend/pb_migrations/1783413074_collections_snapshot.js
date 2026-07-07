@@ -1842,8 +1842,8 @@ migrate((app) => {
       "viewRule": "@request.auth.id != \"\""
     },
     {
-      "createRule": null,
-      "deleteRule": null,
+      "createRule": "@request.auth.id != \"\"",
+      "deleteRule": "@request.auth.role = \"admin\"",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",
