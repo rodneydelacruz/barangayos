@@ -62,7 +62,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: M
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative w-full motion-scale-in rounded-lg border bg-card shadow-lg',
+          'relative w-full motion-scale-in border bg-card shadow-lg',
           size === 'sm' && 'max-w-sm',
           size === 'md' && 'max-w-md',
           size === 'lg' && 'max-w-lg',
@@ -70,7 +70,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: M
       >
         <div className="flex items-center justify-between border-b px-5 py-4">
           <h2 className="font-display text-sm font-semibold text-foreground">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
+          <button type="button" onClick={onClose} className="p-1 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
             <X className="size-4" />
           </button>
         </div>
