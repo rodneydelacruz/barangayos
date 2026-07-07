@@ -1,4 +1,4 @@
-import { spawn } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import { existsSync, mkdtempSync, rmSync, statSync } from 'fs'
 import { join, dirname } from 'path'
 import { tmpdir } from 'os'
@@ -24,6 +24,8 @@ async function waitForURL(url, timeoutMs = 30000) {
 async function main() {
   const tempDir = mkdtempSync(join(tmpdir(), 'pb-e2e-'))
   console.log(`[e2e-server] PocketBase data: ${tempDir}`)
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@e2e.local'
+  const adminPass = process.env.E2E_ADMIN_PASSWORD || 'E2eAdmin123!'
 
   const pbBin = isWin ? 'pocketbase.exe' : 'pocketbase'
   const pbCandidates = [join(root, pbBin), join(root, 'pocketbase', pbBin)]
@@ -36,6 +38,16 @@ async function main() {
 
   const migrationsDir = join(root, 'pocketbase/pb_migrations')
   const pbArgs = ['serve', `--http=127.0.0.1:8090`, `--dir=${tempDir}`, `--migrationsDir=${migrationsDir}`]
+
+  console.log('[e2e-server] Ensuring PocketBase superuser...')
+  const upsertResult = spawnSync(pbPath, ['superuser', 'upsert', adminEmail, adminPass, `--dir=${tempDir}`], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: isWin,
+  })
+  if (upsertResult.status !== 0) {
+    throw new Error(`Failed to upsert PocketBase superuser (exit ${upsertResult.status ?? 'unknown'})`)
+  }
 
   console.log(`[e2e-server] Starting PocketBase...`)
   const pb = spawn(pbPath, pbArgs, { cwd: root, stdio: 'inherit', shell: isWin })
@@ -52,37 +64,25 @@ async function main() {
     await waitForURL('http://127.0.0.1:8090/api/')
     console.log('[e2e-server] PocketBase ready')
 
-    const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@e2e.local'
-    const adminPass = process.env.E2E_ADMIN_PASSWORD || 'E2eAdmin123!'
-
-    const adminRes = await fetch('http://127.0.0.1:8090/api/admins', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: adminEmail, password: adminPass, passwordConfirm: adminPass }),
-    })
-    if (!adminRes.ok && adminRes.status !== 400) {
-      const text = await adminRes.text()
-      console.error(`[e2e-server] Failed to create admin: ${text}`)
-    } else {
-      console.log('[e2e-server] Admin user created')
-    }
-
     const testUserEmail = process.env.E2E_USER_EMAIL || 'test@barangay.gov.ph'
     const testUserPass = process.env.E2E_USER_PASSWORD || 'Test1234!'
 
-    const loginRes = await fetch('http://127.0.0.1:8090/api/admins/auth-with-password', {
+    const loginRes = await fetch('http://127.0.0.1:8090/api/collections/_superusers/auth-with-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identity: adminEmail, password: adminPass }),
     })
-    const { token } = await loginRes.json()
+    let token
+    if (loginRes.ok) {
+      const loginJson = await loginRes.json()
+      token = loginJson.token
+    }
 
+    const userHeaders = { 'Content-Type': 'application/json' }
+    if (token) userHeaders.Authorization = 'Bearer ' + token
     const userRes = await fetch('http://127.0.0.1:8090/api/collections/users/records', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Admin ${token}`,
-      },
+      headers: userHeaders,
       body: JSON.stringify({
         email: testUserEmail,
         password: testUserPass,
@@ -91,11 +91,18 @@ async function main() {
         role: 'admin',
       }),
     })
-    if (!userRes.ok && userRes.status !== 400) {
+    if (userRes.ok) {
+      console.log('[e2e-server] Test user created')
+    } else if (userRes.status === 400) {
+      const text = await userRes.text()
+      if (text.includes('already exists')) {
+        console.log('[e2e-server] Test user already exists')
+      } else {
+        console.error(`[e2e-server] Failed to create test user: ${text}`)
+      }
+    } else {
       const text = await userRes.text()
       console.error(`[e2e-server] Failed to create test user: ${text}`)
-    } else {
-      console.log('[e2e-server] Test user created')
     }
 
     console.log('[e2e-server] Starting Vite dev server...')
