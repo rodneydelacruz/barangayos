@@ -11,7 +11,7 @@ import { getFinanceConfig, type ComplianceWarningItem } from '@/api/settings'
 import { useWidgetConfig } from '@/components/dashboard/useWidgetConfig'
 import { BUDGET_WIDGETS } from '@/components/dashboard/widgetRegistry'
 import { WidgetSheet } from '@/components/dashboard/WidgetSheet'
-import { useAuth } from '@/auth/useAuth'
+import { useUserRole } from '@/auth/guards'
 
 function buildDateRange(days = 30): string[] {
   const dates: string[] = []
@@ -36,8 +36,7 @@ function aggregateDaily<T extends { amount: number }>(
 }
 
 export function BudgetOverview() {
-  const { user } = useAuth()
-  const role = user?.role ?? 'viewer'
+  const role = useUserRole() ?? 'viewer'
   const { config, updateWidget, resetToDefaults, isVisible, getWidgetConfig } = useWidgetConfig('budget', role)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -156,13 +155,13 @@ export function BudgetOverview() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isVisible('disbursements-chart') && (
-            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: string })?.chartType ?? 'bar'} data={disbursementTrend} color="#C9953E" format="currency" />
+            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={disbursementTrend} color="#C9953E" format="currency" />
           )}
           {isVisible('revenue-chart') && (
-            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: string })?.chartType ?? 'bar'} data={revenueTrend} color="#22C55E" format="currency" />
+            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={revenueTrend} color="#22C55E" format="number" />
           )}
           {isVisible('utilization-chart') && (
-            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: string })?.chartType ?? 'line'} data={utilizationData} color="#3B82F6" format="number" />
+            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'line'} data={utilizationData} color="#3B82F6" format="number" />
           )}
         </div>
       </div>
