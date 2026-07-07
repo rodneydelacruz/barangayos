@@ -332,7 +332,7 @@ function DataTableInner<T>({
         )}
         <div className="table-scroll overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 z-20 border-b border-border/70 bg-card">
+            <thead className="sticky top-0 z-20 border-b border-border/70 bg-muted/60">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
                 {hg.headers.map(h => {
