@@ -90,6 +90,12 @@ export const DASHBOARD_WIDGETS: WidgetDefinition[] = [
 
 export const BUDGET_WIDGETS: WidgetDefinition[] = [
   {
+    id: 'compliance-warnings',
+    label: 'Compliance Warnings',
+    description: 'Statutory shortfall and PS cap warnings',
+    roles: ['admin', 'staff'],
+  },
+  {
     id: 'stat-cards',
     label: 'Stat Cards',
     description: 'Summary financial metrics',
