@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
-import { Plus, Pencil, Trash2, ChevronDown, Search, ArrowLeft } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, ArrowLeft } from 'lucide-react'
 import { getMeetings, getMeeting, createMeeting, updateMeeting, deleteMeeting, type ApiMeeting, type MeetingData, type MeetingWithItems } from '@/api/meetings'
 import { createAgendaItem, updateAgendaItem, deleteAgendaItem, type ApiAgendaItem, type AgendaItemData } from '@/api/agenda'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -87,8 +87,6 @@ export default function AgendaPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingWithItems | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
   const [meetingForm, setMeetingForm] = useState(emptyMeetingForm())
   const [itemForm, setItemForm] = useState<AgendaItemData>(emptyItemForm(''))
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null)
@@ -118,17 +116,6 @@ export default function AgendaPage() {
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [selectedId, meetings])
-
-  const filteredMeetings = useMemo(() => {
-    return meetings.filter((m) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!m.title.toLowerCase().includes(q)) return false
-      }
-      if (statusFilter && m.status !== statusFilter) return false
-      return true
-    })
-  }, [meetings, search, statusFilter])
 
   function updateMeetingField(field: string, value: string) {
     setMeetingForm((prev) => ({ ...prev, [field]: value }))
@@ -323,22 +310,29 @@ export default function AgendaPage() {
   const isAdmin = hasRole('admin')
 
   const meetingColumns: Column<ApiMeeting>[] = [
-    { key: 'title', label: 'Title', sortable: true },
-    { key: 'date', label: 'Date', sortable: true, render: (m) => m.meeting_date ? new Date(m.meeting_date).toLocaleDateString() : '', hideBelow: 'sm' },
-    { key: 'meeting_type', label: 'Type' },
+    { key: 'title', label: 'Title', sortable: true, filterType: 'text' },
+    { key: 'date', label: 'Date', sortable: true,
+      render: (m) => m.meeting_date ? new Date(m.meeting_date).toLocaleDateString() : '',
+      hideBelow: 'sm', filterType: 'date' },
+    { key: 'meeting_type', label: 'Type', filterType: 'select',
+      filterOptions: meetingTypeOptions.map(t => ({ label: t.label, value: t.value })) },
     { key: 'status', label: 'Status',
       render: (m) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${meetingStatusColors[m.status] ?? ''}`}>{m.status}</span>
-      ) },
+      ),
+      filterType: 'select',
+      filterOptions: statusOptions.map(s => ({ label: statusLabels[s] || s, value: s })) },
   ]
 
   const agendaItemColumns: Column<ApiAgendaItem>[] = [
     { key: 'sort_order', label: '#' },
-    { key: 'title', label: 'Title' },
+    { key: 'title', label: 'Title', filterType: 'text' },
     { key: 'status', label: 'Status',
       render: (a) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${agendaStatusColors[a.status] ?? ''}`}>{a.status}</span>
-      ) },
+      ),
+      filterType: 'select',
+      filterOptions: agendaStatusOptions.map(s => ({ label: agendaStatusLabels[s] || s, value: s })) },
     { key: 'minutes', label: 'Minutes', render: (a) => a.minutes ?? '—', hideBelow: 'sm' },
     { key: 'actions', label: '', className: 'w-16',
       render: (a) => (isAdmin ? (
@@ -398,7 +392,7 @@ export default function AgendaPage() {
           </Card>
         )}
 
-        <Card>
+        <Card lifted={false} className="shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Agenda Items
@@ -421,6 +415,8 @@ export default function AgendaPage() {
                 />
               }
               rowKey={(a) => a.id}
+              toolbar
+              exportable
             />
           </CardContent>
         </Card>
@@ -442,45 +438,23 @@ export default function AgendaPage() {
         <div className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by title..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-60 max-w-full pl-8 text-sm"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Statuses</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>{statusLabels[s]}</option>
-          ))}
-        </Select>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Meetings</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={meetingColumns}
-            data={filteredMeetings}
+            data={meetings}
             loading={loading}
             onRowClick={(m) => openMeetingDetail(m.id)}
             emptyState={
               <EmptyState
-                title={meetings.length === 0 ? "No meetings yet. Schedule your first meeting." : "No meetings match your filters."}
+                title="No meetings yet. Schedule your first meeting."
                 action={isAdmin && meetings.length === 0 ? { label: "Schedule first meeting", onClick: openCreateMeetingPanel } : undefined}
               />
             }
             rowKey={(m) => m.id}
+            toolbar
+            exportable
           />
         </CardContent>
       </Card>

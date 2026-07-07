@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Home, Users } from 'lucide-react'
 import { getHouseholds, getNextHouseholdNumber, createHousehold, updateHousehold, deleteHousehold, type ApiHousehold } from '@/api/households'
@@ -14,7 +14,6 @@ import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
 import { cn, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
-import { SortSelect } from '@/components/ui/SortSelect'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -58,13 +57,8 @@ export default function HouseholdsPage() {
   const [households, setHouseholds] = useState<ApiHousehold[]>([])
   const [residentsMap, setResidentsMap] = useState<Map<string, ApiResident[]>>(new Map())
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [purokFilter, setPurokFilter] = useState('')
   const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
-  const [sortKey, setSortKey] = useState('household_number')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
+  
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -175,30 +169,13 @@ export default function HouseholdsPage() {
     setError(null)
   }
 
-  function handleSort(key: string) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('asc')
-    }
-  }
-
   const canModify = hasRole('admin', 'staff')
 
-  const sortFields = [
-    { value: 'household_number', label: 'Household #' },
-    { value: 'purok', label: 'Purok' },
-    { value: 'head_name', label: 'Head Name' },
-    { value: '-created', label: 'Newest' },
-  ]
-
-  const sortBy = sortDir === 'desc' ? `-${sortKey}` : sortKey
-
   const columns: Column<ApiHousehold>[] = [
-    { key: 'household_number', label: 'Household #', sortable: true },
-    { key: 'head_name', label: 'Head of Household', sortable: true },
-    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm' },
+    { key: 'household_number', label: 'Household #', sortable: true, filterType: 'text' },
+    { key: 'head_name', label: 'Head of Household', sortable: true, filterType: 'text' },
+    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm', filterType: 'select',
+      filterOptions: purokOptions.map(p => ({ label: p, value: p })) },
     { key: 'member_count', label: 'Members',
       render: (h) => (residentsMap.get(h.id)?.length ?? 0).toString() },
   ]
@@ -206,33 +183,6 @@ export default function HouseholdsPage() {
   function closeFlyout() {
     setFlyoutHousehold(null)
   }
-
-  const filteredHouseholds = useMemo(() => {
-    return households
-      .filter((h) => {
-        if (search) {
-          const q = search.toLowerCase()
-          if (
-            !h.household_number.toLowerCase().includes(q) &&
-            !h.head_name.toLowerCase().includes(q) &&
-            !(h.purok && h.purok.toLowerCase().includes(q))
-          ) return false
-        }
-        if (purokFilter && h.purok !== purokFilter) return false
-        return true
-      })
-      .sort((a, b) => {
-        const aVal = String((a as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
-        const bVal = String((b as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
-        const cmp = aVal.localeCompare(bVal)
-        return sortDir === 'asc' ? cmp : -cmp
-      })
-  }, [households, search, purokFilter, sortKey, sortDir])
-
-  const totalPages = Math.ceil(filteredHouseholds.length / PAGE_SIZE)
-  const paginatedHouseholds = filteredHouseholds.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, purokFilter, sortKey, sortDir])
 
   return (
     <>
@@ -245,54 +195,22 @@ export default function HouseholdsPage() {
         )}
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by household #, head name, or purok..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 w-80 max-w-full text-sm"
-        />
-        <Select
-          value={purokFilter}
-          onValueChange={(v) => setPurokFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Puroks</option>
-          {purokOptions.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </Select>
-        <SortSelect options={sortFields} value={sortBy} onChange={(v) => {
-          const desc = v.startsWith('-')
-          setSortKey(desc ? v.slice(1) : v)
-          setSortDir(desc ? 'desc' : 'asc')
-        }} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Household Records</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={columns}
-            data={paginatedHouseholds}
+            data={households}
             loading={loading}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
             onRowClick={(h) => setFlyoutHousehold(h)}
             emptyState={
               households.length === 0
                 ? <EmptyState title="No households yet" description="Create your first household." action={canModify ? { label: "Create first household", onClick: openCreatePanel } : undefined} />
-                : <EmptyState variant="search" title="No households match your search." />
+                : undefined
             }
-            page={page}
-            totalPages={totalPages}
-            totalItems={filteredHouseholds.length}
-            onPageChange={setPage}
-            pageSize={PAGE_SIZE}
             rowKey={(h) => h.id}
+            toolbar
+            exportable
           />
         </CardContent>
       </Card>

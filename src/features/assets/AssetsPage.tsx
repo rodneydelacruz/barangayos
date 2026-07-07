@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
-import { Plus, ChevronDown, Search, Camera, X, ClipboardList, Tag, MapPin } from 'lucide-react'
+import { Plus, ChevronDown, Camera, X, ClipboardList, Tag, MapPin } from 'lucide-react'
 import { getAssets, createAsset, updateAsset, deleteAsset, type ApiAsset } from '@/api/assets'
 
 import { uploadImage } from '@/api/upload'
@@ -14,7 +14,6 @@ import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
-import { SortSelect } from '@/components/ui/SortSelect'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { assetConditionColors, assetStatusColors } from '@/lib/statusStyles'
@@ -85,10 +84,6 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState<ApiAsset[]>([])
 
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [conditionFilter, setConditionFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -97,9 +92,7 @@ export default function AssetsPage() {
 
   const [uploading, setUploading] = useState(false)
   const [flyoutAsset, setFlyoutAsset] = useState<ApiAsset | null>(null)
-  const [sortBy, setSortBy] = useState('-created')
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
+
 
   useEffect(() => {
     getAssets()
@@ -120,39 +113,6 @@ export default function AssetsPage() {
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [selectedId, assets])
-
-  const filteredAssets = useMemo(() => {
-    const sorted = [...assets].sort((a, b) => {
-      const desc = sortBy.startsWith('-')
-      const field = desc ? sortBy.slice(1) : sortBy
-      let va: string | number = (a as Record<string, unknown>)[field] as string | number || ''
-      let vb: string | number = (b as Record<string, unknown>)[field] as string | number || ''
-      if (field === 'purchase_cost') {
-        va = Number(va) || 0
-        vb = Number(vb) || 0
-      }
-      const cmp = typeof va === 'string' && typeof vb === 'string'
-        ? va.localeCompare(vb) : Number(va) - Number(vb)
-      return desc ? -cmp : cmp
-    })
-    return sorted.filter((a) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!a.name.toLowerCase().includes(q)) return false
-      }
-      if (typeFilter && a.asset_type !== typeFilter) return false
-      if (conditionFilter && a.condition !== conditionFilter) return false
-      if (statusFilter && a.status !== statusFilter) return false
-      return true
-    })
-  }, [assets, search, typeFilter, conditionFilter, statusFilter, sortBy])
-
-  const totalPages = Math.ceil(filteredAssets.length / PAGE_SIZE)
-  const paginatedAssets = filteredAssets.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, typeFilter, conditionFilter, statusFilter, sortBy])
-
-
 
   function updateField(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -247,16 +207,6 @@ export default function AssetsPage() {
 
   const isAdmin = hasRole('admin')
 
-  const sortFields = [
-    { value: 'name', label: 'Name' },
-    { value: 'asset_type', label: 'Type' },
-    { value: 'condition', label: 'Condition' },
-    { value: 'status', label: 'Status' },
-    { value: 'purchase_date', label: 'Purchase Date' },
-    { value: 'purchase_cost', label: 'Cost' },
-    { value: '-created', label: 'Newest' },
-  ]
-
   function openFlyout(asset: ApiAsset) {
     setFlyoutAsset(asset)
   }
@@ -265,11 +215,8 @@ export default function AssetsPage() {
     setFlyoutAsset(null)
   }
 
-  const sortKey = sortBy.startsWith('-') ? sortBy.slice(1) : sortBy
-  const sortDir = sortBy.startsWith('-') ? 'desc' as const : 'asc' as const
-
   const assetColumns: Column<ApiAsset>[] = [
-    { key: 'name', label: 'Asset Name', sortable: true,
+    { key: 'name', label: 'Asset Name', sortable: true, filterType: 'text',
       render: (a) => (
         <div className="flex items-center gap-3">
           {a.image_url ? (
@@ -280,16 +227,19 @@ export default function AssetsPage() {
           <span>{a.name}</span>
         </div>
       ) },
-    { key: 'asset_type', label: 'Type', sortable: true, hideBelow: 'sm' },
-    { key: 'condition', label: 'Condition',
+    { key: 'asset_type', label: 'Type', sortable: true, hideBelow: 'sm', filterType: 'select',
+      filterOptions: assetTypeOptions.map(t => ({ label: t.label, value: t.value })) },
+    { key: 'condition', label: 'Condition', filterType: 'select',
+      filterOptions: conditionOptions.map(c => ({ label: conditionLabels[c] || c, value: c })),
       render: (a) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${assetConditionColors[a.condition] ?? ''}`}>{a.condition}</span>
       ) },
-    { key: 'status', label: 'Status',
+    { key: 'status', label: 'Status', filterType: 'select',
+      filterOptions: statusOptions.map(s => ({ label: statusLabels[s] || s, value: s })),
       render: (a) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${assetStatusColors[a.status!] ?? ''}`}>{a.status}</span>
       ) },
-    { key: 'assigned_to', label: 'Assigned To', render: (a) => a.assigned_to ?? '—', hideBelow: 'sm' },
+    { key: 'assigned_to', label: 'Assigned To', render: (a) => a.assigned_to ?? '—', hideBelow: 'sm', filterType: 'text' },
   ]
 
   return (
@@ -309,73 +259,23 @@ export default function AssetsPage() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-60 max-w-full pl-8 text-sm"
-          />
-        </div>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Types</option>
-          {assetTypeOptions.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </Select>
-        <Select
-          value={conditionFilter}
-          onValueChange={(v) => setConditionFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Conditions</option>
-          {conditionOptions.map((c) => (
-            <option key={c} value={c}>{conditionLabels[c]}</option>
-          ))}
-        </Select>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Statuses</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>{statusLabels[s]}</option>
-          ))}
-        </Select>
-        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Asset Inventory</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={assetColumns}
-            data={paginatedAssets}
+            data={assets}
             loading={loading}
-            sortKey={sortKey}
-            sortDir={sortDir}
             onRowClick={(a) => openFlyout(a)}
             emptyState={
               <EmptyState
-                title={assets.length === 0 ? "No assets yet. Add your first asset." : "No assets match your filters."}
+                title="No assets yet. Add your first asset."
                 action={isAdmin && assets.length === 0 ? { label: "Add first asset", onClick: openCreatePanel } : undefined}
               />
             }
-            page={page}
-            totalPages={totalPages}
-            totalItems={filteredAssets.length}
-            onPageChange={setPage}
-            pageSize={PAGE_SIZE}
             rowKey={(a) => a.id}
+            toolbar
+            exportable
           />
         </CardContent>
       </Card>

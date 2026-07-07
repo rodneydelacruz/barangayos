@@ -14,19 +14,14 @@ import { getAppropriations, type ApiAppropriation } from '@/api/appropriations'
 import { ExportDialog } from '@/components/finance/ExportDialog'
 import { getCurrentUser } from '@/auth/session'
 
-const PAGE_SIZE = 25
-
 export function Disbursements() {
   const today = () => new Date().toISOString().split('T')[0]
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
   const [disbursements, setDisbursements] = useState<ApiDisbursement[]>([])
   const [appropriations, setAppropriations] = useState<ApiAppropriation[]>([])
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiDisbursement | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [showExport, setShowExport] = useState(false)
   const [form, setForm] = useState<DisbursementData>({ appropriation: '', payee: '', disbursement_date: today(), amount: 0, check_no: '', or_no: '', particular: '' })
 
@@ -34,7 +29,7 @@ export function Disbursements() {
     setLoading(true)
     try {
       const [disc, apprs] = await Promise.all([
-        getDisbursements(startDate || undefined, endDate || undefined),
+        getDisbursements(),
         getAppropriations(),
       ])
       setDisbursements(disc)
@@ -43,7 +38,7 @@ export function Disbursements() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [startDate, endDate])
+  useEffect(() => { load() }, [])
 
   async function handleSave() {
     await createDisbursement(form)
@@ -61,20 +56,18 @@ export function Disbursements() {
   }
 
   const totalDisbursed = disbursements.reduce((s, d) => s + d.amount, 0)
-  const totalPages = Math.ceil(disbursements.length / PAGE_SIZE)
-
   const appropriationMap = Object.fromEntries(appropriations.map((a) => [a.id, a]))
 
   const columns: Column<ApiDisbursement>[] = [
-    { key: 'date', label: 'Date', sortable: true, render: (d) => d.disbursement_date ? new Date(d.disbursement_date).toLocaleDateString() : '' },
-    { key: 'payee', label: 'Payee', sortable: true,
+    { key: 'date', label: 'Date', sortable: true, filterType: 'date', render: (d) => d.disbursement_date ? new Date(d.disbursement_date).toLocaleDateString() : '' },
+    { key: 'payee', label: 'Payee', sortable: true, filterType: 'text',
       render: (d) => d.payee || (d.expand?.appropriation as any)?.payee || '—' },
-    { key: 'particulars', label: 'Particulars', render: (d) => d.particular ?? '—', hideBelow: 'sm' },
-    { key: 'amount', label: 'Amount', className: 'text-right',
+    { key: 'particulars', label: 'Particulars', filterType: 'text', render: (d) => d.particular ?? '—', hideBelow: 'sm' },
+    { key: 'amount', label: 'Amount', className: 'text-right', filterType: 'text',
       render: (d) => `₱${Number(d.amount).toLocaleString()}` },
-    { key: 'check_number', label: 'Check #', hideBelow: 'sm',
+    { key: 'check_number', label: 'Check #', hideBelow: 'sm', filterType: 'text',
       render: (d) => <span className="font-mono text-xs">{d.check_no || '—'}</span> },
-    { key: 'reference_number', label: 'OR #', hideBelow: 'sm',
+    { key: 'reference_number', label: 'OR #', hideBelow: 'sm', filterType: 'text',
       render: (d) => <span className="font-mono text-xs">{d.or_no || '—'}</span> },
   ]
 
@@ -90,33 +83,16 @@ export function Disbursements() {
           <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Record Disbursement</Button>
         </div>
       </PageHeader>
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Disbursements' },
-      ]} className="mb-4" />
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">From</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">To</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
-        </div>
-        <div className="text-sm text-muted-foreground ml-auto">Total Disbursed: <span className="font-semibold">₱{totalDisbursed.toLocaleString()}</span></div>
-      </div>
+      
       <DataTable
         columns={columns}
-        data={disbursements.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
+        data={disbursements}
         loading={loading}
         onRowClick={(d) => setFlyout(d)}
         emptyState={<p className="text-center text-muted-foreground py-6">No disbursements found</p>}
-        page={page}
-        totalPages={totalPages}
-        totalItems={disbursements.length}
-        onPageChange={setPage}
-        pageSize={PAGE_SIZE}
         rowKey={(d) => d.id}
+        toolbar
+        exportable
       />
       <DetailPanel
         open={!!flyout}

@@ -7,7 +7,6 @@ import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { FiscalYearSelector } from '@/components/finance/FiscalYearSelector'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getAppropriations, createAppropriation, updateAppropriation, deleteAppropriation, markAppropriationAsObligated, type ApiAppropriation, type AppropriationData } from '@/api/appropriations'
@@ -26,7 +25,7 @@ function getComputedStatus(a: ApiAppropriation): string {
 }
 
 export function Appropriations() {
-  const [year, setYear] = useState(new Date().getFullYear())
+  const currentYear = new Date().getFullYear()
   const [appropriations, setAppropriations] = useState<ApiAppropriation[]>([])
   const [fundSources, setFundSources] = useState<ApiFundSource[]>([])
   const [disbursements, setDisbursements] = useState<ApiDisbursement[]>([])
@@ -36,21 +35,17 @@ export function Appropriations() {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [showExport, setShowExport] = useState(false)
-  const [form, setForm] = useState<AppropriationData>({ fiscal_year: year, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
+  const [form, setForm] = useState<AppropriationData>({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
   const [obligateTarget, setObligateTarget] = useState<ApiAppropriation | null>(null)
   const [obligateForm, setObligateForm] = useState({ payee: '', obligated_date: new Date().toISOString().split('T')[0], obligation_notes: '' })
-  const PAGE_SIZE = 25
-
-  useEffect(() => { setForm((f) => ({ ...f, fiscal_year: year })) }, [year])
 
   async function load() {
     setLoading(true)
     try {
       const [apprs, funds] = await Promise.all([
-        getAppropriations(year),
-        getFundSources(year),
+        getAppropriations(),
+        getFundSources(),
       ])
       setAppropriations(apprs)
       setFundSources(funds)
@@ -58,7 +53,7 @@ export function Appropriations() {
     setLoading(false)
   }
 
-  useEffect(() => { setPage(1); load() }, [year])
+  useEffect(() => { load() }, [])
 
   async function loadDisbursements(apprId: string) {
     try {
@@ -101,7 +96,7 @@ export function Appropriations() {
     }
     setShowForm(false)
     setEditId(null)
-    setForm({ fiscal_year: year, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
+    setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' })
     load()
   }
 
@@ -121,26 +116,35 @@ export function Appropriations() {
     load()
   }
 
-  const totalPages = Math.ceil(appropriations.length / PAGE_SIZE)
-  const paginatedItems = appropriations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
   const columns: Column<ApiAppropriation>[] = [
-    { key: 'item_name', label: 'Item Name', sortable: true },
-    { key: 'fund_source', label: 'Fund Source', sortable: true, hideBelow: 'sm',
+    { key: 'fiscal_year', label: 'Year', sortable: true, filterType: 'text', hideBelow: 'sm' },
+    { key: 'item_name', label: 'Item Name', sortable: true, filterType: 'text' },
+    { key: 'fund_source', label: 'Fund Source', sortable: true, hideBelow: 'sm', filterType: 'text',
       render: (a) => a.expand?.fund_source?.name ?? a.fund_source ?? '—' },
-    { key: 'classification', label: 'Class', hideBelow: 'sm',
+    { key: 'classification', label: 'Class', hideBelow: 'sm', filterType: 'select',
+      filterOptions: [
+        { label: 'PS', value: 'PS' },
+        { label: 'MOOE', value: 'MOOE' },
+        { label: 'CO', value: 'CO' },
+      ],
       render: (a) => <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{a.expense_class}</span> },
-    { key: 'appropriated_amount', label: 'Appropriated',
+    { key: 'appropriated_amount', label: 'Appropriated', filterType: 'text',
       render: (a) => `₱${Number(a.appropriated_amount).toLocaleString()}` },
-    { key: 'status', label: 'Status',
+    { key: 'status', label: 'Status', filterType: 'select',
+      filterOptions: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Obligated', value: 'obligated' },
+        { label: 'Partially Disbursed', value: 'partially_disbursed' },
+        { label: 'Fully Disbursed', value: 'fully_disbursed' },
+      ],
       render: (a) => {
         const status = getComputedStatus(a)
         return (
           <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${appropriationStatusColors[status] ?? ''}`}>{status.replace(/_/g, ' ')}</span>
         )
       }},
-    { key: 'payee', label: 'Payee', render: (a) => a.payee || '—' },
-    { key: 'disbursed_amount', label: 'Disbursed',
+    { key: 'payee', label: 'Payee', filterType: 'text', render: (a) => a.payee || '—' },
+    { key: 'disbursed_amount', label: 'Disbursed', filterType: 'text',
       render: (a) => `₱${Number(a.disbursed_amount).toLocaleString()}` },
   ]
 
@@ -148,31 +152,24 @@ export function Appropriations() {
     <div>
       <PageHeader title="Appropriations">
         <div className="flex items-center gap-4">
-          <FiscalYearSelector value={year} onChange={setYear} />
           {getCurrentUser()?.role === 'admin' && (
             <Button variant="outline" onClick={() => setShowExport(true)}>
               <Download className="h-4 w-4 mr-1" /> Export
             </Button>
           )}
-          <Button onClick={() => { setEditId(null); setForm({ fiscal_year: year, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' }); setShowForm(true) }}>+ Add Appropriation</Button>
+          <Button onClick={() => { setEditId(null); setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' }); setShowForm(true) }}>+ Add Appropriation</Button>
         </div>
       </PageHeader>
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Appropriations' },
-      ]} className="mb-4" />
+      
       <DataTable
         columns={columns}
-        data={paginatedItems}
+        data={appropriations}
         loading={loading}
         onRowClick={handleFlyout}
-        emptyState={<p className="text-center text-muted-foreground py-6">No appropriations for {year}</p>}
-        page={page}
-        totalPages={totalPages}
-        totalItems={appropriations.length}
-        onPageChange={setPage}
-        pageSize={PAGE_SIZE}
+        emptyState={<p className="text-center text-muted-foreground py-6">No appropriations found</p>}
         rowKey={(a) => a.id}
+        toolbar
+        exportable
       />
 
       <DetailPanel
@@ -341,6 +338,10 @@ export function Appropriations() {
             <div className="p-6">
               <h2 className="font-display text-sm font-semibold mb-4">{editId ? 'Edit' : 'Add'} Appropriation</h2>
               <div className="space-y-4">
+                <div>
+                  <Label>Fiscal Year</Label>
+                  <Input type="number" value={form.fiscal_year || currentYear} onChange={(e) => setForm({ ...form, fiscal_year: Number(e.target.value) })} />
+                </div>
                 <div>
                   <Label>Fund Source</Label>
                   <Select value={form.fund_source || ''} onValueChange={(v) => setForm({ ...form, fund_source: v })}>

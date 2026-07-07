@@ -30,20 +30,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   document_fee: 'Document Fee', donation: 'Donation', grant: 'Grant', other: 'Other',
 }
 
-const PAGE_SIZE = 25
-
 export function RevenueTracking() {
   const today = () => new Date().toISOString().split('T')[0]
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [category, setCategory] = useState('all')
   const [revenues, setRevenues] = useState<ApiRevenue[]>([])
   const [incomeAccounts, setIncomeAccounts] = useState<ApiIncomeAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiRevenue | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [showExport, setShowExport] = useState(false)
   const [form, setForm] = useState<RevenueData>({ revenue_date: today(), income_account: '', category: 'document_fee', source: '', amount: 0, or_no: '', remarks: '' })
 
@@ -51,7 +45,7 @@ export function RevenueTracking() {
     setLoading(true)
     try {
       const [revs, accts] = await Promise.all([
-        getRevenues(startDate || undefined, endDate || undefined, category === 'all' ? undefined : category),
+        getRevenues(),
         getIncomeAccounts(),
       ])
       setRevenues(revs)
@@ -60,7 +54,7 @@ export function RevenueTracking() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [startDate, endDate, category])
+  useEffect(() => { load() }, [])
 
   async function handleSave() {
     await createRevenue(form)
@@ -77,19 +71,17 @@ export function RevenueTracking() {
     load()
   }
 
-  const totalRevenue = revenues.reduce((s, r) => s + r.amount, 0)
-  const totalPages = Math.ceil(revenues.length / PAGE_SIZE)
-
   const columns: Column<ApiRevenue>[] = [
-    { key: 'date', label: 'Date', sortable: true, render: (r) => r.revenue_date ? new Date(r.revenue_date).toLocaleDateString() : '' },
-    { key: 'source', label: 'Source', sortable: true },
-    { key: 'category', label: 'Category', sortable: true, hideBelow: 'sm',
+    { key: 'date', label: 'Date', sortable: true, filterType: 'date', render: (r) => r.revenue_date ? new Date(r.revenue_date).toLocaleDateString() : '' },
+    { key: 'source', label: 'Source', sortable: true, filterType: 'text' },
+    { key: 'category', label: 'Category', sortable: true, hideBelow: 'sm', filterType: 'select',
+      filterOptions: CATEGORIES.filter((c) => c.value !== 'all').map((c) => ({ label: c.label, value: c.value })),
       render: (r) => <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{CATEGORY_LABELS[r.category] || r.category}</span> },
     { key: 'income_account', label: 'Income Account', hideBelow: 'sm',
       render: (r) => r.expand?.income_account?.name ?? r.income_account ?? '—' },
-    { key: 'amount', label: 'Amount', className: 'text-right',
+    { key: 'amount', label: 'Amount', className: 'text-right', filterType: 'text',
       render: (r) => `₱${Number(r.amount).toLocaleString()}` },
-    { key: 'reference_number', label: 'OR #', hideBelow: 'sm',
+    { key: 'reference_number', label: 'OR #', hideBelow: 'sm', filterType: 'text',
       render: (r) => <span className="font-mono text-xs">{r.or_no || '—'}</span> },
   ]
 
@@ -105,36 +97,16 @@ export function RevenueTracking() {
           <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Add Revenue</Button>
         </div>
       </PageHeader>
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Revenue Tracking' },
-      ]} className="mb-4" />
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">From</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">To</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
-        </div>
-        <Select value={category} onValueChange={setCategory} className="w-44">
-          {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </Select>
-        <div className="text-sm text-muted-foreground ml-auto">Total: <span className="font-semibold">₱{totalRevenue.toLocaleString()}</span></div>
-      </div>
+      
       <DataTable
         columns={columns}
-        data={revenues.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
+        data={revenues}
         loading={loading}
         onRowClick={(r) => setFlyout(r)}
         emptyState={<p className="text-center text-muted-foreground py-6">No revenue records found</p>}
-        page={page}
-        totalPages={totalPages}
-        totalItems={revenues.length}
-        onPageChange={setPage}
-        pageSize={PAGE_SIZE}
         rowKey={(r) => r.id}
+        toolbar
+        exportable
       />
       <DetailPanel
         open={!!flyout}

@@ -1,11 +1,19 @@
 import { forwardRef, type HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  lifted?: boolean
+}
+
+const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, lifted = true, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('rounded-lg border bg-card text-card-foreground shadow-sm motion-lift', className)}
+      className={cn(
+        'rounded-lg border bg-card text-card-foreground shadow-sm',
+        lifted && 'motion-lift',
+        className,
+      )}
       {...props}
     />
   ),

@@ -9,7 +9,6 @@ import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { FiscalYearSelector } from '@/components/finance/FiscalYearSelector'
 import { getFundSources, createFundSource, updateFundSource, deleteFundSource, type ApiFundSource, type FundSourceData } from '@/api/fundSources'
 import { getFinanceAuditLogs, type ApiFinanceAudit } from '@/api/financeAudit'
 import { ExportDialog } from '@/components/finance/ExportDialog'
@@ -24,30 +23,26 @@ const STATUTORY_LABELS: Record<string, string> = {
 }
 
 export function FundSources() {
-  const [year, setYear] = useState(new Date().getFullYear())
+  const currentYear = new Date().getFullYear()
   const [sources, setSources] = useState<ApiFundSource[]>([])
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiFundSource | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ApiFundSource | null>(null)
-  const [page, setPage] = useState(1)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [auditLogs, setAuditLogs] = useState<ApiFinanceAudit[]>([])
   const [showExport, setShowExport] = useState(false)
-  const PAGE_SIZE = 25
   const [form, setForm] = useState<FundSourceData>({
-    name: '', code: '', statutory_rule: 'none', current_balance: 0, fiscal_year: year, is_active: true, description: '', notes: '',
+    name: '', code: '', statutory_rule: 'none', current_balance: 0, fiscal_year: currentYear, is_active: true, description: '', notes: '',
   })
-
-  useEffect(() => { setForm((f) => ({ ...f, fiscal_year: year })) }, [year])
 
   async function load() {
     setLoading(true)
-    try { setSources(await getFundSources(year)) } catch (_) {}
+    try { setSources(await getFundSources()) } catch (_) {}
     setLoading(false)
   }
 
-  useEffect(() => { setPage(1); load() }, [year])
+  useEffect(() => { load() }, [])
 
   async function loadAuditLogs(fundId: string) {
     try {
@@ -74,7 +69,7 @@ export function FundSources() {
     }
     setShowForm(false)
     setEditing(null)
-    setForm({ name: '', code: '', statutory_rule: 'none', current_balance: 0, fiscal_year: year, is_active: true, description: '', notes: '' })
+    setForm({ name: '', code: '', statutory_rule: 'none', current_balance: 0, fiscal_year: currentYear, is_active: true, description: '', notes: '' })
     load()
   }
 
@@ -86,16 +81,26 @@ export function FundSources() {
     load()
   }
 
-  const totalPages = Math.ceil(sources.length / PAGE_SIZE)
-  const paginatedSources = sources.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
   const columns: Column<ApiFundSource>[] = [
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'code', label: 'Code', sortable: true, hideBelow: 'sm' },
-    { key: 'statutory_rule', label: 'Statutory Rule', render: (f) => f.statutory_rule ?? '—' },
-    { key: 'balance', label: 'Balance', className: 'text-right',
+    { key: 'fiscal_year', label: 'Year', sortable: true, filterType: 'text', hideBelow: 'sm' },
+    { key: 'name', label: 'Name', sortable: true, filterType: 'text' },
+    { key: 'code', label: 'Code', sortable: true, hideBelow: 'sm', filterType: 'text' },
+    { key: 'statutory_rule', label: 'Statutory Rule', filterType: 'select',
+      filterOptions: [
+        { label: 'General', value: 'none' },
+        { label: '20% Development Fund', value: '20%_DF' },
+        { label: 'SK Fund', value: 'SK' },
+        { label: 'BDRRM Fund', value: 'BDRRMF' },
+        { label: 'Gender & Development', value: 'GAD' },
+      ],
+      render: (f) => f.statutory_rule ?? '—' },
+    { key: 'balance', label: 'Balance', className: 'text-right', filterType: 'text',
       render: (f) => `₱${Number(f.current_balance).toLocaleString()}` },
-    { key: 'status', label: 'Status',
+    { key: 'status', label: 'Status', filterType: 'select',
+      filterOptions: [
+        { label: 'Active', value: 'active' },
+        { label: 'Inactive', value: 'inactive' },
+      ],
       render: (f) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${f.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300'}`}>{f.is_active ? 'active' : 'inactive'}</span>
       ) },
@@ -105,7 +110,6 @@ export function FundSources() {
     <div>
       <PageHeader title="Fund Sources">
         <div className="flex items-center gap-4">
-          <FiscalYearSelector value={year} onChange={setYear} />
           {getCurrentUser()?.role === 'admin' && (
             <Button variant="outline" onClick={() => setShowExport(true)}>
               <Download className="h-4 w-4 mr-1" /> Export
@@ -113,29 +117,23 @@ export function FundSources() {
           )}
           <Button onClick={() => {
             setEditing(null)
-            setForm({ name: '', code: '', statutory_rule: 'none', current_balance: 0, original_balance: 0, fiscal_year: year, is_active: true, description: '', notes: '' })
+            setForm({ name: '', code: '', statutory_rule: 'none', current_balance: 0, original_balance: 0, fiscal_year: currentYear, is_active: true, description: '', notes: '' })
             setShowForm(true)
           }}>
             <Plus className="h-4 w-4 mr-1" /> Add Fund Source
           </Button>
         </div>
       </PageHeader>
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Fund Sources' },
-      ]} className="mb-4" />
+      
       <DataTable
         columns={columns}
-        data={paginatedSources}
+        data={sources}
         loading={loading}
           onRowClick={(s) => { setFlyout(s); loadAuditLogs(s.id) }}
-        emptyState={<p className="text-center text-muted-foreground py-6">No fund sources for {year}. Create one to get started.</p>}
-        page={page}
-        totalPages={totalPages}
-        totalItems={sources.length}
-        onPageChange={setPage}
-        pageSize={PAGE_SIZE}
+        emptyState={<p className="text-center text-muted-foreground py-6">No fund sources found. Create one to get started.</p>}
         rowKey={(s) => s.id}
+        toolbar
+        exportable
       />
       <DetailPanel
         open={!!flyout}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, DoorOpen, Circle, Clock, User, LogOut } from 'lucide-react'
 import { getVisitors, createVisitor, updateVisitor, deleteVisitor, checkOutVisitor, type ApiVisitor, type VisitorData } from '@/api/visitors'
@@ -11,8 +11,11 @@ import { Label } from '@/components/ui/label'
 import { hasRole } from '@/auth/session'
 import { cn, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
-import { SortSelect } from '@/components/ui/SortSelect'
 import { DataTable, type Column } from '@/components/ui/data-table'
+
+type VisitorRow = ApiVisitor & {
+  status: 'checked_in' | 'checked_out'
+}
 
 function emptyForm(): VisitorData {
   return {
@@ -33,36 +36,61 @@ function formatTime(iso: string): string {
   })
 }
 
-const columns: Column<ApiVisitor>[] = [
-  { key: 'visitor_name', label: 'Visitor Name', sortable: true },
-  { key: 'purpose', label: 'Purpose' },
-  { key: 'time_in', label: 'Time In', sortable: true,
-    render: (v) => v.time_in ? formatTime(v.time_in) : '' },
-  { key: 'time_out', label: 'Status',
-    render: (v) => v.time_out ? (
-      <span className="text-sm text-muted-foreground">{formatTime(v.time_out)}</span>
-    ) : (
-      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30">
-        <Circle className="size-2 fill-current" />
-        Active
-      </span>
-    ) },
+const statusOptions = [
+  { label: 'Checked In', value: 'checked_in' },
+  { label: 'Checked Out', value: 'checked_out' },
+]
+
+const statusColors: Record<VisitorRow['status'], string> = {
+  checked_in: 'bg-emerald-200 px-3 py-0.5 text-emerald-900 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30',
+  checked_out: 'bg-muted px-3 py-0.5 text-muted-foreground border border-border/60',
+}
+
+const columns: Column<VisitorRow>[] = [
+  { key: 'visitor_name', label: 'Visitor Name', sortable: true, filterType: 'text' },
+  { key: 'purpose', label: 'Purpose', sortable: true, filterType: 'text' },
+  {
+    key: 'status',
+    label: 'Status',
+    sortable: true,
+    filterType: 'select',
+    filterOptions: statusOptions,
+    render: (visitor) => (
+      visitor.status === 'checked_in' ? (
+        <span className={cn('inline-flex items-center gap-1 rounded-md text-xs font-bold', statusColors.checked_in)}>
+          <Circle className="size-2 fill-current" />
+          Active
+        </span>
+      ) : (
+        <span className={cn('inline-flex items-center rounded-md text-xs font-bold', statusColors.checked_out)}>
+          Checked Out
+        </span>
+      )
+    ),
+  },
+  {
+    key: 'time_in',
+    label: 'Time In',
+    sortable: true,
+    render: (visitor) => (visitor.time_in ? formatTime(visitor.time_in) : ''),
+  },
+  {
+    key: 'time_out',
+    label: 'Time Out',
+    hideBelow: 'sm',
+    render: (visitor) => (visitor.time_out ? formatTime(visitor.time_out) : '-'),
+  },
 ]
 
 export default function VisitorLogPage() {
   const [visitors, setVisitors] = useState<ApiVisitor[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [activeOnly, setActiveOnly] = useState(false)
   const [form, setForm] = useState<VisitorData>(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flyoutVisitor, setFlyoutVisitor] = useState<ApiVisitor | null>(null)
-  const [sortBy, setSortBy] = useState('-time_in')
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
 
   useEffect(() => {
     getVisitors()
@@ -76,7 +104,7 @@ export default function VisitorLogPage() {
 
   useEffect(() => {
     if (selectedId && visitors.length > 0) {
-      const record = visitors.find(v => v.id === selectedId)
+      const record = visitors.find((visitor) => visitor.id === selectedId)
       if (record) {
         setFlyoutVisitor(record)
       }
@@ -84,29 +112,13 @@ export default function VisitorLogPage() {
     }
   }, [selectedId, visitors])
 
-  const filteredVisitors = useMemo(() => {
-    const sorted = [...visitors].sort((a, b) => {
-      const desc = sortBy.startsWith('-')
-      const field = desc ? sortBy.slice(1) : sortBy
-      const va: string = (a as Record<string, unknown>)[field] as string || ''
-      const vb: string = (b as Record<string, unknown>)[field] as string || ''
-      const cmp = va.localeCompare(vb)
-      return desc ? -cmp : cmp
-    })
-    return sorted.filter((v) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!v.visitor_name.toLowerCase().includes(q) && !v.purpose.toLowerCase().includes(q)) return false
-      }
-      if (activeOnly && v.time_out) return false
-      return true
-    })
-  }, [visitors, search, activeOnly, sortBy])
-
-  const totalPages = Math.ceil(filteredVisitors.length / PAGE_SIZE)
-  const paginatedVisitors = filteredVisitors.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, activeOnly, sortBy])
+  const tableVisitors = useMemo<VisitorRow[]>(
+    () => visitors.map((visitor) => ({
+      ...visitor,
+      status: visitor.time_out ? 'checked_out' : 'checked_in',
+    })),
+    [visitors],
+  )
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -119,7 +131,7 @@ export default function VisitorLogPage() {
     try {
       if (editingId) {
         const updated = await updateVisitor(editingId, form)
-        setVisitors((prev) => prev.map((v) => (v.id === editingId ? updated : v)))
+        setVisitors((prev) => prev.map((visitor) => (visitor.id === editingId ? updated : visitor)))
       } else {
         const created = await createVisitor(form)
         setVisitors((prev) => [created, ...prev])
@@ -133,7 +145,7 @@ export default function VisitorLogPage() {
   async function handleCheckOut(id: string) {
     try {
       const updated = await checkOutVisitor(id)
-      setVisitors((prev) => prev.map((v) => (v.id === id ? updated : v)))
+      setVisitors((prev) => prev.map((visitor) => (visitor.id === id ? updated : visitor)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check out visitor')
     }
@@ -166,7 +178,7 @@ export default function VisitorLogPage() {
     if (!deletingId) return
     try {
       await deleteVisitor(deletingId)
-      setVisitors((prev) => prev.filter((v) => v.id !== deletingId))
+      setVisitors((prev) => prev.filter((visitor) => visitor.id !== deletingId))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete visitor')
     } finally {
@@ -183,31 +195,8 @@ export default function VisitorLogPage() {
 
   const canModify = hasRole('admin', 'staff')
 
-  const sortFields = [
-    { value: 'visitor_name', label: 'Name' },
-    { value: 'purpose', label: 'Purpose' },
-    { value: 'person_to_visit', label: 'Visiting' },
-    { value: 'time_in', label: 'Time In' },
-    { value: '-time_in', label: 'Newest' },
-  ]
-
   function closeFlyout() {
     setFlyoutVisitor(null)
-  }
-
-  const desc = sortBy.startsWith('-')
-  const currentSortKey = desc ? sortBy.slice(1) : sortBy
-  const currentSortDir = desc ? 'desc' : 'asc'
-
-  function handleSort(key: string) {
-    setSortBy((prev) => {
-      const prevDesc = prev.startsWith('-')
-      const prevKey = prevDesc ? prev.slice(1) : prev
-      if (prevKey === key) {
-        return prevDesc ? key : `-${key}`
-      }
-      return key
-    })
   }
 
   return (
@@ -221,38 +210,11 @@ export default function VisitorLogPage() {
         )}
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by name or purpose..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 w-60 max-w-full text-sm"
-        />
-        <button
-          type="button"
-          onClick={() => setActiveOnly((prev) => !prev)}
-          className={cn(
-            'h-9 rounded-md border px-3 text-sm font-medium transition-colors',
-            activeOnly
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-              : 'border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
-          )}
-        >
-          <span className="flex items-center gap-1.5">
-            <Circle className={cn('size-2.5 fill-current', activeOnly ? 'text-emerald-500' : 'text-muted-foreground/40')} />
-            Show active only
-          </span>
-          </button>
-          <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
-        </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Visitor Entries</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           {loading ? (
-            <DataTable columns={columns} data={[]} loading rowKey={(v) => v.id} />
+            <DataTable columns={columns} data={[]} loading rowKey={(visitor) => visitor.id} />
           ) : visitors.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <p className="text-sm text-muted-foreground">No visitors logged yet.</p>
@@ -266,22 +228,15 @@ export default function VisitorLogPage() {
           ) : (
             <DataTable
               columns={columns}
-              data={paginatedVisitors}
-              sortKey={currentSortKey}
-              sortDir={currentSortDir}
-              onSort={handleSort}
-              onRowClick={(v) => setFlyoutVisitor(v)}
+              data={tableVisitors}
+              loading={loading}
+              onRowClick={(visitor) => setFlyoutVisitor(visitor)}
               emptyState={
                 <div className="flex flex-col items-center py-12 text-center">
                   <p className="text-sm text-muted-foreground">No visitors match your filters.</p>
                 </div>
               }
-              page={page}
-              totalPages={totalPages}
-              totalItems={filteredVisitors.length}
-              onPageChange={setPage}
-              pageSize={PAGE_SIZE}
-              rowKey={(v) => v.id}
+              rowKey={(visitor) => visitor.id}
             />
           )}
         </CardContent>
@@ -290,7 +245,7 @@ export default function VisitorLogPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+          <div className="relative w-full overflow-y-auto bg-card shadow-xl motion-slide-up motion-fade-in md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">{editingId ? 'Edit Visitor' : 'Log Visitor'}</h2>
               <button
@@ -358,22 +313,55 @@ export default function VisitorLogPage() {
 
             <DetailSection icon={<User className="size-3" />} title="Visitor Info">
               <div className="grid grid-cols-2 gap-2">
-                <div className="col-span-2"><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutVisitor.visitor_name}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Contact:</span> {flyoutVisitor.contact_number || '—'}</div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutVisitor.visitor_name}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Contact:</span> {flyoutVisitor.contact_number || '-'}
+                </div>
               </div>
             </DetailSection>
 
             <DetailSection title="Visit Details">
               <div className="grid grid-cols-2 gap-2">
-                <div className="col-span-2"><span className="text-muted-foreground">Purpose:</span> {flyoutVisitor.purpose}</div>
-                <div className="col-span-2"><span className="text-muted-foreground">Person to Visit:</span> {flyoutVisitor.person_to_visit || '—'}</div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Purpose:</span> {flyoutVisitor.purpose}
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Person to Visit:</span> {flyoutVisitor.person_to_visit || '-'}
+                </div>
               </div>
             </DetailSection>
 
             <DetailSection icon={<Clock className="size-3" />} title="Timeline">
               <div className="grid grid-cols-2 gap-2">
                 <div><span className="text-muted-foreground">Time In:</span> {formatTime(flyoutVisitor.time_in)}</div>
-                <div><span className="text-muted-foreground">Time Out:</span> {flyoutVisitor.time_out ? formatTime(flyoutVisitor.time_out) : <span className={cn('inline-flex items-center gap-1 rounded-md bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/30')}><Circle className="size-2 fill-current" />Active</span>}</div>
+                <div>
+                  <span className="text-muted-foreground">Time Out:</span>{' '}
+                  {flyoutVisitor.time_out ? (
+                    formatTime(flyoutVisitor.time_out)
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 dark:border-emerald-800/30 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <Circle className="size-2 fill-current" />
+                      Active
+                    </span>
+                  )}
+                </div>
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Status">
+              <div className="flex items-center gap-2 text-sm">
+                {flyoutVisitor.time_out ? (
+                  <span className="inline-flex items-center rounded-md bg-muted px-3 py-0.5 text-xs font-bold text-muted-foreground">
+                    Checked Out
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-900 dark:border-emerald-800/30 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <Circle className="size-2 fill-current" />
+                    Active
+                  </span>
+                )}
               </div>
             </DetailSection>
 

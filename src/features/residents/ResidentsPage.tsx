@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Search, Home, FileText, BookOpen, Activity } from 'lucide-react'
 import { getResidents, createResident, updateResident, deleteResident, type ApiResident } from '@/api/residents'
@@ -195,9 +195,6 @@ function HouseholdCombobox({ value, onChange }: { value: string; onChange: (id: 
 export default function ResidentsPage() {
   const [residents, setResidents] = useState<ApiResident[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [purokFilter, setPurokFilter] = useState('')
-  const [tagFilter, setTagFilter] = useState<string[]>([])
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -210,20 +207,6 @@ export default function ResidentsPage() {
   const [flyoutBlotters, setFlyoutBlotters] = useState<ApiBlotter[]>([])
   const [flyoutActivities, setFlyoutActivities] = useState<ApiActivity[]>([])
   const [flyoutLoading, setFlyoutLoading] = useState(false)
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
-  const [sortKey, setSortKey] = useState('last_name')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-
-  function handleSort(key: string) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('asc')
-    }
-  }
-
   useEffect(() => {
     getResidents()
       .then(setResidents)
@@ -244,44 +227,11 @@ export default function ResidentsPage() {
     }
   }, [selectedId, residents])
 
-  const filteredResidents = useMemo(() => {
-    return residents
-      .filter((r) => {
-        if (search) {
-          const q = search.toLowerCase()
-          const name = `${r.first_name} ${r.last_name} ${r.middle_name}`.toLowerCase()
-          if (!name.includes(q)) return false
-        }
-        if (purokFilter && r.purok !== purokFilter) return false
-        if (tagFilter.length > 0) {
-          if (!tagFilter.some((tag) => (r as Record<string, unknown>)[tag])) return false
-        }
-        return true
-      })
-      .sort((a, b) => {
-        const aVal = String((a as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
-        const bVal = String((b as Record<string, unknown>)[sortKey] ?? '').toLowerCase()
-        const cmp = aVal.localeCompare(bVal)
-        return sortDir === 'asc' ? cmp : -cmp
-      })
-  }, [residents, search, purokFilter, tagFilter, sortKey, sortDir])
-
-  const totalPages = Math.ceil(filteredResidents.length / PAGE_SIZE)
-  const paginatedResidents = filteredResidents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, purokFilter, tagFilter])
-
   function updateField(field: string, value: string | boolean) {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
       return next
     })
-  }
-
-  function toggleTagFilter(tag: string) {
-    setTagFilter((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    )
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -402,13 +352,19 @@ export default function ResidentsPage() {
   const canModify = hasRole('admin', 'staff')
 
   const columns: Column<ApiResident>[] = [
-    { key: 'last_name', label: 'Name', sortable: true,
+    { key: 'last_name', label: 'Name', sortable: true, filterType: 'text',
       render: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}` },
-    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm' },
-    { key: 'gender', label: 'Gender', hideBelow: 'sm' },
+    { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm', filterType: 'select',
+      filterOptions: purokOptions.map(p => ({ label: p, value: p })) },
+    { key: 'gender', label: 'Gender', hideBelow: 'sm', filterType: 'select',
+      filterOptions: [{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }] },
     { key: 'birth_date', label: 'Age',
       render: (r) => { if (r.birth_date) return calculateAge(r.birth_date).toString(); return '' }, hideBelow: 'md' },
-    { key: 'civil_status', label: 'Civil Status', hideBelow: 'md' },
+    { key: 'civil_status', label: 'Civil Status', hideBelow: 'md', filterType: 'select',
+      filterOptions: [
+        { label: 'Single', value: 'single' }, { label: 'Married', value: 'married' },
+        { label: 'Widowed', value: 'widowed' }, { label: 'Separated', value: 'separated' },
+      ] },
     { key: 'tags', label: 'Tags',
       render: (r) => (
         <div className="flex flex-wrap gap-1">
@@ -432,66 +388,22 @@ export default function ResidentsPage() {
         )}
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 w-60 max-w-full text-sm"
-        />
-        <Select
-          value={purokFilter}
-          onValueChange={(v) => setPurokFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Puroks</option>
-          {purokOptions.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </Select>
-        <div className="flex items-center gap-1.5">
-          {tagKeys.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => toggleTagFilter(tag)}
-              className={cn(
-                'rounded-md px-3.5 py-0.5 text-xs font-bold transition-colors',
-                tagFilter.includes(tag)
-                  ? tagColors[tag]
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
-              )}
-            >
-              {tagLabels[tag]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Resident Profiles</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={columns}
-            data={paginatedResidents}
+            data={residents}
             loading={loading}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
             onRowClick={(r) => openFlyout(r)}
             emptyState={
               residents.length === 0
                 ? <EmptyState title="No residents yet" description="Add your first resident." action={canModify ? { label: "Create first resident", onClick: openCreatePanel } : undefined} />
-                : <EmptyState variant="search" title="No residents match your filters." />
+                : undefined
             }
-            page={page}
-            totalPages={totalPages}
-            totalItems={filteredResidents.length}
-            onPageChange={setPage}
-            pageSize={PAGE_SIZE}
             rowKey={(r) => r.id}
+            toolbar
+            exportable
           />
         </CardContent>
       </Card>

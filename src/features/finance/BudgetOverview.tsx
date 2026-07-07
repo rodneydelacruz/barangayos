@@ -93,10 +93,7 @@ export function BudgetOverview() {
           <FiscalYearSelector value={year} onChange={setYear} />
         </div>
       </PageHeader>
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Budget Overview' },
-      ]} className="mb-4" />
+      
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
         {[
           { label: 'Total Income', value: totalIncome },

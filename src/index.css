@@ -316,3 +316,13 @@ html::-webkit-scrollbar-thumb:hover {
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
   background: var(--color-border);
 }
+
+.table-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

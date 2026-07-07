@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Calendar, Users, BookOpen, FileText } from 'lucide-react'
 import { getBlotters, createBlotter, updateBlotter, deleteBlotter, getNextCaseNumber, type ApiBlotter, type BlotterData } from '@/api/blotter'
@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
-import { SortSelect } from '@/components/ui/SortSelect'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { blotterStatusColors } from '@/lib/statusStyles'
@@ -61,18 +60,13 @@ function emptyForm(): BlotterData & { case_number: string } {
 export default function RecordsPage() {
   const [blotters, setBlotters] = useState<ApiBlotter[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flyoutBlotter, setFlyoutBlotter] = useState<ApiBlotter | null>(null)
-  const [sortBy, setSortBy] = useState('-created')
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
+  
 
   useEffect(() => {
     getBlotters()
@@ -93,35 +87,6 @@ export default function RecordsPage() {
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [selectedId, blotters])
-
-  const filteredBlotters = useMemo(() => {
-    const sorted = [...blotters].sort((a, b) => {
-      const desc = sortBy.startsWith('-')
-      const field = desc ? sortBy.slice(1) : sortBy
-      const va: string = (a as Record<string, unknown>)[field] as string || ''
-      const vb: string = (b as Record<string, unknown>)[field] as string || ''
-      const cmp = va.localeCompare(vb)
-      return desc ? -cmp : cmp
-    })
-    return sorted.filter((b) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !b.case_number.toLowerCase().includes(q) &&
-          !b.complainant_name.toLowerCase().includes(q) &&
-          !b.respondent_name?.toLowerCase().includes(q)
-        ) return false
-      }
-      if (statusFilter && b.status !== statusFilter) return false
-      if (typeFilter && b.incident_type !== typeFilter) return false
-      return true
-    })
-  }, [blotters, search, statusFilter, typeFilter, sortBy])
-
-  const totalPages = Math.ceil(filteredBlotters.length / PAGE_SIZE)
-  const paginatedBlotters = filteredBlotters.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -207,33 +172,32 @@ export default function RecordsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
-  const sortFields = [
-    { value: 'case_number', label: 'Case #' },
-    { value: 'incident_type', label: 'Type' },
-    { value: 'status', label: 'Status' },
-    { value: 'incident_date', label: 'Date' },
-    { value: '-created', label: 'Newest' },
-  ]
-
   function closeFlyout() {
     setFlyoutBlotter(null)
   }
 
-  const sortKey = sortBy.startsWith('-') ? sortBy.slice(1) : sortBy
-  const sortDir = sortBy.startsWith('-') ? 'desc' as const : 'asc' as const
-
   const blotterColumns: Column<ApiBlotter>[] = [
-    { key: 'case_number', label: 'Case #', sortable: true },
-    { key: 'complainant_name', label: 'Complainant', sortable: true },
-    { key: 'respondent_name', label: 'Respondent', sortable: true, hideBelow: 'sm' },
-    { key: 'incident_type', label: 'Incident Type', hideBelow: 'sm' },
+    { key: 'case_number', label: 'Case #', sortable: true, filterType: 'text' },
+    { key: 'complainant_name', label: 'Complainant', sortable: true, filterType: 'text' },
+    { key: 'respondent_name', label: 'Respondent', sortable: true, hideBelow: 'sm', filterType: 'text' },
+    { key: 'incident_type', label: 'Incident Type', hideBelow: 'sm', filterType: 'select',
+      filterOptions: [
+        { label: 'Blotter', value: 'blotter' }, { label: 'Complaint', value: 'complaint' },
+        { label: 'Dispute', value: 'dispute' }, { label: 'Other', value: 'other' },
+      ] },
     { key: 'status', label: 'Status',
       render: (b) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${blotterStatusColors[b.status] ?? ''}`}>
           {b.status}
         </span>
-      ) },
-    { key: 'created', label: 'Date', render: (b) => b.created ? new Date(b.created).toLocaleDateString() : '', hideBelow: 'md' },
+      ),
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Pending', value: 'pending' }, { label: 'Hearing', value: 'hearing' },
+        { label: 'Settled', value: 'settled' }, { label: 'Escalated', value: 'escalated' },
+        { label: 'Dismissed', value: 'dismissed' },
+      ] },
+    { key: 'created', label: 'Date', filterType: 'date', render: (b) => b.created ? new Date(b.created).toLocaleDateString() : '', hideBelow: 'md' },
   ]
 
   return (
@@ -247,59 +211,22 @@ export default function RecordsPage() {
         )}
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by case # or name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 w-60 max-w-full text-sm"
-        />
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v)}
-          className="h-9 w-36 text-sm"
-        >
-          <option value="">All Status</option>
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </Select>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v)}
-          className="h-9 w-36 text-sm"
-        >
-          <option value="">All Types</option>
-          {incidentTypeOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </Select>
-          <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
-        </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Blotter Cases</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={blotterColumns}
-            data={paginatedBlotters}
+            data={blotters}
             loading={loading}
-            sortKey={sortKey}
-            sortDir={sortDir}
             onRowClick={(b) => setFlyoutBlotter(b)}
             emptyState={
               <EmptyState
-                title={blotters.length === 0 ? "No blotter cases yet." : "No blotter cases match your filters."}
+                title="No blotter cases yet."
                 action={canModify && blotters.length === 0 ? { label: "Create first case", onClick: openCreatePanel } : undefined}
               />
             }
-            page={page}
-            totalPages={totalPages}
-            totalItems={filteredBlotters.length}
-            onPageChange={setPage}
-            pageSize={PAGE_SIZE}
+            toolbar
+            exportable
             rowKey={(b) => b.id}
           />
         </CardContent>

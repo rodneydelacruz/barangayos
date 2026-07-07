@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
-import { Plus, ChevronDown, Search, FileText, Clock, User, CheckCircle2, RotateCcw, Ban, DollarSign } from 'lucide-react'
+import { Plus, ChevronDown, FileText, Clock, User, CheckCircle2, RotateCcw, Ban, DollarSign } from 'lucide-react'
 import { getDocuments, createDocument, updateDocument, deleteDocument, getDailyQueueNumber, type ApiDocument } from '@/api/documents'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
-import { SortSelect } from '@/components/ui/SortSelect'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { documentStatusColors } from '@/lib/statusStyles'
@@ -61,18 +60,13 @@ function emptyForm() {
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<ApiDocument[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
   const [form, setForm] = useState(emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flyoutDoc, setFlyoutDoc] = useState<ApiDocument | null>(null)
-  const [sortBy, setSortBy] = useState('-created')
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 25
+  
 
   useEffect(() => {
     getDocuments()
@@ -93,31 +87,6 @@ export default function DocumentsPage() {
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [selectedId, docs])
-
-  const filteredDocs = useMemo(() => {
-    const sorted = [...docs].sort((a, b) => {
-      const desc = sortBy.startsWith('-')
-      const field = desc ? sortBy.slice(1) : sortBy
-      const va: string = (a as Record<string, unknown>)[field] as string || ''
-      const vb: string = (b as Record<string, unknown>)[field] as string || ''
-      const cmp = va.localeCompare(vb)
-      return desc ? -cmp : cmp
-    })
-    return sorted.filter((d) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!d.queue_number.toLowerCase().includes(q) && !d.resident_name.toLowerCase().includes(q)) return false
-      }
-      if (statusFilter && d.status !== statusFilter) return false
-      if (typeFilter && d.document_type !== typeFilter) return false
-      return true
-    })
-  }, [docs, search, statusFilter, typeFilter, sortBy])
-
-  const totalPages = Math.ceil(filteredDocs.length / PAGE_SIZE)
-  const paginatedDocs = filteredDocs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, sortBy])
 
   function updateField(field: string, value: string) {
     setForm((prev) => {
@@ -206,35 +175,43 @@ export default function DocumentsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
-  const sortFields = [
-    { value: 'queue_number', label: 'Queue #' },
-    { value: 'resident_name', label: 'Name' },
-    { value: 'document_type', label: 'Type' },
-    { value: 'status', label: 'Status' },
-    { value: 'requested_at', label: 'Date' },
-    { value: '-created', label: 'Newest' },
-  ]
-
   function closeFlyout() {
     setFlyoutDoc(null)
   }
 
-  const sortKey = sortBy.startsWith('-') ? sortBy.slice(1) : sortBy
-  const sortDir = sortBy.startsWith('-') ? 'desc' as const : 'asc' as const
-
   const documentsColumns: Column<ApiDocument>[] = [
-    { key: 'control_number', label: 'Queue #', sortable: true, render: (d) => `#${d.queue_number}` },
-    { key: 'resident_name', label: 'Resident', sortable: true,
+    { key: 'control_number', label: 'Queue #', sortable: true, filterType: 'text',
+      render: (d) => `#${d.queue_number}` },
+    { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
       render: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}` },
-    { key: 'document_type', label: 'Document Type', sortable: true, hideBelow: 'sm' },
+    { key: 'document_type', label: 'Document Type', sortable: true, hideBelow: 'sm', filterType: 'select',
+      filterOptions: [
+        { label: 'Barangay Clearance', value: 'barangay_clearance' },
+        { label: 'Business Permit', value: 'business_permit' },
+        { label: 'Certificate of Indigency', value: 'certificate_of_indigency' },
+        { label: 'Certificate of Residency', value: 'certificate_of_residency' },
+        { label: 'Certificate of Good Moral', value: 'certificate_of_good_moral' },
+        { label: 'Cedula', value: 'cedula' },
+        { label: 'Other', value: 'other' },
+      ] },
     { key: 'status', label: 'Status',
       render: (d) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${documentStatusColors[d.status] ?? ''}`}>
           {d.status.replace(/_/g, ' ')}
         </span>
-      ) },
-    { key: 'payment_status', label: 'Payment', hideBelow: 'sm' },
-    { key: 'created', label: 'Requested', render: (d) => d.created ? new Date(d.created).toLocaleDateString() : '', hideBelow: 'md' },
+      ),
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' },
+        { label: 'For Release', value: 'for_release' }, { label: 'Released', value: 'released' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ] },
+    { key: 'payment_status', label: 'Payment', hideBelow: 'sm', filterType: 'select',
+      filterOptions: [
+        { label: 'Paid', value: 'paid' }, { label: 'Unpaid', value: 'unpaid' },
+        { label: 'Waived', value: 'waived' },
+      ] },
+    { key: 'created', label: 'Requested', filterType: 'date', render: (d) => d.created ? new Date(d.created).toLocaleDateString() : '', hideBelow: 'md' },
   ]
 
   return (
@@ -248,62 +225,22 @@ export default function DocumentsPage() {
         )}
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by queue # or name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-60 max-w-full pl-8 text-sm"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v)}
-          className="h-9 w-40 text-sm"
-        >
-          <option value="">All Statuses</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>{statusLabels[s]}</option>
-          ))}
-        </Select>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v)}
-          className="h-9 w-44 text-sm"
-        >
-          <option value="">All Types</option>
-          {documentTypeOptions.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </Select>
-        <SortSelect options={sortFields} value={sortBy} onChange={setSortBy} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Request Queue</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={documentsColumns}
-            data={paginatedDocs}
+            data={docs}
             loading={loading}
-            sortKey={sortKey}
-            sortDir={sortDir}
             onRowClick={(d) => setFlyoutDoc(d)}
             emptyState={
               <EmptyState
-                title={docs.length === 0 ? "No document requests yet." : "No requests match your filters."}
+                title="No document requests yet."
                 action={canModify && docs.length === 0 ? { label: "Create first request", onClick: openCreatePanel } : undefined}
               />
             }
-            page={page}
-            totalPages={totalPages}
-            totalItems={filteredDocs.length}
-            onPageChange={setPage}
-            pageSize={PAGE_SIZE}
+            toolbar
+            exportable
             rowKey={(d) => d.id}
           />
         </CardContent>

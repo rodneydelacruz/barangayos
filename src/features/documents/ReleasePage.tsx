@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Check, Search, DollarSign } from 'lucide-react'
+import { Check, DollarSign } from 'lucide-react'
 import { getDocuments, updateDocument, getDocumentFee, type ApiDocument } from '@/api/documents'
 import { getIncomeAccounts } from '@/api/incomeAccounts'
 import { createRevenue } from '@/api/revenues'
@@ -18,7 +18,6 @@ export default function ReleasePage() {
   const [docs, setDocs] = useState<ApiDocument[]>([])
   const [incomeAccounts, setIncomeAccounts] = useState<Array<{ id: string; coa_code: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
   const [releaseDoc, setReleaseDoc] = useState<ApiDocument | null>(null)
   const [receivedBy, setReceivedBy] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
@@ -47,16 +46,6 @@ export default function ReleasePage() {
   const forRelease = useMemo(() => {
     return docs.filter((d) => d.status === 'for_release')
   }, [docs])
-
-  const filteredRelease = useMemo(() => {
-    if (!search) return forRelease
-    const q = search.toLowerCase()
-    return forRelease.filter(
-      (d) =>
-        d.queue_number.toLowerCase().includes(q) ||
-        d.resident_name.toLowerCase().includes(q),
-    )
-  }, [forRelease, search])
 
   async function openReleaseDialog(doc: ApiDocument) {
     setReleaseDoc(doc)
@@ -131,17 +120,33 @@ export default function ReleasePage() {
   }
 
   const releaseColumns: Column<ApiDocument>[] = [
-    { key: 'control_number', label: 'Control #', sortable: true, render: (d) => `#${d.queue_number}` },
-    { key: 'resident_name', label: 'Resident', sortable: true,
+    { key: 'control_number', label: 'Control #', sortable: true, filterType: 'text',
+      render: (d) => `#${d.queue_number}` },
+    { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
       render: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}` },
-    { key: 'document_type', label: 'Type', hideBelow: 'sm' },
-    { key: 'purpose', label: 'Purpose' },
+    { key: 'document_type', label: 'Type', hideBelow: 'sm', filterType: 'select',
+      filterOptions: [
+        { label: 'Barangay Clearance', value: 'barangay_clearance' },
+        { label: 'Business Permit', value: 'business_permit' },
+        { label: 'Certificate of Indigency', value: 'certificate_of_indigency' },
+        { label: 'Certificate of Residency', value: 'certificate_of_residency' },
+        { label: 'Certificate of Good Moral', value: 'certificate_of_good_moral' },
+        { label: 'Cedula', value: 'cedula' },
+        { label: 'Other', value: 'other' },
+      ] },
+    { key: 'purpose', label: 'Purpose', filterType: 'text' },
     { key: 'status', label: 'Status',
       render: (d) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${documentStatusColors[d.status] ?? ''}`}>
           {d.status.replace(/_/g, ' ')}
         </span>
-      ) },
+      ),
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' },
+        { label: 'For Release', value: 'for_release' }, { label: 'Released', value: 'released' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ] },
     { key: 'actions', label: '', className: 'w-24 text-right',
       render: (d) => (
         <Button size="sm" className="gap-1.5" onClick={(e) => { e.stopPropagation(); openReleaseDialog(d) }}>
@@ -167,36 +172,21 @@ export default function ReleasePage() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by queue # or name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-60 max-w-full pl-8 text-sm"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {forRelease.length} document{forRelease.length !== 1 ? 's' : ''} ready for release
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>For Release</CardTitle>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={releaseColumns}
-            data={filteredRelease}
+            data={forRelease}
             loading={loading}
             emptyState={
               <EmptyState
-                title={forRelease.length === 0 ? "No documents ready for release." : "No documents match your search."}
-                description={forRelease.length === 0 ? 'Documents marked as "For Release" in the Document Queue will appear here.' : undefined}
+                title="No documents ready for release."
+                description='Documents marked as "For Release" in the Document Queue will appear here.'
               />
             }
+            toolbar
+            exportable
             rowKey={(d) => d.id}
           />
         </CardContent>

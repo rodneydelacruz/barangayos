@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, Database, FileText, Filter } from 'lucide-react'
+import { Clock, User, Database, FileText } from 'lucide-react'
 import { getFinanceAuditLogs, type ApiFinanceAudit } from '@/api/financeAudit'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select } from '@/components/ui/select'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { cn, formatDateTime } from '@/lib/utils'
 
@@ -25,11 +24,6 @@ const collectionLabels: Record<string, string> = {
   revenues: 'Revenues',
 }
 
-const collectionOptions = [
-  { value: '', label: 'All Finance' },
-  ...FINANCE_COLLECTIONS.map((c) => ({ value: c, label: collectionLabels[c] })),
-]
-
 const actionColors: Record<string, string> = {
   create: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   update: 'bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
@@ -42,25 +36,23 @@ function formatPeso(n: number): string {
 
 export function FinanceAudit() {
   const [logs, setLogs] = useState<ApiFinanceAudit[]>([])
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalItems, setTotalItems] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [collectionFilter, setCollectionFilter] = useState('')
   const [flyoutLog, setFlyoutLog] = useState<ApiFinanceAudit | null>(null)
 
   function closeFlyout() {
     setFlyoutLog(null)
   }
 
-  async function fetchLogs(p: number, collectionName: string) {
+  async function fetchLogs() {
     setLoading(true)
     try {
-      const result = await getFinanceAuditLogs(p, 25, '-created', collectionName || undefined)
-      setLogs(result.items)
-      setTotalPages(result.totalPages)
-      setTotalItems(result.totalItems)
-      setPage(p)
+      const first = await getFinanceAuditLogs(1, 100, '-created')
+      const all = [...first.items]
+      for (let page = 2; page <= first.totalPages; page += 1) {
+        const next = await getFinanceAuditLogs(page, 100, '-created')
+        all.push(...next.items)
+      }
+      setLogs(all)
     } catch {
       // silent
     } finally {
@@ -69,26 +61,26 @@ export function FinanceAudit() {
   }
 
   useEffect(() => {
-    setPage(1)
-    setLogs([])
-    fetchLogs(1, collectionFilter)
-  }, [collectionFilter])
-
-  function handlePageChange(newPage: number) {
-    fetchLogs(newPage, collectionFilter)
-  }
+    fetchLogs()
+  }, [])
 
   const totalAmount = logs.reduce((s, l) => s + (l.amount || 0), 0)
 
   const columns: Column<ApiFinanceAudit>[] = [
-    { key: 'action', label: 'Action',
+    { key: 'action', label: 'Action', filterType: 'select',
+      filterOptions: [
+        { label: 'Create', value: 'create' },
+        { label: 'Update', value: 'update' },
+        { label: 'Delete', value: 'delete' },
+      ],
       render: (a) => (
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${a.action === 'create' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : a.action === 'update' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{a.action}</span>
       ) },
-    { key: 'collection_name', label: 'Collection', sortable: true,
+    { key: 'collection_name', label: 'Collection', sortable: true, filterType: 'select',
+      filterOptions: [...FINANCE_COLLECTIONS].map((c) => ({ label: collectionLabels[c], value: c })),
       render: (a) => a.collection_name.replace(/_/g, ' ') },
-    { key: 'details', label: 'Details', render: (a) => a.details ?? '—' },
-    { key: 'amount', label: 'Amount', className: 'text-right',
+    { key: 'details', label: 'Details', filterType: 'text', render: (a) => a.details ?? '—' },
+    { key: 'amount', label: 'Amount', className: 'text-right', filterType: 'text',
       render: (a) => a.amount ? `₱${Number(a.amount).toLocaleString()}` : '—' },
   ]
 
@@ -96,37 +88,10 @@ export function FinanceAudit() {
     <>
       <PageHeader title="Finance Audit Trail" subtitle="Track all financial transactions and changes." />
 
-      <Breadcrumb items={[
-        { href: '/finance/budget', label: 'Finance' },
-        { label: 'Audit Trail' },
-      ]} className="mb-4" />
+      
 
-      <div className="mb-4 flex items-center gap-2">
-        <Filter className="size-4 text-muted-foreground" />
-        <Select
-          value={collectionFilter}
-          onValueChange={(v) => setCollectionFilter(v)}
-          className="h-9 w-52 text-sm"
-        >
-          {collectionOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Finance Activity Log</CardTitle>
-            {totalAmount > 0 && (
-              <span className="text-sm text-muted-foreground">
-                Total amount shown: <span className="font-semibold text-foreground">{formatPeso(totalAmount)}</span>
-              </span>
-            )}
-          </div>
-        </CardHeader>
+      <Card lifted={false} className="shadow-none">
+        
         <CardContent className="p-0">
           <DataTable
             columns={columns}
@@ -134,12 +99,9 @@ export function FinanceAudit() {
             loading={loading}
             onRowClick={(l) => setFlyoutLog(l)}
             emptyState={<p className="text-center text-muted-foreground py-12">No finance activity recorded yet.</p>}
-            page={page}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            onPageChange={handlePageChange}
-            pageSize={25}
             rowKey={(l) => l.id}
+            toolbar
+            exportable
           />
         </CardContent>
       </Card>
