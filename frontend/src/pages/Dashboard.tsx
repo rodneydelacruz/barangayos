@@ -32,9 +32,7 @@ export default function Dashboard() {
   return (
     <div className="font-display">
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Dashboard</h1>
-        </div>
+        
         <button
           onClick={() => setSheetOpen(true)}
           className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
