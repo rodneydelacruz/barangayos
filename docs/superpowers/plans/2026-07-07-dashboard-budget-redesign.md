@@ -910,22 +910,13 @@ export default function Dashboard() {
 }
 ```
 
-- [ ] **Step 2: Update `DashboardSearch.tsx` — accent color update**
-
-In `DashboardSearch.tsx`:
-- Line 39: Replace `focus:ring-2 focus:ring-gold/50` with `focus:ring-2 focus:ring-accent-blue/50`
-- Line 68: Replace `text-gold` with `text-accent-blue`
+- [ ] **Step 2: Update `DashboardSearch.tsx` — no visual changes needed (gold ring stays)**
 
 - [ ] **Step 4: Update `DashboardHero.tsx` — remove gold border-top, make card cleaner**
 
 Edit `DashboardHero.tsx`:
-- Change the container div from `rounded-xl border border-border border-t-2 border-gold bg-card shadow-sm` to `rounded-lg border border-border bg-card shadow-sm`
-- Change the icon container from `bg-gold/10` to `bg-accent-blue/10` and icon color from `text-gold` to `text-accent-blue`
-
-In the file:
-- Line 43: Replace `"rounded-xl border border-border border-t-2 border-gold bg-card shadow-sm motion-fade-in motion-slide-up"` with `"rounded-lg border border-border bg-card shadow-sm motion-fade-in motion-slide-up"`
-- Line 68: Replace `bg-gold/10` with `bg-accent-blue/10`
-- Line 69: Replace `text-gold` with `text-accent-blue`
+- Remove the gold top-border accent only: container class changes from `rounded-xl border border-border border-t-2 border-gold bg-card shadow-sm` to `rounded-lg border border-border bg-card shadow-sm`
+- Keep `bg-gold/10` and `text-gold` for icons — palette is preserved
 
 - [ ] **Step 5: Update `DashboardKPI.tsx` to accept config-driven metrics**
 
@@ -961,13 +952,13 @@ interface KpiCard {
 
 Update each card entry to include `metricKey`:
 ```tsx
-{ label: 'Residents', metricKey: 'residents', value: stats.residents, sub: `${stats.voters} voters`, icon: Users, color: 'text-accent-blue', roles: ['admin', 'staff', 'viewer'] },
-{ label: 'Document Requests', metricKey: 'pendingDocuments', value: stats.pendingDocuments, sub: 'pending', icon: FileText, color: 'text-accent-amber', roles: ['admin', 'staff', 'viewer'] },
-{ label: 'Blotter Cases', metricKey: 'blotterActive', value: stats.blotterActive, sub: 'active', icon: Scale, color: 'text-accent-rose', roles: ['admin', 'staff', 'viewer'] },
-{ label: 'Visitors', metricKey: 'visitorsToday', value: stats.visitorsToday, sub: `${stats.visitorsActive} now`, icon: DoorOpen, color: 'text-accent-teal', roles: ['admin', 'staff'] },
+{ label: 'Residents', metricKey: 'residents', value: stats.residents, sub: `${stats.voters} voters`, icon: Users, color: 'text-barangay', roles: ['admin', 'staff', 'viewer'] },
+{ label: 'Document Requests', metricKey: 'pendingDocuments', value: stats.pendingDocuments, sub: 'pending', icon: FileText, color: 'text-amber-500', roles: ['admin', 'staff', 'viewer'] },
+{ label: 'Blotter Cases', metricKey: 'blotterActive', value: stats.blotterActive, sub: 'active', icon: Scale, color: 'text-blue-500', roles: ['admin', 'staff', 'viewer'] },
+{ label: 'Visitors', metricKey: 'visitorsToday', value: stats.visitorsToday, sub: `${stats.visitorsActive} now`, icon: DoorOpen, color: 'text-emerald-500', roles: ['admin', 'staff'] },
 { label: 'Meetings Today', metricKey: 'meetingsToday', value: stats.meetingsToday, sub: 'today', icon: Calendar, color: 'text-purple-500', roles: ['admin', 'staff'] },
 { label: 'Assets', metricKey: 'assets', value: `₱${(stats.assetsValue / 1000).toFixed(1)}K`, sub: `${stats.assetsTotal} items`, icon: Package, color: 'text-narra', roles: ['admin'] },
-{ label: 'Settled Cases', metricKey: 'settledCases', value: stats.settledCases, sub: 'total', icon: CheckCircle2, color: 'text-accent-teal', roles: ['admin', 'staff'] },
+{ label: 'Settled Cases', metricKey: 'settledCases', value: stats.settledCases, sub: 'total', icon: CheckCircle2, color: 'text-emerald-500', roles: ['admin', 'staff'] },
 ```
 
 Then filter:
@@ -978,7 +969,7 @@ const visibleCards = selectedMetrics
   : roleCards
 ```
 
-Also change the gold top-border on the card: replace `className="h-1 w-full bg-gold/60"` with `className=""` (remove the div entirely).
+Keep the gold top-border accent strip on the card (div with `className="h-1 w-full bg-gold/60"`) — palette is preserved.
 
 - [ ] **Step 6: Update `DashboardChart.tsx` to accept chart type config**
 
@@ -1048,7 +1039,7 @@ function renderDonut() {
 }
 ```
 
-Also change the card container: replace `rounded-xl` with `rounded-lg` and remove any gold border-top if present.
+Change the card container: replace `rounded-xl` with `rounded-lg`.
 
 - [ ] **Step 7: Update `DashboardActivity.tsx` to accept pageSize config**
 
@@ -1070,7 +1061,7 @@ Also change `LOAD_MORE` to use `pageSize` instead of the constant `5`.
 
 - [ ] **Step 8: Update `DashboardSystemStatus.tsx` — style only**
 
-Replace `rounded-xl` with `rounded-lg` on the card. No other changes.
+Replace `rounded-xl` with `rounded-lg` on the card. Keep all other styling (gold accents unchanged).
 
 - [ ] **Step 9: Update `DashboardQuickActions.tsx` — style only**
 
@@ -1261,13 +1252,13 @@ export function BudgetOverview() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isVisible('disbursements-chart') && (
-            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: string })?.chartType ?? 'bar'} data={disbursementTrend} color="#2563EB" format="currency" />
+            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: string })?.chartType ?? 'bar'} data={disbursementTrend} color="#C9953E" format="currency" />
           )}
           {isVisible('revenue-chart') && (
-            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: string })?.chartType ?? 'bar'} data={revenueTrend} color="#0D9488" format="currency" />
+            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: string })?.chartType ?? 'bar'} data={revenueTrend} color="#22C55E" format="currency" />
           )}
           {isVisible('utilization-chart') && (
-            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: string })?.chartType ?? 'line'} data={utilizationData} color="#2563EB" format="number" />
+            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: string })?.chartType ?? 'line'} data={utilizationData} color="#3B82F6" format="number" />
           )}
         </div>
       </div>
@@ -1312,7 +1303,7 @@ if (detailMode === 'compact') {
         <p className="text-xs font-medium text-muted-foreground">{title}</p>
         <p className="mt-1 text-lg font-bold text-foreground tabular-nums">{f(appropriated)}</p>
         <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-accent-blue transition-all" style={{ width: `${Math.min(obligatedPct, 100)}%` }} />
+          <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${Math.min(obligatedPct, 100)}%` }} />
         </div>
         <p className="mt-1 text-[10px] text-muted-foreground">{obligatedPct}% utilized</p>
       </CardContent>

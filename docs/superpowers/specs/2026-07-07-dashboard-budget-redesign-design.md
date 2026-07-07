@@ -11,23 +11,18 @@ Reimagine the Dashboard and Budget Overview pages with a modern corporate visual
 
 ## Design Tokens
 
-### Color Palette (Cool Corporate)
+### Color Palette (Philippine Heritage — Preserved)
 
-| Token | Light Hex | Dark Hex | Usage |
-|-------|-----------|----------|-------|
-| `--color-bg` | `#F1F5F9` | `#0B1120` | Page background |
-| `--color-fg` | `#0F172A` | `#F8FAFC` | Primary text |
-| `--color-card` | `#FFFFFF` | `#131D2E` | Card surface |
-| `--color-accent` | `#2563EB` | `#60A5FA` | Primary interactive (replaces gold as dominant) |
-| `--color-accent-teal` | `#0D9488` | `#2DD4BF` | Positive metrics |
-| `--color-gold` | `#D4A04A` | `#E4B65E` | Identity badge, heritage marker (sparingly) |
-| `--color-border` | `#E2E8F0` | `#1E293B` | Hairline rules |
-| `--color-muted-fg` | `#64748B` | `#94A3B8` | Secondary/tertiary text |
-| `--color-surface-raised` | `#F8FAFC` | `#0F172A` | Raised card alt |
-| `--color-accent-rose` | `#E11D48` | `#FB7185` | Destructive/urgent |
-| `--color-accent-amber` | `#D97706` | `#FBBF24` | Warning |
+The original Philippine-inspired palette is kept unchanged. These new accent-* variables are added to support the new components (WidgetSheet toggles, segmented controls, chart accents) and map to the existing Philippine colors:
 
-Existing Philippine tokens (`--color-barangay`, `--color-narra`, `--color-bamboo`, `--color-red-pinoy`) remain defined for backward compatibility but are no longer the primary design drivers.
+| Token | Light Hex | Dark Hex | Maps To | Usage |
+|-------|-----------|----------|---------|-------|
+| `--accent-blue` | `#1B3A4B` | `#608B99` | `--barangay` | Primary interactive (toggles, active states) |
+| `--accent-teal` | `#0D9488` | `#2DD4BF` | New | Positive metrics, accent |
+| `--accent-rose` | `#CE1126` | `#D94A45` | `--red-pinoy` | Destructive/urgent |
+| `--accent-amber` | `#C9953E` | `#C9953E` | `--gold` | Warnings, highlights |
+
+All original `--color-barangay`, `--color-narra`, `--color-bamboo`, `--color-red-pinoy`, `--color-gold`, `--color-capiz` tokens remain fully intact and functional.
 
 ### Typography
 
@@ -39,16 +34,11 @@ Existing Philippine tokens (`--color-barangay`, `--color-narra`, `--color-bamboo
 
 ### Border Radius
 
-Reduce from `0.5rem` (8px) to `0.375rem` (6px). Remove the gold top-border accent strip on cards — use clean flat cards with subtle shadow instead.
+Keep existing `0.5rem` (8px). Remove the gold top-border accent strip on cards — use clean flat cards with subtle shadow instead.
 
 ### Shadows
 
-Replace current warm shadows with cooler slate-tinted shadows:
-
-```css
---shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
---shadow-elevated: 0 4px 16px rgba(15, 23, 42, 0.08);
-```
+Keep existing warm shadows using `rgba(0, 0, 0, ...)` — unchanged from the original design.
 
 ---
 
