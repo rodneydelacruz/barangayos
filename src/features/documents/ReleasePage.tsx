@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect, useMemo } from 'react'
 import { Check, DollarSign } from 'lucide-react'
 import { getDocuments, updateDocument, getDocumentFee, type ApiDocument } from '@/api/documents'
@@ -28,6 +29,7 @@ export default function ReleasePage() {
   const [remarks, setRemarks] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  useBodyScrollLock(releaseDoc !== null)
 
   useEffect(() => {
     Promise.all([
@@ -121,8 +123,10 @@ export default function ReleasePage() {
 
   const releaseColumns: Column<ApiDocument>[] = [
     { key: 'control_number', label: 'Control #', sortable: true, filterType: 'text',
+      filterValue: (d) => `#${d.queue_number}`,
       render: (d) => `#${d.queue_number}` },
     { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
+      filterValue: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}`,
       render: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}` },
     { key: 'document_type', label: 'Type', hideBelow: 'sm', filterType: 'select',
       filterOptions: [

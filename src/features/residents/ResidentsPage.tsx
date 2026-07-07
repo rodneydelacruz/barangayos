@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Search, Home, FileText, BookOpen, Activity } from 'lucide-react'
@@ -199,6 +200,7 @@ export default function ResidentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  useBodyScrollLock(panelOpen)
   const [error, setError] = useState<string | null>(null)
   const [age, setAge] = useState(0)
   const [flyoutResident, setFlyoutResident] = useState<ApiResident | null>(null)
@@ -353,6 +355,7 @@ export default function ResidentsPage() {
 
   const columns: Column<ApiResident>[] = [
     { key: 'last_name', label: 'Name', sortable: true, filterType: 'text',
+      filterValue: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`,
       render: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}` },
     { key: 'purok', label: 'Purok', sortable: true, hideBelow: 'sm', filterType: 'select',
       filterOptions: purokOptions.map(p => ({ label: p, value: p })) },
@@ -404,6 +407,8 @@ export default function ResidentsPage() {
             rowKey={(r) => r.id}
             toolbar
             exportable
+            sortKey="last_name"
+            sortDir="asc"
           />
         </CardContent>
       </Card>

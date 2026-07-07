@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react'
 import { getEventsByMonth, createEvent, updateEvent, deleteEvent, type ApiCalendarEvent, type CalendarEventData } from '@/api/calendar'
@@ -84,6 +85,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  useBodyScrollLock(panelOpen)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<CalendarEventData>(emptyForm())
   const [deletingId, setDeletingId] = useState<string | null>(null)

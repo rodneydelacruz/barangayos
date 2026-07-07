@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { Plus, DollarSign, Calendar, Tag, FileText, Receipt, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ export function RevenueTracking() {
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiRevenue | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useBodyScrollLock(showForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showExport, setShowExport] = useState(false)
   const [form, setForm] = useState<RevenueData>({ revenue_date: today(), income_account: '', category: 'document_fee', source: '', amount: 0, or_no: '', remarks: '' })

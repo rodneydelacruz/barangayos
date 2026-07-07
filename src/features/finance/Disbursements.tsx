@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { Plus, Calendar, DollarSign, FileText, Building, Receipt, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ export function Disbursements() {
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiDisbursement | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useBodyScrollLock(showForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showExport, setShowExport] = useState(false)
   const [form, setForm] = useState<DisbursementData>({ appropriation: '', payee: '', disbursement_date: today(), amount: 0, check_no: '', or_no: '', particular: '' })

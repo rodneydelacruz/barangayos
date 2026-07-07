@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, FileText, Clock, User, CheckCircle2, RotateCcw, Ban, DollarSign } from 'lucide-react'
@@ -64,6 +65,7 @@ export default function DocumentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  useBodyScrollLock(panelOpen)
   const [error, setError] = useState<string | null>(null)
   const [flyoutDoc, setFlyoutDoc] = useState<ApiDocument | null>(null)
   
@@ -181,8 +183,10 @@ export default function DocumentsPage() {
 
   const documentsColumns: Column<ApiDocument>[] = [
     { key: 'control_number', label: 'Queue #', sortable: true, filterType: 'text',
+      filterValue: (d) => `#${d.queue_number}`,
       render: (d) => `#${d.queue_number}` },
     { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
+      filterValue: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}`,
       render: (d) => `${d.last_name ?? ''}, ${d.first_name ?? ''}` },
     { key: 'document_type', label: 'Document Type', sortable: true, hideBelow: 'sm', filterType: 'select',
       filterOptions: [

@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { DollarSign, BookOpen, Calendar, FileText, Building, Receipt, Database, ArrowRight, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,6 +34,7 @@ export function Appropriations() {
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiAppropriation | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useBodyScrollLock(showForm)
   const [editId, setEditId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showExport, setShowExport] = useState(false)

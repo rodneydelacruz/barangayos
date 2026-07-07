@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Camera, X, ClipboardList, Tag, MapPin } from 'lucide-react'
@@ -88,6 +89,7 @@ export default function AssetsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  useBodyScrollLock(panelOpen)
   const [error, setError] = useState<string | null>(null)
 
   const [uploading, setUploading] = useState(false)

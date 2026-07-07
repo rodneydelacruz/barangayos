@@ -37,6 +37,7 @@ export interface Column<T> {
   className?: string
   filterType?: 'text' | 'select' | 'date'
   filterOptions?: { label: string; value: string }[]
+  filterValue?: (item: T) => string
   pinned?: 'left' | 'right'
   resizable?: boolean
   align?: 'left' | 'center' | 'right'
@@ -96,7 +97,9 @@ function DataTableInner<T>({
       accessorFn: (row) => (row as Record<string, unknown>)[col.key],
       enableSorting: col.sortable ?? false,
       enableColumnFilter: !!col.filterType,
-      filterFn: col.filterType === 'select' ? 'equalsString' : 'includesString',
+      filterFn: col.filterType === 'select' ? 'equalsString' : col.filterValue
+        ? (row, _columnId, filterVal) => String(col.filterValue!(row.original)).toLowerCase().includes(String(filterVal).toLowerCase())
+        : 'includesString',
       enableResizing: col.resizable ?? false,
       size: 150,
       minSize: col.resizable ? 80 : undefined,
@@ -111,7 +114,11 @@ function DataTableInner<T>({
     })), [columns])
 
   const isControlled = externalSortKey !== undefined && externalOnSort !== undefined
-  const [internalSorting, setInternalSorting] = useState<SortingState>([])
+  const [internalSorting, setInternalSorting] = useState<SortingState>(() =>
+    !isControlled && externalSortKey !== undefined
+      ? [{ id: externalSortKey, desc: externalSortDir === 'desc' }]
+      : []
+  )
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [internalDense, setInternalDense] = useState(dense)

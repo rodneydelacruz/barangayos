@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, Pencil, Trash2, ChevronDown, ArrowLeft } from 'lucide-react'
@@ -92,6 +93,7 @@ export default function AgendaPage() {
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [meetingPanelOpen, setMeetingPanelOpen] = useState(false)
+  useBodyScrollLock(meetingPanelOpen || itemPanelOpen)
   const [itemPanelOpen, setItemPanelOpen] = useState(false)
   const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)

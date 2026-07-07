@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useEffect, type ReactNode } from 'react'
 import { X, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -13,20 +14,7 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ open, onClose, title, onEdit, onDelete, loading, children }: DetailPanelProps) {
-  useEffect(() => {
-    if (open) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      document.body.style.overflow = 'hidden'
-      document.body.style.paddingRight = scrollbarWidth + 'px'
-    } else {
-      document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
-    }
-  }, [open])
+  useBodyScrollLock(open)
 
   if (!open) return null
 

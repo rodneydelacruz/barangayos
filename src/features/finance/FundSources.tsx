@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { Plus, Landmark, DollarSign, Calendar, FileText, Scale, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ export function FundSources() {
   const [loading, setLoading] = useState(true)
   const [flyout, setFlyout] = useState<ApiFundSource | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useBodyScrollLock(showForm)
   const [editing, setEditing] = useState<ApiFundSource | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [auditLogs, setAuditLogs] = useState<ApiFinanceAudit[]>([])

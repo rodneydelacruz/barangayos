@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Calendar, Users, BookOpen, FileText } from 'lucide-react'
@@ -64,6 +65,7 @@ export default function RecordsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  useBodyScrollLock(panelOpen)
   const [error, setError] = useState<string | null>(null)
   const [flyoutBlotter, setFlyoutBlotter] = useState<ApiBlotter | null>(null)
   
