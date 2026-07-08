@@ -129,7 +129,7 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
 :root {
   color-scheme: light;
 
-  --bg: #F5F0E8;
+  --bg: #F4F6F9;
   --fg: #1A1513;
   --card: #FFFFFF;
   --card-fg: #1A1513;
@@ -137,19 +137,19 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   --popover-fg: #1A1513;
   --primary: #1E2A4A;
   --primary-fg: #FFFFFF;
-  --secondary: #F0EBE0;
+  --secondary: #EEF0F4;
   --secondary-fg: #1A1513;
-  --muted: #F0EBE0;
-  --muted-fg: #8B7E74;
-  --accent: #F0EBE0;
+  --muted: #EEF0F4;
+  --muted-fg: #8E9096;
+  --accent: #EEF0F4;
   --accent-fg: #1A1513;
   --destructive: #CE1126;
   --destructive-fg: #FFFFFF;
-  --border: #EBE5D8;
-  --input: #EBE5D8;
+  --border: #E2E5EA;
+  --input: #E2E5EA;
   --ring: #D4A854;
 
-  --capiz: #F8F5F0;
+  --capiz: #F9FAFB;
   --barangay: #1E2A4A;
   --gold: #D4A854;
   --teal: #2D8B7A;

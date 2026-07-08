@@ -82,7 +82,7 @@ function BarChart({ items, total, color = '#D4A854' }: {
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-3">
           <span className="w-28 text-xs font-medium truncate text-foreground">{item.label}</span>
-          <div className="flex-1 h-6 rounded bg-[#F0EBE0] overflow-hidden">
+          <div className="flex-1 h-6 rounded bg-muted overflow-hidden">
             <div
               className="h-full rounded transition-all duration-500"
               style={{
