@@ -23,7 +23,7 @@ export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
           <div className="shrink-0">{children}</div>
         )}
       </div>
-      <div className="mt-3 border-b border-bamboo/40" />
+      <div className="mt-3 border-b border-gold/30" />
     </div>
   )
 }

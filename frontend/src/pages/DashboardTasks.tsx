@@ -17,7 +17,7 @@ const priorityConfig = {
 
 export default function DashboardTasks({ tasks }: DashboardTasksProps) {
   return (
-    <Card className="motion-fade-in motion-slide-up rounded-lg">
+    <Card className="motion-fade-in motion-slide-up" variant="accent-top" accentColor="#D4A854">
       <CardContent className="p-5">
         <h2 className="font-display flex items-center gap-2 text-sm font-semibold text-foreground">
           Ang Iyong mga Gawain

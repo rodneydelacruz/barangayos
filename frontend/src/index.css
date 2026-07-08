@@ -28,6 +28,7 @@
   --color-capiz: var(--capiz);
   --color-barangay: var(--barangay);
   --color-gold: var(--gold);
+  --color-teal: var(--teal);
   --color-narra: var(--narra);
   --color-bamboo: var(--bamboo);
   --color-red-pinoy: var(--red-pinoy);
@@ -47,21 +48,21 @@
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  --radius: 0;
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
-  --radius-3xl: 0;
+  --radius: 0.375rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
 
   --shadow-xs: 0 0 0 1px var(--color-border);
-  --shadow-sm: 0 0 0 1px var(--color-border);
-  --shadow-md: 0 0 0 1px var(--color-border);
-  --shadow-lg: 0 0 0 1px var(--color-border);
-  --shadow-xl: 0 0 0 1px var(--color-border);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-xl: 0 8px 24px rgba(0,0,0,0.12);
   --shadow-ring: 0 0 0 1px var(--color-border);
-  --shadow-elevated: 0 0 0 1px var(--color-border);
+  --shadow-elevated: 0 2px 6px rgba(30,42,74,0.25);
 }
 
 @utility motion-fade-in {
@@ -134,30 +135,31 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   --card-fg: #1A1513;
   --popover: #FFFFFF;
   --popover-fg: #1A1513;
-  --primary: #1B3A4B;
+  --primary: #1E2A4A;
   --primary-fg: #FFFFFF;
   --secondary: #F0EBE0;
   --secondary-fg: #1A1513;
   --muted: #F0EBE0;
-  --muted-fg: #7A6E62;
+  --muted-fg: #8B7E74;
   --accent: #F0EBE0;
   --accent-fg: #1A1513;
   --destructive: #CE1126;
   --destructive-fg: #FFFFFF;
-  --border: #E4DBC8;
-  --input: #E4DBC8;
-  --ring: #C9953E;
+  --border: #EBE5D8;
+  --input: #EBE5D8;
+  --ring: #D4A854;
 
   --capiz: #F8F5F0;
-  --barangay: #1B3A4B;
-  --gold: #C9953E;
+  --barangay: #1E2A4A;
+  --gold: #D4A854;
+  --teal: #2D8B7A;
   --narra: #5C4033;
-  --bamboo: #E4DBC8;
+  --bamboo: #EBE5D8;
   --red-pinoy: #CE1126;
 
-  --accent-blue: #1B3A4B;
-  --accent-teal: #0D9488;
-  --accent-rose: #CE1126;
+  --accent-blue: #1E2A4A;
+  --accent-teal: #2DD4BF;
+  --accent-rose: #E8614A;
   --accent-amber: #C9953E;
 
   --surface-raised: #FFFFFF;
@@ -195,7 +197,8 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
 
   --capiz: #0B0A09;
   --barangay: #608B99;
-  --gold: #C9953E;
+  --gold: #D4A854;
+  --teal: #2DD4BF;
   --narra: #C4B4A0;
   --bamboo: #2A2622;
   --red-pinoy: #D94A45;
@@ -213,8 +216,6 @@ a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   --sidebar-border: #162434;
   --surface-overlay: rgba(0, 0, 0, 0.6);
   --text-subtle: #7A7064;
-
-  --shadow-sm: 0 0 0 1px var(--color-border);
 }
 
 .dark .elevated {

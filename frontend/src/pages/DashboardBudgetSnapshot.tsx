@@ -34,7 +34,7 @@ export default function DashboardBudgetSnapshot({ metric = 'balance' }: Dashboar
   const highlightLabel = metric === 'income' ? 'Total Income' : metric === 'disbursed' ? 'Disbursed' : 'Balance'
 
   return (
-    <Card>
+    <Card variant="default">
       <CardContent className="p-5">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Landmark className="size-3.5" />
@@ -52,7 +52,7 @@ export default function DashboardBudgetSnapshot({ metric = 'balance' }: Dashboar
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-accent-blue transition-all"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${Math.min(utilization, 100)}%` }}
           />
         </div>

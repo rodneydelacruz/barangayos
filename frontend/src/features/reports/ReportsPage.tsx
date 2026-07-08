@@ -40,15 +40,16 @@ function StatCard({ label, value, icon: Icon, color }: {
   color: string
 }) {
   return (
-    <Card className="overflow-hidden motion-lift">
-      <div className="h-1 w-full bg-gold/60" />
+    <Card variant="default" className="overflow-hidden motion-lift">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
+            <p className="mt-1 text-xl font-bold text-foreground">{value}</p>
           </div>
-          <Icon className={cn('size-5 shrink-0 mt-0.5', color)} />
+          <div className={cn('flex size-9 items-center justify-center rounded-lg', color.replace('text-', 'bg-').replace('barangay', 'primary') + '/10')}>
+            <Icon className={cn('size-4', color)} />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -57,8 +58,7 @@ function StatCard({ label, value, icon: Icon, color }: {
 
 function StatCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
-      <div className="h-1 w-full bg-gold/60" />
+    <Card variant="default" className="overflow-hidden">
       <CardContent className="p-4">
         <div className="space-y-2">
           <div className="h-3 w-20 animate-pulse rounded bg-muted" />
@@ -69,7 +69,7 @@ function StatCardSkeleton() {
   )
 }
 
-function BarChart({ items, total, color = '#C9953E' }: {
+function BarChart({ items, total, color = '#D4A854' }: {
   items: { label: string; count: number }[]
   total: number
   color?: string
@@ -82,7 +82,7 @@ function BarChart({ items, total, color = '#C9953E' }: {
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-3">
           <span className="w-28 text-xs font-medium truncate text-foreground">{item.label}</span>
-          <div className="flex-1 h-5 rounded bg-muted overflow-hidden">
+          <div className="flex-1 h-6 rounded bg-[#F0EBE0] overflow-hidden">
             <div
               className="h-full rounded transition-all duration-500"
               style={{
@@ -104,7 +104,7 @@ function BarChartSkeleton() {
       {[1, 2, 3, 4].map((i) => (
         <div key={i} className="flex items-center gap-3">
           <div className="h-3 w-28 animate-pulse rounded bg-muted" />
-          <div className="flex-1 h-5 animate-pulse rounded bg-muted" />
+          <div className="flex-1 h-6 animate-pulse rounded bg-muted" />
           <div className="h-3 w-8 animate-pulse rounded bg-muted" />
         </div>
       ))}
@@ -118,7 +118,7 @@ function SectionCard({ title, children, className }: {
   className?: string
 }) {
   return (
-    <Card className={cn('motion-fade-in motion-slide-up', className)}>
+    <Card variant="accent-top" accentColor="#D4A854" className={cn('motion-fade-in motion-slide-up', className)}>
       <CardHeader>
         <CardTitle className="text-sm font-semibold">{title}</CardTitle>
       </CardHeader>
@@ -414,9 +414,10 @@ export default function ReportsPage() {
     <>
       <PageHeader title="Reports Dashboard"/>
 
-      <div className="mb-6 flex items-center justify-between">
-        <Tabs tabs={REPORT_TABS} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} className="border-bamboo/40" />
-        <ExportBar activeTab={activeTab} />
+      <div className="mb-6">
+        <Tabs tabs={REPORT_TABS} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)}>
+          <ExportBar activeTab={activeTab} />
+        </Tabs>
       </div>
 
       {/* Tab content */}

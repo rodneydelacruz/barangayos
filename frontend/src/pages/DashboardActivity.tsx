@@ -39,7 +39,7 @@ export default function DashboardActivity(props: DashboardActivityProps) {
   const hasMore = visibleCount < activities.length
 
   return (
-    <Card className="motion-fade-in motion-slide-up" style={{ animationDelay: '100ms' }}>
+    <Card className="motion-fade-in motion-slide-up" variant="accent-top" accentColor="#2D8B7A" style={{ animationDelay: '100ms' }}>
       <CardContent className="p-5">
         <h2 className="font-display text-sm font-semibold text-foreground">Mga Kamakailang Gawain</h2>
 

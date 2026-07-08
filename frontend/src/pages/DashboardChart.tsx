@@ -67,9 +67,9 @@ export default function DashboardChart({ title, items, total, config }: Dashboar
           <div key={item.label} className="flex items-center gap-2">
             <span className="w-24 truncate text-xs font-medium text-foreground">{item.label}</span>
             <div className="relative flex-1">
-              <div className="h-5 rounded-sm bg-muted">
+              <div className="h-6 rounded bg-[#F0EBE0] overflow-hidden">
                 <div
-                  className="h-full rounded-sm transition-all duration-700 ease-out"
+                  className="h-full rounded transition-all duration-700 ease-out"
                   style={{
                     width: `${(item.count / maxCount) * 100}%`,
                     backgroundColor: item.color,
@@ -87,7 +87,7 @@ export default function DashboardChart({ title, items, total, config }: Dashboar
   }
 
   return (
-    <Card className="motion-fade-in motion-slide-up rounded-lg" style={{ animationDelay: '150ms' }}>
+    <Card className="motion-fade-in motion-slide-up" style={{ animationDelay: '150ms' }}>
       <CardContent className="p-5">
         <div className="mb-3 flex items-center gap-2">
           <BarChart3 className="size-4 text-muted-foreground" />

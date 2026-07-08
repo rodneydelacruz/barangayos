@@ -44,23 +44,40 @@ export default function DashboardKPI({ stats, role, loading, config }: Dashboard
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 motion-stagger-75">
       {visibleCards.map((card, i) => {
         const Icon = card.icon
+        const isPrimary = i === 0
         return (
-          <Card key={card.label} className="overflow-hidden motion-lift" style={{ '--stagger-index': i } as React.CSSProperties}>
-            <div className="h-1 w-full bg-gold/60" />
+          <Card
+            key={card.label}
+            variant={isPrimary ? 'elevated' : 'default'}
+            className="overflow-hidden motion-lift"
+            style={{ '--stagger-index': i } as React.CSSProperties}
+          >
             <CardContent className="p-4">
               {loading ? (
                 <div className="space-y-2">
                   <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                  <div className="h-7 w-16 animate-pulse rounded bg-muted" />
+                  <div className={cn('h-7 w-16 animate-pulse rounded', isPrimary ? 'bg-primary-foreground/20' : 'bg-muted')} />
                 </div>
               ) : (
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">{card.label}</p>
-                    <p className="mt-1 text-2xl font-bold text-foreground">{card.value}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground/60">{card.sub}</p>
+                    <p className={cn(
+                      'text-xs font-medium uppercase tracking-wider',
+                      isPrimary ? 'text-primary-foreground/60' : 'text-muted-foreground/70',
+                    )}>{card.label}</p>
+                    <p className={cn(
+                      'mt-1 font-bold',
+                      isPrimary ? 'text-3xl text-primary-foreground' : 'text-2xl text-foreground',
+                    )}>{card.value}</p>
+                    <p className={cn(
+                      'mt-0.5 text-[11px]',
+                      isPrimary ? 'text-primary-foreground/50' : 'text-muted-foreground/60',
+                    )}>{card.sub}</p>
                   </div>
-                  <Icon className={cn('size-5 shrink-0 mt-0.5', card.color)} />
+                  <Icon className={cn(
+                    'size-5 shrink-0 mt-0.5',
+                    isPrimary ? 'text-primary-foreground/40' : card.color,
+                  )} />
                 </div>
               )}
             </CardContent>

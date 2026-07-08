@@ -3,20 +3,33 @@ import { cn } from '@/lib/utils'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   lifted?: boolean
+  variant?: 'default' | 'elevated' | 'accent-top'
+  accentColor?: string
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, lifted = true, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'border bg-card text-card-foreground',
-        lifted && 'motion-lift',
-        className,
-      )}
-      {...props}
-    />
-  ),
+  ({ className, lifted = true, variant = 'default', accentColor, style, ...props }, ref) => {
+    const variantClasses = {
+      default: 'bg-card text-card-foreground border shadow-sm',
+      elevated: 'bg-primary text-primary-foreground border-primary shadow-elevated',
+      'accent-top': 'bg-card text-card-foreground border shadow-sm border-t-[3px]',
+    }
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          variantClasses[variant],
+          lifted && 'motion-lift',
+          className,
+        )}
+        style={{
+          ...(variant === 'accent-top' && accentColor ? { borderTopColor: accentColor } : {}),
+          ...style,
+        }}
+        {...props}
+      />
+    )
+  },
 )
 Card.displayName = 'Card'
 

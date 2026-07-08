@@ -23,17 +23,17 @@ export default function Dashboard() {
 
   const documentItems = Object.entries(stats.documentByStatus).map(([key, count]) => {
     const colorMap: Record<string, string> = {
-      pending: '#C9953E', processing: '#1B3A4B', for_release: '#0D9488',
+      pending: '#D4A854', processing: '#1E2A4A', for_release: '#2D8B7A',
       released: '#A09688', cancelled: '#CE1126',
     }
     return { label: key.replace(/_/g, ' '), count, color: colorMap[key] ?? '#A09688' }
   })
 
   return (
-    <div className="font-display">
+    <div>
 
-      <div className="space-y-5">
-        {isVisible('hero') && <DashboardHero userName={userName} role={role} stats={stats} onCustomize={() => setSheetOpen(true)} />}
+      <div className="space-y-4">
+        {isVisible('hero') && <DashboardHero onCustomize={() => setSheetOpen(true)} />}
         {isVisible('search') && <DashboardSearch />}
         {isVisible('kpi-strip') && (
           <DashboardKPI stats={stats} role={role} loading={loading} config={getWidgetConfig('kpi-strip')} />

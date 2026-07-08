@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 import { FiscalYearSelector } from '@/components/finance/FiscalYearSelector'
 import { ExpenseClassCard } from '@/components/finance/ExpenseClassCard'
 import { ComplianceWarning } from '@/components/finance/ComplianceWarning'
@@ -127,14 +128,29 @@ export function BudgetOverview() {
       <div className="space-y-5">
         {isVisible('stat-cards') && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {selectedStats.map((key: string) => {
+            {selectedStats.map((key: string, idx: number) => {
               const s = statMap[key]
               if (!s) return null
               const isUtil = key === 'utilization'
+              const isPrimary = idx === 0
               return (
-                <div key={key} className="rounded-lg border border-border bg-card p-3 text-center">
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                  <p className="text-lg font-bold text-foreground tabular-nums">
+                <div
+                  key={key}
+                  className={cn(
+                    'rounded-lg border p-3 text-center',
+                    isPrimary
+                      ? 'bg-primary text-primary-foreground border-primary shadow-elevated'
+                      : 'bg-card text-card-foreground border-border shadow-sm',
+                  )}
+                >
+                  <p className={cn(
+                    'text-xs uppercase tracking-wider',
+                    isPrimary ? 'text-primary-foreground/60' : 'text-muted-foreground',
+                  )}>{s.label}</p>
+                  <p className={cn(
+                    'font-bold tabular-nums',
+                    isPrimary ? 'text-2xl text-primary-foreground' : 'text-lg text-foreground',
+                  )}>
                     {isUtil ? `${s.value}%` : `₱${s.value.toLocaleString()}`}
                   </p>
                 </div>
@@ -147,21 +163,21 @@ export function BudgetOverview() {
 
         {isVisible('expense-cards') && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ExpenseClassCard title="PS (Personnel Services)" appropriated={psAppropriated} obligated={psDisbursed} disbursed={psDisbursed} itemCount={psItems.length} detailMode={detailMode} />
-            <ExpenseClassCard title="MOOE (Maintenance & Other Operating Expenses)" appropriated={mooeAppropriated} obligated={mooeDisbursed} disbursed={mooeDisbursed} itemCount={mooeItems.length} detailMode={detailMode} />
-            <ExpenseClassCard title="CO (Capital Outlay)" appropriated={coAppropriated} obligated={coDisbursed} disbursed={coDisbursed} itemCount={coItems.length} detailMode={detailMode} />
+            <ExpenseClassCard title="PS (Personnel Services)" appropriated={psAppropriated} obligated={psDisbursed} disbursed={psDisbursed} itemCount={psItems.length} detailMode={detailMode} accentColor="#1E2A4A" />
+            <ExpenseClassCard title="MOOE (Maintenance & Other Operating Expenses)" appropriated={mooeAppropriated} obligated={mooeDisbursed} disbursed={mooeDisbursed} itemCount={mooeItems.length} detailMode={detailMode} accentColor="#D4A854" />
+            <ExpenseClassCard title="CO (Capital Outlay)" appropriated={coAppropriated} obligated={coDisbursed} disbursed={coDisbursed} itemCount={coItems.length} detailMode={detailMode} accentColor="#2D8B7A" />
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isVisible('disbursements-chart') && (
-            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={disbursementTrend} color="#C9953E" format="currency" />
+            <KpiChart title="Disbursements (30 days)" type={(getWidgetConfig('disbursements-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={disbursementTrend} color="#D4A854" format="currency" />
           )}
           {isVisible('revenue-chart') && (
-            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={revenueTrend} color="#22C55E" format="number" />
+            <KpiChart title="Revenue (30 days)" type={(getWidgetConfig('revenue-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'bar'} data={revenueTrend} color="#2D8B7A" format="number" />
           )}
           {isVisible('utilization-chart') && (
-            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'line'} data={utilizationData} color="#3B82F6" format="number" />
+            <KpiChart title="Utilization Rate (30 days)" type={(getWidgetConfig('utilization-chart') as { chartType?: 'bar' | 'line' | 'area' })?.chartType ?? 'line'} data={utilizationData} color="#1E2A4A" format="number" />
           )}
         </div>
       </div>
