@@ -219,7 +219,7 @@ export default function AssetsPage() {
   const isAdmin = hasRole('admin')
 
   const addAssetButton = isAdmin ? (
-    <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={openCreatePanel}>
+    <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={openCreatePanel}>
       <Plus className="size-3" />
       Add Asset
     </Button>

@@ -81,7 +81,7 @@ export function Disbursements() {
           <Download className="size-3" /> Export
         </Button>
       )}
-      <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={() => setShowForm(true)}>
+      <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={() => setShowForm(true)}>
         <Plus className="size-3" />
         Record
       </Button>

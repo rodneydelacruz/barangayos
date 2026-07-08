@@ -141,10 +141,10 @@ export default function ReleasePage() {
     { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
       render: (d) => (
         <div className="flex items-center gap-1.5">
-          <div className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-2.5" />
+          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <User className="size-3" />
           </div>
-          <span className="font-medium text-[11px]">{d.resident_name}</span>
+          <span className="font-medium text-xs">{d.resident_name}</span>
         </div>
       ) },
     { key: 'document_type', label: 'Type', hideBelow: 'sm', filterType: 'select',

@@ -356,10 +356,10 @@ export default function ResidentsPage() {
       filterValue: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`,
       render: (r) => (
         <div className="flex items-center gap-1.5">
-          <div className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-2.5" />
+          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <User className="size-3" />
           </div>
-          <span className="font-medium text-[11px]">{r.last_name}, {r.first_name}{r.middle_name ? ' ' + r.middle_name : ''}</span>
+          <span className="font-medium text-xs">{r.last_name}, {r.first_name}{r.middle_name ? ' ' + r.middle_name : ''}</span>
         </div>
       ) },
     { key: 'purok', label: 'Purok', sortable: true, filterType: 'select',
@@ -374,7 +374,8 @@ export default function ResidentsPage() {
         { label: 'Widowed', value: 'widowed' }, { label: 'Separated', value: 'separated' },
       ] },
     { key: 'nationality', label: 'Nationality', filterType: 'text' },
-    { key: 'tags', label: 'Tags',
+    { key: 'tags', label: 'Tags', filterType: 'text',
+      filterValue: (r) => tagKeys.filter((k) => (r as Record<string, unknown>)[k]).map((k) => tagLabels[k]).join(' '),
       render: (r) => (
         <div className="flex flex-wrap gap-0.5">
           {tagKeys.filter((k) => (r as Record<string, unknown>)[k]).map((k) => (

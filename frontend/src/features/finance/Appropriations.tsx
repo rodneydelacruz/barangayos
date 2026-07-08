@@ -1,6 +1,6 @@
 import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 import { useState, useEffect } from 'react'
-import { DollarSign, BookOpen, Calendar, FileText, Building, Receipt, Database, ArrowRight, Download } from 'lucide-react'
+import { Plus, DollarSign, BookOpen, Calendar, FileText, Building, Receipt, Database, ArrowRight, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -161,7 +161,7 @@ export function Appropriations() {
           <Download className="size-3" /> Export
         </Button>
       )}
-      <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={() => { setEditId(null); setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' }); setShowForm(true) }}>
+      <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={() => { setEditId(null); setForm({ fiscal_year: currentYear, fund_source: '', expense_class: 'MOOE', item_name: '', appropriated_amount: 0, notes: '' }); setShowForm(true) }}>
         <Plus className="size-3" />
         Add
       </Button>

@@ -122,7 +122,7 @@ export function FundSources() {
           <Download className="size-3" /> Export
         </Button>
       )}
-      <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={() => {
+      <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={() => {
         setEditing(null)
         setForm({ name: '', code: '', statutory_rule: 'none', current_balance: 0, original_balance: 0, fiscal_year: currentYear, is_active: true, description: '', notes: '' })
         setShowForm(true)

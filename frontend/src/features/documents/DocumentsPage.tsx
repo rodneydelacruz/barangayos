@@ -174,7 +174,7 @@ export default function DocumentsPage() {
   const canModify = hasRole('admin', 'staff')
 
   const newRequestButton = canModify ? (
-    <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={openCreatePanel}>
+    <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={openCreatePanel}>
       <Plus className="size-3" />
       New Request
     </Button>
@@ -191,10 +191,10 @@ export default function DocumentsPage() {
     { key: 'resident_name', label: 'Resident', sortable: true, filterType: 'text',
       render: (d) => (
         <div className="flex items-center gap-1.5">
-          <div className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-2.5" />
+          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <User className="size-3" />
           </div>
-          <span className="font-medium text-[11px]">{d.resident_name}</span>
+          <span className="font-medium text-xs">{d.resident_name}</span>
         </div>
       ) },
     { key: 'document_type', label: 'Type', sortable: true, filterType: 'select',

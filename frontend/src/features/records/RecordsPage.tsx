@@ -173,7 +173,7 @@ export default function RecordsPage() {
   const canModify = hasRole('admin', 'staff')
 
   const newBlotterButton = canModify ? (
-    <Button size="sm" className="gap-0.5 motion-press h-6 text-xs" onClick={openCreatePanel}>
+    <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={openCreatePanel}>
       <Plus className="size-3" />
       New Blotter
     </Button>
@@ -188,19 +188,19 @@ export default function RecordsPage() {
     { key: 'complainant_name', label: 'Complainant', sortable: true, filterType: 'text',
       render: (b) => (
         <div className="flex items-center gap-1.5">
-          <div className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-2.5" />
+          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <User className="size-3" />
           </div>
-          <span className="font-medium text-[11px]">{b.complainant_name}</span>
+          <span className="font-medium text-xs">{b.complainant_name}</span>
         </div>
       ) },
     { key: 'respondent_name', label: 'Respondent', sortable: true, filterType: 'text',
       render: (b) => (
         <div className="flex items-center gap-1.5">
-          <div className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-2.5" />
+          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <User className="size-3" />
           </div>
-          <span className="font-medium text-[11px]">{b.respondent_name || '—'}</span>
+          <span className="font-medium text-xs">{b.respondent_name || '—'}</span>
         </div>
       ) },
     { key: 'incident_type', label: 'Incident Type', hideBelow: 'sm', filterType: 'select',
