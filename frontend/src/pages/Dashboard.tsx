@@ -31,19 +31,9 @@ export default function Dashboard() {
 
   return (
     <div className="font-display">
-      <div className="flex items-center justify-between mb-4">
-        
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-        >
-          <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
-          Customize
-        </button>
-      </div>
 
       <div className="space-y-5">
-        {isVisible('hero') && <DashboardHero userName={userName} role={role} stats={stats} />}
+        {isVisible('hero') && <DashboardHero userName={userName} role={role} stats={stats} onCustomize={() => setSheetOpen(true)} />}
         {isVisible('search') && <DashboardSearch />}
         {isVisible('kpi-strip') && (
           <DashboardKPI stats={stats} role={role} loading={loading} config={getWidgetConfig('kpi-strip')} />

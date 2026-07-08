@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Scale, Clock, MapPin, Phone, UserCheck, UserPlus } from 'lucide-react'
+import { Users, Scale, Clock, MapPin, Phone, UserCheck, UserPlus, SlidersHorizontal } from 'lucide-react'
 import { getAllSettings } from '@/api/settings'
 import type { DashboardStats } from './hooks/useDashboardData'
 
@@ -11,6 +11,7 @@ interface DashboardHeroProps {
   userName: string
   role: string
   stats: DashboardStats
+  onCustomize?: () => void
 }
 
 interface StatBlockProps {
@@ -41,7 +42,7 @@ function StatBlock({ icon: Icon, value, label, hint, iconBg, iconColor, delay }:
   )
 }
 
-export default function DashboardHero({ stats }: DashboardHeroProps) {
+export default function DashboardHero({ stats, onCustomize }: DashboardHeroProps) {
   const [clock, setClock] = useState(new Date())
   const [settings, setSettings] = useState<Record<string, any>>({})
 
@@ -84,9 +85,21 @@ export default function DashboardHero({ stats }: DashboardHeroProps) {
               </p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="size-3.5" />
-            <span className="font-mono tabular-nums">{formatClock(clock)}</span>
+          <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="size-3.5" />
+              <span className="font-mono tabular-nums">{formatClock(clock)}</span>
+            </div>
+            <span className="text-muted-foreground/30">|</span>
+            <button
+              type="button"
+              onClick={onCustomize}
+              className="flex items-center gap-1 rounded px-1.5 py-1 text-blue-600 underline decoration-blue-600/30 transition-colors hover:text-blue-800 hover:decoration-blue-800 dark:text-blue-400 dark:decoration-blue-400/30 dark:hover:text-blue-300 dark:hover:decoration-blue-300"
+              title="Customize dashboard"
+            >
+              <SlidersHorizontal className="size-3" />
+              <span>Customize</span>
+            </button>
           </div>
         </div>
 
