@@ -46,9 +46,8 @@ export default function LoginPage() {
         />
 
         {/* Brand mark on mobile — overlaid on illustration */}
-        <div className="absolute left-6 top-6 z-20 flex items-center gap-3 lg:hidden">
-          <img src="/logo.png" alt="" className="size-10 object-contain" />
-          <span className="font-display text-lg font-semibold tracking-tight text-white">BarangayOS</span>
+        <div className="absolute left-6 top-6 z-20 lg:hidden">
+          <img src="/standard-logo.png" alt="" className="h-10 w-auto object-contain" />
         </div>
 
         {/* Illustration — fills the entire panel */}
@@ -73,17 +72,14 @@ export default function LoginPage() {
           {/* Branding */}
           <div className="text-center">
             <img
-              src="/logo.png"
+              src="/standard-logo.png"
               alt="BarangayOS"
-              className="mx-auto size-48 object-contain"
+              className="mx-auto w-full max-w-xs object-contain"
             />
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-narra">
+            <p className="mt-4 font-display text-sm font-semibold uppercase tracking-[0.2em] text-narra">
               {greeting}
             </p>
-            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-barangay">
-              BarangayOS
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 font-display text-sm text-gray-500">
               Barangay Records Management System
             </p>
           </div>
@@ -103,7 +99,7 @@ export default function LoginPage() {
                   required
                   placeholder="Email address"
                   autoComplete="email"
-                  className="w-full rounded-xl bg-gray-100 px-4 py-3.5 pr-11 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-barangay/25"
+                  className="w-full rounded-xl bg-gray-100 px-4 py-3.5 pr-11 font-display text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-barangay/25"
                 />
                 <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <User className="size-4" />
@@ -120,7 +116,7 @@ export default function LoginPage() {
                   required
                   placeholder="Password"
                   autoComplete="current-password"
-                  className="w-full rounded-xl bg-gray-100 px-4 py-3.5 pr-11 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-barangay/25"
+                  className="w-full rounded-xl bg-gray-100 px-4 py-3.5 pr-11 font-display text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-barangay/25"
                 />
                 <button
                   type="button"
@@ -137,7 +133,7 @@ export default function LoginPage() {
 
               {/* Error */}
               {error && (
-                <div className="flex items-start gap-2 rounded-xl border border-red-pinoy/20 bg-red-pinoy/5 px-4 py-3 text-sm text-red-pinoy motion-scale-in">
+                <div className="flex items-start gap-2 rounded-xl border border-red-pinoy/20 bg-red-pinoy/5 px-4 py-3 font-display text-sm text-red-pinoy motion-scale-in">
                   <AlertCircle className="mt-0.5 size-4 shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -147,10 +143,10 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-gradient-to-r from-barangay to-[#0D1F2D] px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:from-[#0D1F2D] hover:to-barangay hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-barangay/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-full bg-gradient-to-r from-barangay to-[#0D1F2D] px-4 py-3.5 font-display text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:from-[#0D1F2D] hover:to-barangay hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-barangay/50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
-                  <span className="flex items-center justify-center gap-2">
+                  <span className="flex items-center justify-center gap-2 font-display">
                     <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     Signing in...
                   </span>
@@ -163,31 +159,31 @@ export default function LoginPage() {
 
           {/* Footer */}
           {/* Footer links */}
-          <div className="mt-10 text-center text-xs text-gray-400">
-           
+          <div className="mt-10 text-center font-display text-xs text-gray-400">
+
             <a
               href="https://github.com/rodneydelacruz/barangayos/blob/main/docs/PRIVACY_NOTICE.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-gray-500 underline transition-colors hover:text-gray-600"
+              className="font-display font-medium text-gray-500 underline transition-colors hover:text-gray-600"
             >
               Privacy Notice
             </a>
-            <span className="mx-1.5 text-gray-300">&middot;</span>
+            <span className="mx-1.5 font-display text-gray-300">&middot;</span>
             <a
               href="https://github.com/rodneydelacruz/barangayos/blob/main/docs/TERMS_OF_USE.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-gray-500 underline transition-colors hover:text-gray-600"
+              className="font-display font-medium text-gray-500 underline transition-colors hover:text-gray-600"
             >
               Terms of Use
             </a>
-            <span className="mx-1.5 text-gray-300">&middot;</span>
+            <span className="mx-1.5 font-display text-gray-300">&middot;</span>
             <a
               href="https://github.com/rodneydelacruz/barangayos/blob/main/docs/DATA_PROCESSING_AGREEMENT.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-gray-500 underline transition-colors hover:text-gray-600"
+              className="font-display font-medium text-gray-500 underline transition-colors hover:text-gray-600"
             >
               DPA
             </a>

@@ -147,43 +147,36 @@ export default function Sidebar({ pinned, onTogglePin, mobileOpen, onMobileOpenC
           {(pinned || mobileOpen) ? (
             <>
               <img
-                src="/logo.png"
+                src="/icon-logo.png"
                 alt="BarangayOS"
                 className="size-8 shrink-0 rounded-md object-contain"
               />
               <span className="font-display min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">
-                BarangayOS
+                B-OS v1.0.1
               </span>
+              {pinned && !mobileOpen && (
+                <button
+                  type="button"
+                  onClick={onTogglePin}
+                  className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  aria-label="Collapse sidebar"
+                  title="Collapse to icons"
+                >
+                  <PanelRightClose className="size-4" />
+                </button>
+              )}
             </>
-          ) : null}
-          {pinned && !mobileOpen ? (
+          ) : (
             <button
               type="button"
               onClick={onTogglePin}
-              className="ml-auto hidden size-8 shrink-0 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground md:flex"
-              aria-label="Collapse sidebar"
-              title="Collapse to icons"
+              className="flex size-8 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
             >
-              <PanelRightClose className="size-4" />
+              <PanelRightOpen className="size-4" />
             </button>
-          ) : !pinned && !mobileOpen ? (
-            <>
-              <img
-                src="/logo.png"
-                alt=""
-                className="size-6 shrink-0 object-contain"
-              />
-              <button
-                type="button"
-                onClick={onTogglePin}
-                className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                aria-label="Expand sidebar"
-                title="Expand sidebar"
-              >
-                <PanelRightOpen className="size-4" />
-              </button>
-            </>
-          ) : null}
+          )}
         </div>
 
         <nav className="sidebar-scroll flex-1 overflow-y-auto py-4">

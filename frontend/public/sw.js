@@ -3,11 +3,8 @@ const STATIC = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logo.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
-  '/favicon.png',
+  '/icon-logo.png',
+  '/standard-logo.png',
 ]
 
 self.addEventListener('install', (e) => {

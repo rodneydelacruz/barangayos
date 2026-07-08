@@ -46,7 +46,7 @@ export default function Layout() {
           <Menu className="size-5" />
         </button>
         <img
-          src="/logo.png"
+          src="/icon-logo.png"
           alt="BarangayOS"
           className="size-8 shrink-0 rounded-md object-contain"
         />
@@ -57,38 +57,30 @@ export default function Layout() {
       <main className="col-start-2 flex min-w-0 flex-col">
         {/* Desktop sticky header strip */}
         {brgyName && (
-          <div className="sticky top-0 z-30 hidden border-b bg-card px-5 py-2 md:flex md:items-center md:justify-between motion-fade-in">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-8 items-center justify-center rounded-md bg-barangay/10">
-                <img
-                  src="/logo.png"
-                  alt=""
-                  className="size-5 object-contain"
-                />
-              </div>
-              <h1 className="font-display text-lg font-bold text-foreground tracking-tight">
-                Barangay {brgyName}
-                {municipality && (
-                  <span className="mx-1.5 font-normal text-muted-foreground/60">|</span>
-                )}
-                <span className="text-sm font-semibold text-muted-foreground">
-                  {[municipality, province].filter(Boolean).join(', ')}
-                </span>
-                {region && (
-                  <>
-                    <span className="mx-1.5 font-normal text-muted-foreground/40">·</span>
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      {region}
-                    </span>
-                  </>
-                )}
-                <span className="mx-1.5 font-normal text-muted-foreground/40">·</span>
-                <span className="text-sm font-semibold text-muted-foreground">
-                  Philippines
-                </span>
-              </h1>
-            </div>
-            <div className="hidden items-center gap-2.5 md:flex">
+          <div className="sticky top-0 z-30 hidden border-b bg-card px-5 py-2 md:flex md:items-center motion-fade-in">
+            <img
+              src="/standard-logo.png"
+              alt=""
+              className="h-10 w-auto object-contain shrink-0"
+            />
+            <h1 className="flex-1 text-center font-display text-sm font-semibold text-muted-foreground tracking-tight">
+              Barangay {brgyName}
+              {municipality && (
+                <span className="mx-1.5 font-normal text-muted-foreground/60">|</span>
+              )}
+              <span className="text-sm font-semibold text-muted-foreground">
+                {[municipality, province].filter(Boolean).join(', ')}
+              </span>
+              {region && (
+                <>
+                  <span className="mx-1.5 font-normal text-muted-foreground/40">·</span>
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {region}
+                  </span>
+                </>
+              )}
+            </h1>
+            <div className="flex items-center justify-end gap-2.5 shrink-0">
               <a
                 href="https://github.com/rodneydelacruz/barangayos/blob/main/docs/PRIVACY_NOTICE.md"
                 target="_blank"
