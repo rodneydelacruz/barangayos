@@ -3,19 +3,6 @@ import { Users, Scale, Clock, MapPin, Phone, UserCheck, UserPlus } from 'lucide-
 import { getAllSettings } from '@/api/settings'
 import type { DashboardStats } from './hooks/useDashboardData'
 
-function formatDate(): string {
-  const d = new Date()
-  const months = ['Enero', 'Pebrero', 'Marso', 'Abril', 'Mayo', 'Hunyo', 'Hulyo', 'Agosto', 'Setyembre', 'Oktubre', 'Nobyembre', 'Disyembre']
-  return `Ika-${d.getDate()} ng ${months[d.getMonth()]}, ${d.getFullYear()}`
-}
-
-function getTimeGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Magandang umaga'
-  if (hour < 18) return 'Magandang hapon'
-  return 'Magandang gabi'
-}
-
 function formatClock(date: Date): string {
   return date.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
 }
@@ -54,7 +41,7 @@ function StatBlock({ icon: Icon, value, label, hint, iconBg, iconColor, delay }:
   )
 }
 
-export default function DashboardHero({ userName, stats }: DashboardHeroProps) {
+export default function DashboardHero({ stats }: DashboardHeroProps) {
   const [clock, setClock] = useState(new Date())
   const [settings, setSettings] = useState<Record<string, any>>({})
 
@@ -96,7 +83,6 @@ export default function DashboardHero({ userName, stats }: DashboardHeroProps) {
                 Barangay {brgyName}{locationStr}
               </p>
             )}
-            
           </div>
           <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="size-3.5" />
