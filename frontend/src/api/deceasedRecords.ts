@@ -26,6 +26,12 @@ export async function createDeceasedRecord(data: DeceasedRecordData): Promise<Ap
   } catch (err) { throw handleApiError(err) }
 }
 
+export async function updateDeceasedRecord(id: string, data: Partial<DeceasedRecordData>): Promise<ApiDeceasedRecord> {
+  try {
+    return await getClient().collection('deceased_records').update<ApiDeceasedRecord>(id, data)
+  } catch (err) { throw handleApiError(err) }
+}
+
 export async function deleteDeceasedRecord(id: string): Promise<boolean> {
   try {
     const record = await getClient().collection('deceased_records').getOne<ApiDeceasedRecord>(id)
