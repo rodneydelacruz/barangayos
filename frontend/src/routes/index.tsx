@@ -6,6 +6,7 @@ import Dashboard from '@/pages/Dashboard'
 import { RecordsPage } from '@/features/records'
 import { ResidentsPage } from '@/features/residents'
 import { HouseholdsPage } from '@/features/households'
+import { DeceasedRecordsPage } from '@/features/deceased'
 import { DocumentsPage, ReleasePage } from '@/features/documents'
 import { SystemSettings } from '@/features/settings'
 import { ActivityPage, VisitorLogPage } from '@/features/logs'
@@ -56,6 +57,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute roles={['admin', 'staff']}>
               <HouseholdsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="deceased"
+          element={
+            <ProtectedRoute roles={['admin', 'staff']}>
+              <DeceasedRecordsPage />
             </ProtectedRoute>
           }
         />

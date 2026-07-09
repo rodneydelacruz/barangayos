@@ -66,3 +66,8 @@ prod/
 
 # LAN HTTPS certificates (generated locally)
 backend/certs/
+
+# Claude Code
+.claude/
+package-lock.json
+

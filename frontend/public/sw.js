@@ -1,57 +1,24 @@
-const CACHE = 'barangayos-v1'
-const STATIC = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-logo.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-512-maskable.png',
-  '/standard-logo.png',
-]
+// This service worker exists only to unregister any previously installed
+// version (barangayos-v1). It does not cache anything.
+// Once every client has unregistered, this file can be deleted.
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(STATIC)).then(() => self.skipWaiting())
-  )
-})
+self.addEventListener('install', () => self.skipWaiting())
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    Promise.all([
+      // Delete all caches from the old SW
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k.startsWith('barangayos-')).map((k) => caches.delete(k)))
+      ),
+      // Unregister this SW — on the next navigation it will be gone
+      self.registration.unregister(),
+    ]).then(() => self.clients.claim())
   )
 })
 
+// Passthrough — handle every request by going directly to the network.
+// This is only needed until the SW finishes activating above.
 self.addEventListener('fetch', (e) => {
-  const { request } = e
-  const url = new URL(request.url)
-
-  // Only cache GET requests
-  if (request.method !== 'GET') {
-    e.respondWith(fetch(request).catch(() => new Response(null, { status: 503 })))
-    return
-  }
-
-  // API calls — network first, fallback to cache
-  if (url.pathname.startsWith('/api/') || url.port === '8090') {
-    e.respondWith(
-      fetch(request).then((res) => {
-        const clone = res.clone()
-        caches.open(CACHE).then((c) => c.put(request, clone))
-        return res
-      }).catch(() => caches.match(request))
-    )
-    return
-  }
-
-  // Static assets — cache first
-  e.respondWith(
-    caches.match(request).then((cached) => cached ?? fetch(request).then((res) => {
-      const clone = res.clone()
-      caches.open(CACHE).then((c) => c.put(request, clone))
-      return res
-    }))
-  )
+  e.respondWith(fetch(e.request).catch(() => new Response(null, { status: 503 })))
 })

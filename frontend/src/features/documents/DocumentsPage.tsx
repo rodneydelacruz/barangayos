@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
+import { ResidentNameCombobox } from '@/components/ui/ResidentNameCombobox'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
@@ -255,7 +255,7 @@ export default function DocumentsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Request' : 'New Document Request'}</h2>
               <button
@@ -276,7 +276,7 @@ export default function DocumentsPage() {
 
               <div className="space-y-2">
                 <Label>Resident *</Label>
-                <ResidentCombobox
+                <ResidentNameCombobox
                   value={form.resident_name}
                   onChange={(v) => { updateField('resident_name', v); if (!v) updateField('resident_id', '') }}
                   onSelectResident={(r) => { updateField('resident_id', r.id); updateField('resident_name', `${r.first_name} ${r.last_name}`) }}

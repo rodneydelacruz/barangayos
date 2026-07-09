@@ -469,7 +469,7 @@ export default function AgendaPage() {
     {meetingPanelOpen && (
       <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
         <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closeMeetingPanel} aria-hidden="true" />
-        <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+        <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
           <div className="flex items-center justify-between border-b px-5 py-4">
             <h2 className="font-display text-sm font-semibold text-foreground">{editingMeetingId ? 'Edit Meeting' : 'New Meeting'}</h2>
             <button
@@ -579,7 +579,7 @@ export default function AgendaPage() {
     {itemPanelOpen && (
       <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
         <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closeItemPanel} aria-hidden="true" />
-        <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+        <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
           <div className="flex items-center justify-between border-b px-5 py-4">
             <h2 className="font-display text-sm font-semibold text-foreground">{editingItemId ? 'Edit Agenda Item' : 'Add Agenda Item'}</h2>
             <button

@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   DoorOpen,
+  Skull,
   Package,
   Calendar,
   BarChart3,
@@ -50,6 +51,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { to: '/residents', label: 'Resident Profiles', icon: Users, roles: ['admin', 'staff', 'viewer'] },
       { to: '/households', label: 'Households', icon: Home, roles: ['admin', 'staff'] },
+      { to: '/deceased', label: 'Deceased Records', icon: Skull, roles: ['admin', 'staff'] },
     ],
   },
   {

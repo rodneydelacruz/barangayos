@@ -13,14 +13,14 @@ function loadResidents(): Promise<ApiResident[]> {
   return loading
 }
 
-interface ResidentComboboxProps {
+interface ResidentNameComboboxProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   onSelectResident?: (resident: ApiResident) => void
 }
 
-export function ResidentCombobox({ value, onChange, placeholder = 'Type or search resident...', onSelectResident }: ResidentComboboxProps) {
+export function ResidentNameCombobox({ value, onChange, placeholder = 'Type or search resident...', onSelectResident }: ResidentNameComboboxProps) {
   const [query, setQuery] = useState(value)
   const [results, setResults] = useState<ApiResident[]>([])
   const [open, setOpen] = useState(false)
@@ -65,27 +65,16 @@ export function ResidentCombobox({ value, onChange, placeholder = 'Type or searc
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id="panel-resident-name"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            onChange(e.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => { if (query.length >= 3) setOpen(true) }}
           placeholder={placeholder}
           className="h-9 pl-8 text-sm"
         />
-        {value && value === query && (
-          <button
-            type="button"
-            onClick={() => { setQuery(''); onChange('') }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-lg text-muted-foreground hover:text-foreground leading-none"
-            aria-label="Clear"
-          >×</button>
-        )}
       </div>
-      {open && query && results.length > 0 && (
-        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto border bg-background shadow-lg">
+      {open && results.length > 0 && (
+        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-background shadow-lg">
           {results.map((r) => (
             <button
               key={r.id}
@@ -94,9 +83,16 @@ export function ResidentCombobox({ value, onChange, placeholder = 'Type or searc
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
               <span className="font-medium">{r.first_name} {r.last_name}</span>
-              {r.purok && <span className="ml-auto text-xs text-muted-foreground">{r.purok}</span>}
+              {r.type_of_resident && (
+                <span className="ml-auto text-xs text-muted-foreground">{r.type_of_resident}</span>
+              )}
             </button>
           ))}
+        </div>
+      )}
+      {open && query.length >= 3 && results.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-background p-2 text-sm text-muted-foreground shadow-lg">
+          No residents found
         </div>
       )}
     </div>

@@ -34,8 +34,17 @@ export default function Layout() {
   const province = settings.province ?? ''
   const region = settings.region ?? ''
 
+  const isDemo = import.meta.env.VITE_DEMO_MODE === 'true'
+
   return (
-    <div className="grid min-h-screen grid-cols-[auto_1fr]">
+    <div className="flex min-h-screen flex-col">
+      {/* Demo-mode banner — outside the grid so it never overlaps any content */}
+      {isDemo && (
+        <div className="sticky top-0 z-[60] bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-4 py-2.5 text-center text-xs sm:text-sm font-semibold text-white shadow-md">
+          ⚠️&nbsp; DEMO MODE — This site contains sample data only. Do not enter real personal information.
+        </div>
+      )}
+      <div className="grid flex-1 grid-cols-[auto_1fr]">
       <header className="sticky top-0 z-50 col-span-full flex h-14 items-center gap-3 border-b bg-background px-4 md:hidden">
         <button
           type="button"
@@ -117,5 +126,7 @@ export default function Layout() {
         <Toaster position="bottom-right" richColors closeButton />
       </main>
     </div>
+    {/* closes the outer flex container */}
+  </div>
   )
 }

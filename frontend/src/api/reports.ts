@@ -8,8 +8,8 @@ import { getVisitors } from './visitors'
 
 export interface DemographicsReport {
   total: number
-  byPurok: Record<string, number>
-  byGender: { male: number; female: number }
+  bySitioPurok: Record<string, number>
+  bySex: { male: number; female: number }
   byCivilStatus: Record<string, number>
   voters: number
   senior: number
@@ -21,7 +21,7 @@ export interface DemographicsReport {
 export async function getDemographicsReport(): Promise<DemographicsReport> {
   try {
     const residents = await getResidents()
-    const byPurok: Record<string, number> = {}
+    const bySitioPurok: Record<string, number> = {}
     const byCivilStatus: Record<string, number> = {}
     let male = 0
     let female = 0
@@ -31,38 +31,39 @@ export async function getDemographicsReport(): Promise<DemographicsReport> {
     let fourPs = 0
     let under18 = 0
     let adult = 0
-    let senior = 0
+    let seniorCount = 0
 
     for (const r of residents) {
-      byPurok[r.purok] = (byPurok[r.purok] || 0) + 1
+      const purok = r.sitio_purok || 'Unknown'
+      bySitioPurok[purok] = (bySitioPurok[purok] || 0) + 1
       byCivilStatus[r.civil_status] = (byCivilStatus[r.civil_status] || 0) + 1
-      if (r.gender === 'male') male++
-      else if (r.gender === 'female') female++
-      if (r.is_voter) voters++
-      if (r.is_senior) seniors++
-      if (r.is_pwd) pwd++
-      if (r.is_4ps) fourPs++
+      if (r.sex === 'Male') male++
+      else if (r.sex === 'Female') female++
+      if (r.registered_voter) voters++
+      if (r.senior_citizen) seniors++
+      if (r.pwd) pwd++
+      if (r.government_assistance_programs?.includes('4Ps')) fourPs++
       if (r.age < 18) under18++
-      else if (r.age >= 60) senior++
+      else if (r.age >= 60) seniorCount++
       else adult++
     }
 
     return {
       total: residents.length,
-      byPurok,
-      byGender: { male, female },
+      bySitioPurok,
+      bySex: { male, female },
       byCivilStatus,
       voters,
       senior: seniors,
       pwd,
       fourPs,
-      ageGroups: { under18, adult, senior },
+      ageGroups: { under18, adult: adult, senior: seniorCount },
     }
   } catch {
     return {
       total: 0,
-      byPurok: {},
-      byGender: { male: 0, female: 0 },
+      bySitioPurok: {},
+      bySex: { male: 0, female: 0 },
       byCivilStatus: {},
       voters: 0,
       senior: 0,

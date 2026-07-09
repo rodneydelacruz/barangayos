@@ -8,17 +8,47 @@ const COLLECTION = 'households'
 
 export interface HouseholdData {
   household_number: string
-  purok?: string
-  head_name: string
+  region?: string
+  province?: string
+  city_municipality?: string
+  barangay?: string
+  sitio_purok?: string
+  household_complete_address?: string
   address?: string
+  no_of_families?: number
+  no_of_household_members?: number
+  no_of_migrants?: number
+  household_type?: string
+  household_type_other?: string
+  tenure_status?: string
+  tenure_status_other?: string
+  household_unit?: string
+  household_unit_other?: string
+  household_name?: string
+  monthly_income?: number
   notes?: string
 }
 
 export interface ApiHousehold extends RecordModel {
   household_number: string
-  purok: string
-  head_name: string
+  region: string
+  province: string
+  city_municipality: string
+  barangay: string
+  sitio_purok: string
+  household_complete_address: string
   address: string
+  no_of_families: number
+  no_of_household_members: number
+  no_of_migrants: number
+  household_type: string
+  household_type_other: string
+  tenure_status: string
+  tenure_status_other: string
+  household_unit: string
+  household_unit_other: string
+  household_name: string
+  monthly_income: number
   notes: string
   updated: string
 }
@@ -27,30 +57,32 @@ export async function getNextHouseholdNumber(): Promise<string> {
   try {
     const all = await getClient().collection(COLLECTION).getFullList<ApiHousehold>({
       sort: '-created',
-      requestKey: 'next-household-number',
+      requestKey: 'next-hh',
     })
     let max = 0
+    const year = new Date().getFullYear().toString()
     for (const h of all) {
-      const num = parseInt(h.household_number.replace(/[^0-9]/g, ''), 10)
-      if (num > max) max = num
+      const m = h.household_number?.match(/BRGY-(\d+)/)
+      if (m) max = Math.max(max, parseInt(m[1], 10))
     }
-    return `H-${String(max + 1).padStart(4, '0')}`
+    return `BRGY-${String(max + 1).padStart(4, '0')}-${year}`
   } catch {
-    return 'H-0001'
+    return `BRGY-0001-${new Date().getFullYear()}`
   }
 }
 
 export async function getHouseholdsPage(
   page = 1,
   perPage = 25,
-  options: { search?: string; purok?: string } = {},
+  options: { search?: string; sitio_purok?: string } = {},
 ): Promise<PaginatedResult<ApiHousehold>> {
   try {
     const filters: string[] = []
     if (options.search) {
-      filters.push(getClient().filter('(head_name ~ {:q} || household_number ~ {:q})', { q: options.search }))
+      const q = options.search.replace(/"/g, '\\"')
+      filters.push(`(household_number ~ "${q}" || household_name ~ "${q}" || household_complete_address ~ "${q}" || sitio_purok ~ "${q}")`)
     }
-    if (options.purok) filters.push(getClient().filter('purok = {:p}', { p: options.purok }))
+    if (options.sitio_purok) filters.push(`sitio_purok = "${options.sitio_purok}"`)
     const query: Record<string, unknown> = { sort: 'household_number' }
     if (filters.length > 0) query.filter = filters.join(' && ')
     const result = await getClient().collection(COLLECTION).getList<ApiHousehold>(page, perPage, query)
@@ -71,8 +103,8 @@ export async function getHouseholds(): Promise<ApiHousehold[]> {
 export async function searchHouseholds(query: string): Promise<ApiHousehold[]> {
   try {
     const result = await getClient().collection(COLLECTION).getList<ApiHousehold>(1, 20, {
-      filter: getClient().filter('(head_name ~ {:q} || household_number ~ {:q} || address ~ {:q})', { q: query }),
-      sort: 'head_name',
+      filter: `(household_number ~ "${query}" || household_name ~ "${query}" || household_complete_address ~ "${query}")`,
+      sort: 'household_name',
     })
     return result.items
   } catch (err) {
@@ -91,7 +123,7 @@ export async function getHousehold(id: string): Promise<ApiHousehold> {
 export async function createHousehold(data: HouseholdData): Promise<ApiHousehold> {
   try {
     const result = await getClient().collection(COLLECTION).create<ApiHousehold>(data)
-    createActivity('create', COLLECTION, result.id, `Created household: ${result.household_number} — ${result.head_name}`)
+    createActivity('create', COLLECTION, result.id, `Created household: ${result.household_number} — ${result.household_name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
@@ -101,7 +133,7 @@ export async function createHousehold(data: HouseholdData): Promise<ApiHousehold
 export async function updateHousehold(id: string, data: Partial<HouseholdData>): Promise<ApiHousehold> {
   try {
     const result = await getClient().collection(COLLECTION).update<ApiHousehold>(id, data)
-    createActivity('update', COLLECTION, id, `Updated household: ${result.household_number} — ${result.head_name}`)
+    createActivity('update', COLLECTION, id, `Updated household: ${result.household_number} — ${result.household_name}`)
     return result
   } catch (err) {
     throw handleApiError(err)

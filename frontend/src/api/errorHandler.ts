@@ -25,6 +25,18 @@ export function handleApiError(err: unknown): ApiError {
     } else if (status === 401) {
       getClient().authStore.clear()
       message = 'Your session has expired. Please sign in again.'
+    } else if (status === 400) {
+      // Extract field-level validation errors for a more helpful message
+      const response = err.data ?? {}
+      const fieldErrors: string[] = []
+      const data = response.data ?? {}
+      for (const [field, detail] of Object.entries(data)) {
+        const d = detail as { code?: string; message?: string }
+        if (d?.message) fieldErrors.push(`${field}: ${d.message}`)
+      }
+      if (fieldErrors.length > 0) {
+        message = `Validation failed: ${fieldErrors.join('; ')}`
+      }
     }
 
     return new ApiError(message, status, err)
