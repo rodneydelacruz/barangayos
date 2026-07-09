@@ -25,6 +25,7 @@ services:
         VITE_LOCAL_API_URL: ${VITE_LOCAL_API_URL:-}
         VITE_CLOUDINARY_CLOUD_NAME: ${VITE_CLOUDINARY_CLOUD_NAME:-}
         VITE_CLOUDINARY_UPLOAD_PRESET: ${VITE_CLOUDINARY_UPLOAD_PRESET:-}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-}
     container_name: barangay-frontend
     restart: unless-stopped
     ports:

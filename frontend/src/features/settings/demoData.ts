@@ -312,9 +312,9 @@ export async function seedCollections(
         const hhNumber = await getNextHouseholdNumber()
         const hh = await createHousehold({
           household_number: hhNumber,
-          head_name: headNames[i],
-          purok: pick(PUROKS),
-          address: `${pick(PUROKS)}, Barangay Poblacion`,
+          household_name: headNames[i],
+          sitio_purok: pick(PUROKS),
+          household_complete_address: `${pick(PUROKS)}, Barangay Poblacion`,
         })
         householdIds.push(hh.id)
         total++
@@ -343,22 +343,22 @@ export async function seedCollections(
           first_name: firstName,
           middle_name: Math.random() > 0.4 ? pick(LAST_NAMES) : undefined,
           last_name: lastName,
-          suffix: Math.random() > 0.85 ? pick(['Jr.', 'Sr.', 'II', 'III']) : undefined,
-          birth_date: birthDate,
+          ext_name: Math.random() > 0.85 ? pick(['Jr.', 'Sr.', 'II', 'III']) : undefined,
+          date_of_birth: birthDate,
           age,
-          gender: isMale ? 'male' : 'female',
-          contact_number: `09${String(Math.floor(100000000 + Math.random() * 900000000))}`,
+          sex: isMale ? 'Male' : 'Female',
+          mobile_number: `09${String(Math.floor(100000000 + Math.random() * 900000000))}`,
           household_id: householdIds.length > 0 && Math.random() > 0.3
             ? pick(householdIds)
             : undefined,
-          purok: pick(PUROKS),
+          sitio_purok: pick(PUROKS),
           civil_status: pick(civilStatus),
-          occupation: age > 15 ? pick(OCCUPATIONS) : undefined,
+          profession_occupation: age > 15 ? pick(OCCUPATIONS) : undefined,
           nationality: 'Filipino',
-          is_voter: age >= 18 ? Math.random() > 0.15 : false,
-          is_4ps: Math.random() > 0.85,
-          is_senior: age >= 60,
-          is_pwd: Math.random() > 0.92,
+          registered_voter: age >= 18 ? Math.random() > 0.15 : false,
+          government_assistance_programs: Math.random() > 0.85 ? ['4Ps'] : [],
+          senior_citizen: age >= 60,
+          pwd: Math.random() > 0.92,
           blood_type: pick(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
         })
         residentIds.push(res.id)

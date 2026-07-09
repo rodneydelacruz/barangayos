@@ -220,7 +220,7 @@ function HouseholdCombobox({ value, onChange }: { value: string; onChange: (id: 
     inputRef.current?.focus()
   }
 
-  const displayValue = selected ? `${selected.head_name} (${selected.household_number})` : query
+  const displayValue = selected ? `${selected.household_name} (${selected.household_number})` : query
 
   return (
     <div ref={containerRef} className="relative">
@@ -257,7 +257,7 @@ function HouseholdCombobox({ value, onChange }: { value: string; onChange: (id: 
               onClick={() => handleSelect(h)}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
-              <span className="font-medium">{h.head_name}</span>
+              <span className="font-medium">{h.household_name}</span>
               <span className="text-muted-foreground">({h.household_number})</span>
             </button>
           ))}
@@ -289,13 +289,13 @@ const sectoralKeys: { key: keyof FormData; label: string }[] = [
 
 const displayTagKeys: { key: string; label: string; color: string }[] = [
   { key: 'is_deceased', label: 'Deceased', color: tagColors.is_deceased },
-  { key: 'senior_citizen', label: 'Senior Citizen', color: tagColors.is_senior },
-  { key: 'pwd', label: 'PWD', color: tagColors.is_pwd },
+  { key: 'senior_citizen', label: 'Senior Citizen', color: tagColors.senior_citizen },
+  { key: 'pwd', label: 'PWD', color: tagColors.pwd },
 ]
 
 const sectoralColorMap: Record<string, string> = {
-  senior_citizen: tagColors.is_senior,
-  pwd: tagColors.is_pwd,
+  senior_citizen: tagColors.senior_citizen,
+  pwd: tagColors.pwd,
 }
 
 export default function ResidentsPage() {
@@ -582,10 +582,10 @@ export default function ResidentsPage() {
             <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.is_deceased)}>Deceased</span>
           )}
           {r.senior_citizen && (
-            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.is_senior)}>Senior Citizen</span>
+            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.senior_citizen)}>Senior Citizen</span>
           )}
           {r.pwd && (
-            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.is_pwd)}>PWD</span>
+            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.pwd)}>PWD</span>
           )}
         </div>
       ) },
@@ -1095,9 +1095,9 @@ export default function ResidentsPage() {
               {flyoutHousehold ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div><span className="text-muted-foreground">Household #:</span> {flyoutHousehold.household_number}</div>
-                  <div><span className="text-muted-foreground">Head:</span> {flyoutHousehold.head_name}</div>
-                  <div><span className="text-muted-foreground">Purok:</span> {flyoutHousehold.purok || '—'}</div>
-                  <div><span className="text-muted-foreground">Address:</span> {flyoutHousehold.address || '—'}</div>
+                  <div><span className="text-muted-foreground">Household Name:</span> {flyoutHousehold.household_name || '—'}</div>
+                  <div><span className="text-muted-foreground">Purok:</span> {flyoutHousehold.sitio_purok || '—'}</div>
+                  <div><span className="text-muted-foreground">Address:</span> {flyoutHousehold.household_complete_address || '—'}</div>
                 </div>
               ) : (
                 <p className="text-muted-foreground">Not assigned to a household.</p>
