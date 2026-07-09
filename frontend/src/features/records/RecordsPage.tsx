@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
+import { ResidentNameCombobox } from '@/components/ui/ResidentNameCombobox'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -304,7 +304,7 @@ export default function RecordsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="panel-complainant-name">Complainant Name *</Label>
-                    <ResidentCombobox value={form.complainant_name} onChange={(v) => updateField('complainant_name', v)} />
+                    <ResidentNameCombobox value={form.complainant_name} onChange={(v) => updateField('complainant_name', v)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-complainant-contact">Contact</Label>
@@ -314,7 +314,7 @@ export default function RecordsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="panel-respondent-name">Respondent Name</Label>
-                    <ResidentCombobox value={form.respondent_name ?? ''} onChange={(v) => updateField('respondent_name', v)} />
+                    <ResidentNameCombobox value={form.respondent_name ?? ''} onChange={(v) => updateField('respondent_name', v)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-respondent-contact">Contact</Label>
