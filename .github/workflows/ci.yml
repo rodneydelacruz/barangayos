@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
         with:
@@ -45,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
         with:
@@ -59,6 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
         with:
@@ -80,6 +86,8 @@ jobs:
     timeout-minutes: 10
     needs: [lint, typecheck, unit-tests]
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
         with:
@@ -100,6 +108,8 @@ jobs:
     needs: [build]
     if: github.event_name == 'pull_request' || github.ref_name == 'main'
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
         with:
