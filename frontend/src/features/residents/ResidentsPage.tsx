@@ -564,33 +564,13 @@ export default function ResidentsPage() {
     { key: 'date_of_birth', label: 'Age', sortable: true,
       render: (r) => (r.date_of_birth ? computeAge(r.date_of_birth).toString() : '') },
     { key: 'civil_status', label: 'Civil Status', sortable: true, filterType: 'select',
-      filterOptions: [
-        { label: 'Single', value: 'single' },
-        { label: 'Married', value: 'married' },
-        { label: 'Widowed', value: 'widowed' },
-        { label: 'Separated', value: 'separated' },
-        { label: 'Divorced', value: 'divorced' },
-      ] },
+      filterOptions: civilStatusOptions.map((o) => ({ label: o.label, value: o.code ?? o.label })) },
     { key: 'type_of_resident', label: 'Type', sortable: true, filterType: 'select',
       filterOptions: [
         { label: 'Non-migrant', value: 'Non-migrant' },
         { label: 'Migrant', value: 'Migrant' },
         { label: 'Transient', value: 'Transient' },
       ] },
-    { key: 'tags', label: 'Tags',
-      render: (r) => (
-        <div className="flex flex-wrap gap-1">
-          {r.is_deceased && (
-            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.is_deceased)}>Deceased</span>
-          )}
-          {r.senior_citizen && (
-            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.senior_citizen)}>Senior Citizen</span>
-          )}
-          {r.pwd && (
-            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold', tagColors.pwd)}>PWD</span>
-          )}
-        </div>
-      ) },
   ]
 
   return (
