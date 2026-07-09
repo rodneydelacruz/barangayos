@@ -60,6 +60,7 @@ interface FormData {
   residence_of_mother_upon_birth: string
   sex: string
   gender: string
+  gender_other: string
   civil_status: string
   pregnant_woman: boolean
   highest_educational_attainment: string
@@ -86,10 +87,12 @@ interface FormData {
   nationality: string
   ethnicity: string
   religion: string
+  religion_other: string
   registered_voter: boolean
   resident_voter: boolean
   last_voted_year: number
   government_assistance_programs: string[]
+  government_assistance_other: string
   employed: boolean
   unemployed: boolean
   ofw: boolean
@@ -121,6 +124,7 @@ function emptyForm(): FormData {
     residence_of_mother_upon_birth: '',
     sex: '',
     gender: '',
+    gender_other: '',
     civil_status: '',
     pregnant_woman: false,
     highest_educational_attainment: '',
@@ -147,10 +151,12 @@ function emptyForm(): FormData {
     nationality: '',
     ethnicity: '',
     religion: '',
+    religion_other: '',
     registered_voter: false,
     resident_voter: false,
     last_voted_year: 0,
     government_assistance_programs: [],
+    government_assistance_other: '',
     employed: false,
     unemployed: false,
     ofw: false,
@@ -307,7 +313,6 @@ export default function ResidentsPage() {
   const [panelOpen, setPanelOpen] = useState(false)
   useBodyScrollLock(panelOpen)
   const [error, setError] = useState<string | null>(null)
-  const [age, setAge] = useState(0)
   const [flyoutResident, setFlyoutResident] = useState<ApiResident | null>(null)
   const [flyoutHousehold, setFlyoutHousehold] = useState<ApiHousehold | null>(null)
   const [flyoutDocs, setFlyoutDocs] = useState<ApiDocument[]>([])
@@ -368,32 +373,29 @@ export default function ResidentsPage() {
 
     try {
       const payload: Record<string, unknown> = { ...form }
-      // Send age derived from date_of_birth for the server record
-      payload.age = age
 
       // Convert empty strings to undefined for optional fields
-      const optionalStringFields = [
-        'middle_name', 'ext_name', 'philsys_card_no', 'place_of_birth',
+      // NOTE: required fields (region, province, city_municipality, barangay,
+      // place_of_birth, sex, civil_status, nationality, religion,
+      // type_of_resident, data_privacy_consent, last_voted_year,
+      // registered_voter, resident_voter) must NOT be set to undefined
+      const optionalStringFields: (keyof FormData)[] = [
+        'middle_name', 'ext_name', 'philsys_card_no',
         'residence_of_mother_upon_birth', 'profession_occupation',
         'email_address', 'mobile_number', 'tel_number',
-        'region', 'province', 'city_municipality', 'barangay',
         'sitio_purok', 'house_block_lot_no', 'street_name', 'subdivision_village', 'zip_code',
-        'blood_type', 'complexion', 'ethnicity', 'religion',
-        'type_of_resident', 'household_id', 'gender', 'civil_status',
-        'highest_educational_attainment', 'nationality',
+        'blood_type', 'complexion', 'ethnicity',
+        'household_id', 'gender', 'gender_other', 'religion_other', 'government_assistance_other',
+        'highest_educational_attainment',
         'mother_maiden_first_name', 'mother_maiden_middle_name', 'mother_maiden_last_name',
-        'sex',
       ]
       for (const key of optionalStringFields) {
         if (payload[key] === '') payload[key] = undefined
       }
 
-      // Convert 0 numbers to undefined
+      // Convert 0 numbers to undefined (only for optional numeric fields)
       if (!payload.height_m) payload.height_m = undefined
       if (!payload.weight_kg) payload.weight_kg = undefined
-      if (!payload.last_voted_year) payload.last_voted_year = undefined
-
-      // Remove empty consent_signature_date
       if (!payload.consent_signature_date) payload.consent_signature_date = undefined
 
       if (editingId) {
@@ -402,7 +404,7 @@ export default function ResidentsPage() {
           prev.map((r) => (r.id === editingId ? updated : r)),
         )
       } else {
-        const created = await createResident(payload as InhabitantData)
+        const created = await createResident(payload as unknown as InhabitantData)
         setResidents((prev) => [created, ...prev])
       }
       closePanel()
@@ -415,7 +417,6 @@ export default function ResidentsPage() {
     setError(null)
     setEditingId(null)
     setForm(emptyForm())
-    setAge(0)
     setPanelOpen(true)
   }
 
@@ -434,6 +435,7 @@ export default function ResidentsPage() {
       residence_of_mother_upon_birth: record.residence_of_mother_upon_birth || '',
       sex: record.sex || '',
       gender: record.gender || '',
+      gender_other: record.gender_other || '',
       civil_status: record.civil_status || '',
       pregnant_woman: record.pregnant_woman || false,
       highest_educational_attainment: record.highest_educational_attainment || '',
@@ -460,10 +462,12 @@ export default function ResidentsPage() {
       nationality: record.nationality || '',
       ethnicity: record.ethnicity || '',
       religion: record.religion || '',
+      religion_other: record.religion_other || '',
       registered_voter: record.registered_voter || false,
       resident_voter: record.resident_voter || false,
       last_voted_year: record.last_voted_year || 0,
       government_assistance_programs: record.government_assistance_programs || [],
+      government_assistance_other: record.government_assistance_other || '',
       employed: record.employed || false,
       unemployed: record.unemployed || false,
       ofw: record.ofw || false,
@@ -480,7 +484,6 @@ export default function ResidentsPage() {
       consent_signature_date: record.consent_signature_date || '',
       is_deceased: record.is_deceased || false,
     })
-    setAge(computeAge(record.date_of_birth))
     setPanelOpen(true)
     setError(null)
   }
@@ -536,7 +539,6 @@ export default function ResidentsPage() {
     setPanelOpen(false)
     setEditingId(null)
     setForm(emptyForm())
-    setAge(0)
     setError(null)
   }
 
@@ -626,7 +628,7 @@ export default function ResidentsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-3/4 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Resident' : 'New Resident'}</h2>
               <button
@@ -701,12 +703,8 @@ export default function ResidentsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="panel-dob">Date of Birth</Label>
-                    <Input id="panel-dob" type="date" value={form.date_of_birth} onChange={(e) => { updateField('date_of_birth', e.target.value); setAge(computeAge(e.target.value)) }} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="panel-age">Age</Label>
-                    <Input id="panel-age" type="number" value={age || ''} disabled className="opacity-70" />
+                    <Label htmlFor="panel-dob">Date of Birth *</Label>
+                    <Input id="panel-dob" type="date" value={form.date_of_birth} onChange={(e) => updateField('date_of_birth', e.target.value)} />
                   </div>
                 </div>
 
@@ -749,6 +747,15 @@ export default function ResidentsPage() {
                         <option key={opt.label} value={opt.code ?? opt.label}>{opt.label}</option>
                       ))}
                     </Select>
+                    {form.gender === 'Others (specify)' && (
+                      <Input
+                        id="panel-gender-other"
+                        value={form.gender_other}
+                        onChange={(e) => updateField('gender_other', e.target.value)}
+                        placeholder="Please specify gender"
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -910,6 +917,15 @@ export default function ResidentsPage() {
                         <option key={opt.label} value={opt.code ?? opt.label}>{opt.label}</option>
                       ))}
                     </Select>
+                    {form.religion === 'Others (specify)' && (
+                      <Input
+                        id="panel-religion-other"
+                        value={form.religion_other}
+                        onChange={(e) => updateField('religion_other', e.target.value)}
+                        placeholder="Please specify religion"
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -981,6 +997,15 @@ export default function ResidentsPage() {
                       )
                     })}
                   </div>
+                  {form.government_assistance_programs.includes('Others (specify)') && (
+                    <Input
+                      id="panel-gov-assistance-other"
+                      value={form.government_assistance_other}
+                      onChange={(e) => updateField('government_assistance_other', e.target.value)}
+                      placeholder="Please specify assistance program"
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               </FormSection>
 
@@ -1044,60 +1069,115 @@ export default function ResidentsPage() {
         {flyoutResident && (
           <>
             <DetailSection icon={<Search className="size-3" />} title="Personal Information">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutResident.first_name} {flyoutResident.last_name}</span></div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="col-span-2"><span className="text-muted-foreground">Full Name:</span> <span className="font-medium">{flyoutResident.first_name}{flyoutResident.middle_name ? ` ${flyoutResident.middle_name}` : ''} {flyoutResident.last_name}{flyoutResident.ext_name ? ` ${flyoutResident.ext_name}` : ''}</span>
+                  {displayTagKeys.filter(({ key }) => (flyoutResident as Record<string, unknown>)[key]).map(({ key, label, color }) => (
+                    <span key={key} className={cn('ml-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold', color)}>{label}</span>
+                  ))}
+                </div>
+                <div><span className="text-muted-foreground">PhilSys Card No:</span> {flyoutResident.philsys_card_no ? formatPhilsysCardNo(flyoutResident.philsys_card_no) : '—'}</div>
                 <div><span className="text-muted-foreground">Sex:</span> {flyoutResident.sex || '—'}</div>
-                <div><span className="text-muted-foreground">Gender:</span> {flyoutResident.gender || '—'}</div>
-                <div><span className="text-muted-foreground">DOB:</span> {formatDate(flyoutResident.date_of_birth)}</div>
+                <div><span className="text-muted-foreground">Gender:</span> {flyoutResident.gender || '—'}{flyoutResident.gender === 'Others (specify)' && flyoutResident.gender_other ? ` (${flyoutResident.gender_other})` : ''}</div>
+                <div><span className="text-muted-foreground">Date of Birth:</span> {formatDate(flyoutResident.date_of_birth)}</div>
                 <div><span className="text-muted-foreground">Age:</span> {flyoutResident.date_of_birth ? computeAge(flyoutResident.date_of_birth) : '—'}</div>
-                <div><span className="text-muted-foreground">Place of Birth:</span> {flyoutResident.place_of_birth || '—'}</div>
+                <div className="col-span-2"><span className="text-muted-foreground">Place of Birth:</span> {flyoutResident.place_of_birth || '—'}</div>
+                <div className="col-span-2"><span className="text-muted-foreground">Residence of Mother Upon Birth:</span> {flyoutResident.residence_of_mother_upon_birth || '—'}</div>
                 <div><span className="text-muted-foreground">Civil Status:</span> {flyoutResident.civil_status ? (flyoutResident.civil_status.charAt(0).toUpperCase() + flyoutResident.civil_status.slice(1)) : '—'}</div>
-                <div><span className="text-muted-foreground">Type:</span> {flyoutResident.type_of_resident || '—'}</div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Contact:</span>{' '}
-                  {[flyoutResident.email_address, flyoutResident.mobile_number, flyoutResident.tel_number].filter(Boolean).join(' | ') || '—'}
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Address:</span>{' '}
-                  {[flyoutResident.house_block_lot_no, flyoutResident.street_name, flyoutResident.subdivision_village, flyoutResident.sitio_purok, flyoutResident.barangay, flyoutResident.city_municipality, flyoutResident.province, flyoutResident.region, flyoutResident.zip_code].filter(Boolean).join(', ') || '—'}
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Identity:</span>{' '}
-                  {[flyoutResident.nationality, flyoutResident.ethnicity, flyoutResident.religion, flyoutResident.blood_type].filter(Boolean).join(' | ') || '—'}
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Voter:</span>{' '}
-                  {flyoutResident.registered_voter ? 'Registered' : 'Not registered'}
-                  {flyoutResident.resident_voter ? ', Resident Voter' : ''}
-                  {flyoutResident.last_voted_year ? ` (Last voted: ${flyoutResident.last_voted_year})` : ''}
-                </div>
-                <div className="col-span-2 flex flex-wrap gap-1">
-                  {displayTagKeys.map(({ key, label, color }) =>
-                    (flyoutResident as Record<string, unknown>)[key] ? (
-                      <span key={key} className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', color)}>
-                        {label}
+                <div><span className="text-muted-foreground">Type of Resident:</span> {flyoutResident.type_of_resident || '—'}</div>
+                <div><span className="text-muted-foreground">Highest Educational Attainment:</span> {flyoutResident.highest_educational_attainment || '—'}</div>
+                <div><span className="text-muted-foreground">Profession/Occupation:</span> {flyoutResident.profession_occupation || '—'}</div>
+                {flyoutResident.pregnant_woman && (
+                  <div className="col-span-2"><span className="text-muted-foreground">Pregnant Woman:</span> <span className="font-medium text-amber-600">Yes</span></div>
+                )}
+                <div className="col-span-2"><span className="text-muted-foreground">Mother's Maiden Name:</span> {[flyoutResident.mother_maiden_first_name, flyoutResident.mother_maiden_middle_name, flyoutResident.mother_maiden_last_name].filter(Boolean).join(' ') || '—'}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Phone className="size-3" />} title="Contact Details">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Email:</span> {flyoutResident.email_address || '—'}</div>
+                <div><span className="text-muted-foreground">Mobile:</span> {flyoutResident.mobile_number ? formatMobileNumber(flyoutResident.mobile_number) : '—'}</div>
+                <div><span className="text-muted-foreground">Tel. No:</span> {flyoutResident.tel_number || '—'}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Home className="size-3" />} title="Address">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-2"><span className="text-muted-foreground">Full Address:</span> {[flyoutResident.house_block_lot_no, flyoutResident.street_name, flyoutResident.subdivision_village, flyoutResident.sitio_purok, flyoutResident.barangay, flyoutResident.city_municipality, flyoutResident.province, flyoutResident.region, flyoutResident.zip_code].filter(Boolean).join(', ') || '—'}</div>
+                <div><span className="text-muted-foreground">House/Block/Lot No:</span> {flyoutResident.house_block_lot_no || '—'}</div>
+                <div><span className="text-muted-foreground">Street:</span> {flyoutResident.street_name || '—'}</div>
+                <div><span className="text-muted-foreground">Subdivision/Village:</span> {flyoutResident.subdivision_village || '—'}</div>
+                <div><span className="text-muted-foreground">Sitio/Purok:</span> {flyoutResident.sitio_purok || '—'}</div>
+                <div><span className="text-muted-foreground">Barangay:</span> {flyoutResident.barangay || '—'}</div>
+                <div><span className="text-muted-foreground">City/Municipality:</span> {flyoutResident.city_municipality || '—'}</div>
+                <div><span className="text-muted-foreground">Province:</span> {flyoutResident.province || '—'}</div>
+                <div><span className="text-muted-foreground">Region:</span> {flyoutResident.region || '—'}</div>
+                <div><span className="text-muted-foreground">ZIP Code:</span> {flyoutResident.zip_code || '—'}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Fingerprint className="size-3" />} title="Identity Information">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Nationality:</span> {flyoutResident.nationality || '—'}</div>
+                <div><span className="text-muted-foreground">Ethnicity:</span> {flyoutResident.ethnicity || '—'}</div>
+                <div><span className="text-muted-foreground">Religion:</span> {flyoutResident.religion || '—'}{flyoutResident.religion === 'Others (specify)' && flyoutResident.religion_other ? ` (${flyoutResident.religion_other})` : ''}</div>
+                <div><span className="text-muted-foreground">Blood Type:</span> {flyoutResident.blood_type || '—'}</div>
+                <div><span className="text-muted-foreground">Height (m):</span> {flyoutResident.height_m ? `${flyoutResident.height_m}m` : '—'}</div>
+                <div><span className="text-muted-foreground">Weight (kg):</span> {flyoutResident.weight_kg ? `${flyoutResident.weight_kg}kg` : '—'}</div>
+                <div><span className="text-muted-foreground">Complexion:</span> {flyoutResident.complexion || '—'}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Vote className="size-3" />} title="Voter Information">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Registered Voter:</span> {flyoutResident.registered_voter ? 'Yes' : 'No'}</div>
+                <div><span className="text-muted-foreground">Resident Voter:</span> {flyoutResident.resident_voter ? 'Yes' : 'No'}</div>
+                <div><span className="text-muted-foreground">Last Voted Year:</span> {flyoutResident.last_voted_year || '—'}</div>
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Gift className="size-3" />} title="Beneficiary Info">
+              <div className="grid grid-cols-1 gap-2">
+                <div><span className="text-muted-foreground">Government Assistance Programs:</span></div>
+                {flyoutResident.government_assistance_programs && flyoutResident.government_assistance_programs.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {flyoutResident.government_assistance_programs.map((prog) => (
+                      <span key={prog} className="inline-flex rounded-md px-3 py-0.5 text-xs font-bold bg-emerald-200 text-emerald-900 border border-emerald-400 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/30">
+                        {prog}
                       </span>
-                    ) : null
-                  )}
-                  {sectoralKeys
-                    .filter(({ key }) => (flyoutResident as Record<string, unknown>)[key])
-                    .map(({ key, label }) => (
-                      <span key={key} className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', sectoralColorMap[key] || 'bg-blue-200 text-blue-900 border border-blue-400 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800/30')}>
-                        {label}
-                      </span>
-                    ))
-                  }
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">None</p>
+                )}
+                {flyoutResident.government_assistance_other && (
+                  <div><span className="text-muted-foreground">Other (specify):</span> {flyoutResident.government_assistance_other}</div>
+                )}
+              </div>
+            </DetailSection>
+
+            <DetailSection icon={<Users className="size-3" />} title="Sectoral Affiliations">
+              <div className="flex flex-wrap gap-1">
+                {sectoralKeys
+                  .filter(({ key }) => (flyoutResident as Record<string, unknown>)[key])
+                  .map(({ key, label }) => (
+                    <span key={key} className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', sectoralColorMap[key] || 'bg-blue-200 text-blue-900 border border-blue-400 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800/30')}>
+                      {label}
+                    </span>
+                  ))}
+                {sectoralKeys.filter(({ key }) => (flyoutResident as Record<string, unknown>)[key]).length === 0 && (
+                  <p className="text-xs text-muted-foreground">None</p>
+                )}
               </div>
             </DetailSection>
 
             <DetailSection icon={<Home className="size-3" />} title="Household">
               {flyoutHousehold ? (
                 <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2"><span className="text-muted-foreground">Household Name:</span> {flyoutHousehold.household_name || '—'}</div>
                   <div><span className="text-muted-foreground">Household #:</span> {flyoutHousehold.household_number}</div>
-                  <div><span className="text-muted-foreground">Household Name:</span> {flyoutHousehold.household_name || '—'}</div>
-                  <div><span className="text-muted-foreground">Purok:</span> {flyoutHousehold.sitio_purok || '—'}</div>
-                  <div><span className="text-muted-foreground">Address:</span> {flyoutHousehold.household_complete_address || '—'}</div>
+                  <div><span className="text-muted-foreground">Sitio/Purok:</span> {flyoutHousehold.sitio_purok || '—'}</div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Complete Address:</span> {flyoutHousehold.household_complete_address || '—'}</div>
                 </div>
               ) : (
                 <p className="text-muted-foreground">Not assigned to a household.</p>

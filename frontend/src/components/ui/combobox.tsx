@@ -22,6 +22,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
     const [query, setQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const closeOnFocus = useRef(false);
     const selectedLabel = options.find((o) => o.value === value)?.label ?? '';
     const filtered = query ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase())) : options;
 
@@ -38,7 +39,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
     const handleSelect = useCallback((opt: ComboboxOption) => {
       onChange(opt.value);
       setOpen(false);
-      inputRef.current?.focus();
+      closeOnFocus.current = true;
     }, [onChange]);
 
     return (
@@ -52,7 +53,10 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
             }}
             value={open ? query : selectedLabel}
             onChange={(e) => { setQuery(e.target.value); if (!open) setOpen(true); if (value) onChange(''); }}
-            onFocus={() => setOpen(true)}
+            onFocus={() => {
+              if (closeOnFocus.current) { closeOnFocus.current = false; return; }
+              setOpen(true);
+            }}
             placeholder={placeholder}
             disabled={disabled}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"

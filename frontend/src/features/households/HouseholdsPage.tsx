@@ -196,12 +196,6 @@ export default function HouseholdsPage() {
     return m
   }, [reasonLeavingOptions])
 
-  const transferLabelMap = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const opt of reasonTransferringOptions) m.set(opt.code ?? opt.label, opt.label)
-    return m
-  }, [reasonTransferringOptions])
-
   /* ── data loading ──────────────────────────────────────────────── */
 
   useEffect(() => {
@@ -518,7 +512,7 @@ export default function HouseholdsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Household' : 'New Household'}</h2>
               <button

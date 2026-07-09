@@ -260,7 +260,7 @@ export default function ReportsPage() {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <SectionCard title="Residents by Purok (Top 5)">
-            <BarChart items={sortedEntries(d.byPurok).slice(0, 5)} total={d.total} />
+            <BarChart items={sortedEntries(d.bySitioPurok).slice(0, 5)} total={d.total} />
           </SectionCard>
           <SectionCard title="Documents by Status">
             <BarChart items={sortedEntries(docs.byStatus)} total={docs.total} />
@@ -290,20 +290,20 @@ export default function ReportsPage() {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <SectionCard title="By Purok">
-            <BarChart items={sortedEntries(data.byPurok)} total={data.total} />
+            <BarChart items={sortedEntries(data.bySitioPurok)} total={data.total} />
           </SectionCard>
           <SectionCard title="By Gender">
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
                   <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">Male</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{data.byGender.male}</p>
+                  <p className="mt-1 text-2xl font-bold text-foreground">{data.bySex.male}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
                   <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">Female</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{data.byGender.female}</p>
+                  <p className="mt-1 text-2xl font-bold text-foreground">{data.bySex.female}</p>
                 </CardContent>
               </Card>
             </div>

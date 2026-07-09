@@ -21,7 +21,7 @@ export function DetailPanel({ open, onClose, title, onEdit, onDelete, loading, c
   return (
     <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
       <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={onClose} />
-      <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-lg md:border-l md:border-border max-md:max-h-[85vh]">
+      <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] font-display">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <h2 className="font-display text-sm font-semibold text-foreground">{title}</h2>
           <div className="flex items-center gap-1">

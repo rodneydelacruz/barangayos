@@ -345,7 +345,6 @@ export async function seedCollections(
           last_name: lastName,
           ext_name: Math.random() > 0.85 ? pick(['Jr.', 'Sr.', 'II', 'III']) : undefined,
           date_of_birth: birthDate,
-          age,
           sex: isMale ? 'Male' : 'Female',
           mobile_number: `09${String(Math.floor(100000000 + Math.random() * 900000000))}`,
           household_id: householdIds.length > 0 && Math.random() > 0.3

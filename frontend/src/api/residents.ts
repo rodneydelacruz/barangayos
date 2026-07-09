@@ -22,6 +22,7 @@ export interface InhabitantData {
   residence_of_mother_upon_birth?: string
   sex?: string
   gender?: string
+  gender_other?: string
   civil_status?: string
   pregnant_woman?: boolean
   highest_educational_attainment?: string
@@ -54,6 +55,7 @@ export interface InhabitantData {
   nationality?: string
   ethnicity?: string
   religion?: string
+  religion_other?: string
 
   // Voter Info
   registered_voter?: boolean
@@ -62,6 +64,7 @@ export interface InhabitantData {
 
   // Beneficiary Info
   government_assistance_programs?: string[]
+  government_assistance_other?: string
 
   // Sectoral Info (all boolean)
   employed?: boolean
@@ -102,6 +105,7 @@ export interface ApiResident extends RecordModel {
   residence_of_mother_upon_birth: string
   sex: string
   gender: string
+  gender_other: string
   civil_status: string
   pregnant_woman: boolean
   highest_educational_attainment: string
@@ -134,6 +138,7 @@ export interface ApiResident extends RecordModel {
   nationality: string
   ethnicity: string
   religion: string
+  religion_other: string
 
   // Voter Info
   registered_voter: boolean
@@ -142,6 +147,7 @@ export interface ApiResident extends RecordModel {
 
   // Beneficiary Info
   government_assistance_programs: string[]
+  government_assistance_other: string
 
   // Sectoral Info
   employed: boolean
