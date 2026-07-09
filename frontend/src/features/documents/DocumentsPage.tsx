@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { ResidentCombobox } from '@/components/ui/ResidentCombobox'
+import { ResidentNameCombobox } from '@/components/ui/ResidentNameCombobox'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
@@ -276,7 +276,7 @@ export default function DocumentsPage() {
 
               <div className="space-y-2">
                 <Label>Resident *</Label>
-                <ResidentCombobox
+                <ResidentNameCombobox
                   value={form.resident_name}
                   onChange={(v) => { updateField('resident_name', v); if (!v) updateField('resident_id', '') }}
                   onSelectResident={(r) => { updateField('resident_id', r.id); updateField('resident_name', `${r.first_name} ${r.last_name}`) }}

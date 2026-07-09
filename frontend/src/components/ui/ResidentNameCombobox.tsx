@@ -17,9 +17,10 @@ interface ResidentNameComboboxProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  onSelectResident?: (resident: ApiResident) => void
 }
 
-export function ResidentNameCombobox({ value, onChange, placeholder = 'Type or search resident...' }: ResidentNameComboboxProps) {
+export function ResidentNameCombobox({ value, onChange, placeholder = 'Type or search resident...', onSelectResident }: ResidentNameComboboxProps) {
   const [query, setQuery] = useState(value)
   const [results, setResults] = useState<ApiResident[]>([])
   const [open, setOpen] = useState(false)
@@ -55,6 +56,7 @@ export function ResidentNameCombobox({ value, onChange, placeholder = 'Type or s
     const name = `${r.first_name} ${r.last_name}`
     setQuery(name)
     onChange(name)
+    onSelectResident?.(r)
     setOpen(false)
   }
 
