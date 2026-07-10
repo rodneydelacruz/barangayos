@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { ResidentNameCombobox } from '@/components/ui/ResidentNameCombobox'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { blotterStatusColors } from '@/lib/statusStyles'
@@ -250,7 +250,7 @@ export default function RecordsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Blotter Case' : 'New Blotter Case'}</h2>
               <button
@@ -396,22 +396,20 @@ export default function RecordsPage() {
           return (
             <>
               <DetailSection icon={<Calendar className="size-3" />} title="Case Info">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><span className="text-muted-foreground">Case #:</span> <span className="font-medium">{flyoutBlotter.case_number}</span></div>
-                  <div><span className="text-muted-foreground">Type:</span> <span className="capitalize">{flyoutBlotter.incident_type}</span></div>
-                  <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex items-center gap-1.5 rounded-md px-3.5 py-0.5 text-xs font-bold', cfg.bg, cfg.color)}>{cfg.label}</span></div>
-                  <div><span className="text-muted-foreground">Date:</span> {formatDate(flyoutBlotter.incident_date)}</div>
-                  <div className="col-span-2"><span className="text-muted-foreground">Location:</span> {flyoutBlotter.incident_location || '—'}</div>
-                </div>
+                <FieldRow label="Case #" value={flyoutBlotter.case_number} />
+                <FieldRow label="Type" value={flyoutBlotter.incident_type.charAt(0).toUpperCase() + flyoutBlotter.incident_type.slice(1)} />
+                <FieldRow label="Status">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-md px-3.5 py-0.5 text-xs font-bold', cfg.bg, cfg.color)}>{cfg.label}</span>
+                </FieldRow>
+                <FieldRow label="Date" value={formatDate(flyoutBlotter.incident_date)} />
+                <FieldRow label="Location" value={flyoutBlotter.incident_location || '—'} />
               </DetailSection>
 
               <DetailSection icon={<Users className="size-3" />} title="Parties">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><span className="text-muted-foreground">Complainant:</span> {flyoutBlotter.complainant_name}</div>
-                  <div><span className="text-muted-foreground">Complainant Contact:</span> {flyoutBlotter.complainant_contact || '—'}</div>
-                  <div><span className="text-muted-foreground">Respondent:</span> {flyoutBlotter.respondent_name || '—'}</div>
-                  <div><span className="text-muted-foreground">Respondent Contact:</span> {flyoutBlotter.respondent_contact || '—'}</div>
-                </div>
+                <FieldRow label="Complainant" value={flyoutBlotter.complainant_name} />
+                <FieldRow label="Complainant Contact" value={flyoutBlotter.complainant_contact || '—'} />
+                <FieldRow label="Respondent" value={flyoutBlotter.respondent_name || '—'} />
+                <FieldRow label="Respondent Contact" value={flyoutBlotter.respondent_contact || '—'} />
               </DetailSection>
 
               {flyoutBlotter.narrative && (
@@ -433,10 +431,8 @@ export default function RecordsPage() {
               )}
 
               <DetailSection title="Metadata">
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>Created: {formatDateTime(flyoutBlotter.created)}</div>
-                  <div>Updated: {formatDateTime(flyoutBlotter.updated)}</div>
-                </div>
+                <FieldRow label="Created" value={formatDateTime(flyoutBlotter.created)} />
+                <FieldRow label="Updated" value={formatDateTime(flyoutBlotter.updated)} />
               </DetailSection>
             </>
           )

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { assetConditionColors, assetStatusColors } from '@/lib/statusStyles'
@@ -290,7 +290,7 @@ export default function AssetsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Asset' : 'Add Asset'}</h2>
               <button
@@ -513,28 +513,26 @@ export default function AssetsPage() {
             </DetailSection>
 
             <DetailSection icon={<ClipboardList className="size-3" />} title="Details">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{flyoutAsset.name}</span></div>
-                <div><span className="text-muted-foreground">Type:</span> {assetTypeOptions.find((t) => t.value === flyoutAsset.asset_type)?.label || flyoutAsset.asset_type}</div>
-                <div><span className="text-muted-foreground">Serial #:</span> {flyoutAsset.serial_number || '—'}</div>
-                <div><span className="text-muted-foreground">Condition:</span> <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', conditionColors[flyoutAsset.condition])}>{conditionLabels[flyoutAsset.condition]}</span></div>
-                <div><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', statusColors[flyoutAsset.status ?? ''])}>{statusLabels[flyoutAsset.status ?? '']}</span></div>
-              </div>
+              <FieldRow label="Name" value={flyoutAsset.name} />
+              <FieldRow label="Type" value={assetTypeOptions.find((t) => t.value === flyoutAsset.asset_type)?.label || flyoutAsset.asset_type} />
+              <FieldRow label="Serial #" value={flyoutAsset.serial_number || '—'} />
+              <FieldRow label="Condition">
+                <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', conditionColors[flyoutAsset.condition])}>{conditionLabels[flyoutAsset.condition]}</span>
+              </FieldRow>
+              <FieldRow label="Status">
+                <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', statusColors[flyoutAsset.status ?? ''])}>{statusLabels[flyoutAsset.status ?? '']}</span>
+              </FieldRow>
             </DetailSection>
 
             <DetailSection icon={<Tag className="size-3" />} title="Valuation">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Purchase Cost:</span> {flyoutAsset.purchase_cost ? `₱${Number(flyoutAsset.purchase_cost).toLocaleString()}` : '—'}</div>
-                <div><span className="text-muted-foreground">Current Value:</span> {flyoutAsset.current_value ? `₱${Number(flyoutAsset.current_value).toLocaleString()}` : '—'}</div>
-                <div><span className="text-muted-foreground">Purchase Date:</span> {formatDate(flyoutAsset.purchase_date)}</div>
-              </div>
+              <FieldRow label="Purchase Cost" value={flyoutAsset.purchase_cost ? `₱${Number(flyoutAsset.purchase_cost).toLocaleString()}` : '—'} />
+              <FieldRow label="Current Value" value={flyoutAsset.current_value ? `₱${Number(flyoutAsset.current_value).toLocaleString()}` : '—'} />
+              <FieldRow label="Purchase Date" value={formatDate(flyoutAsset.purchase_date)} />
             </DetailSection>
 
             <DetailSection icon={<MapPin className="size-3" />} title="Assignment">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Assigned To:</span> {flyoutAsset.assigned_to || '—'}</div>
-                <div><span className="text-muted-foreground">Location:</span> {flyoutAsset.location || '—'}</div>
-              </div>
+              <FieldRow label="Assigned To" value={flyoutAsset.assigned_to || '—'} />
+              <FieldRow label="Location" value={flyoutAsset.location || '—'} />
             </DetailSection>
 
             {flyoutAsset.description && (
@@ -550,10 +548,8 @@ export default function AssetsPage() {
             )}
 
             <DetailSection title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {formatDateTime(flyoutAsset.created)}</div>
-                <div>Updated: {formatDateTime(flyoutAsset.updated)}</div>
-              </div>
+              <FieldRow label="Created" value={formatDateTime(flyoutAsset.created)} />
+              <FieldRow label="Updated" value={formatDateTime(flyoutAsset.updated)} />
             </DetailSection>
           </>
         )}

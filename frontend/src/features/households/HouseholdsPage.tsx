@@ -32,7 +32,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { FormSection } from '@/components/ui/form-section'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useLookups } from '@/hooks/useLookups'
@@ -793,7 +793,7 @@ export default function HouseholdsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Household' : 'New Household'}</h2>
               <button
@@ -1328,47 +1328,39 @@ export default function HouseholdsPage() {
           <>
             {/* Address */}
             <DetailSection icon={<MapPin className="size-3" />} title="Address">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">Region:</span> <span className="font-medium">{flyoutHousehold.region || '—'}</span></div>
-                <div><span className="text-muted-foreground">Province:</span> <span className="font-medium">{flyoutHousehold.province || '—'}</span></div>
-                <div><span className="text-muted-foreground">City/Municipality:</span> <span className="font-medium">{flyoutHousehold.city_municipality || '—'}</span></div>
-                <div><span className="text-muted-foreground">Barangay:</span> <span className="font-medium">{flyoutHousehold.barangay || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Sitio/Purok:</span> <span className="font-medium">{flyoutHousehold.sitio_purok || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Complete Address:</span> <span className="font-medium">{flyoutHousehold.household_complete_address || '—'}</span></div>
-              </div>
+              <FieldRow label="Region" value={flyoutHousehold.region || '—'} />
+              <FieldRow label="Province" value={flyoutHousehold.province || '—'} />
+              <FieldRow label="City/Municipality" value={flyoutHousehold.city_municipality || '—'} />
+              <FieldRow label="Barangay" value={flyoutHousehold.barangay || '—'} />
+              <FieldRow label="Sitio/Purok" value={flyoutHousehold.sitio_purok || '—'} />
+              <FieldRow label="Complete Address" value={flyoutHousehold.household_complete_address || '—'} />
             </DetailSection>
 
             {/* Classification */}
             <DetailSection icon={<Building2 className="size-3" />} title="Classification">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">Household Type:</span> <span className="font-medium">{flyoutHousehold.household_type || '—'}</span></div>
-                <div><span className="text-muted-foreground">Type (other):</span> <span className="font-medium">{flyoutHousehold.household_type_other || '—'}</span></div>
-                <div><span className="text-muted-foreground">Tenure Status:</span> <span className="font-medium">{flyoutHousehold.tenure_status || '—'}</span></div>
-                <div><span className="text-muted-foreground">Tenure (other):</span> <span className="font-medium">{flyoutHousehold.tenure_status_other || '—'}</span></div>
-                <div><span className="text-muted-foreground">Household Unit:</span> <span className="font-medium">{flyoutHousehold.household_unit || '—'}</span></div>
-                <div><span className="text-muted-foreground">Unit (other):</span> <span className="font-medium">{flyoutHousehold.household_unit_other || '—'}</span></div>
-              </div>
+              <FieldRow label="Household Type" value={flyoutHousehold.household_type || '—'} />
+              <FieldRow label="Type (other)" value={flyoutHousehold.household_type_other || '—'} />
+              <FieldRow label="Tenure Status" value={flyoutHousehold.tenure_status || '—'} />
+              <FieldRow label="Tenure (other)" value={flyoutHousehold.tenure_status_other || '—'} />
+              <FieldRow label="Household Unit" value={flyoutHousehold.household_unit || '—'} />
+              <FieldRow label="Unit (other)" value={flyoutHousehold.household_unit_other || '—'} />
             </DetailSection>
 
             {/* Demographics */}
             <DetailSection icon={<Users className="size-3" />} title="Demographics">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div className="col-span-2"><span className="text-muted-foreground">Household Head:</span> <span className="font-medium">{flyoutHousehold.household_name || '—'}</span></div>
-                <div><span className="text-muted-foreground">No. of Families:</span> <span className="font-medium">{flyoutHousehold.no_of_families ?? '—'}</span></div>
-                <div><span className="text-muted-foreground">No. of Members:</span> <span className="font-medium">{flyoutHousehold.no_of_household_members ?? '—'}</span></div>
-                <div><span className="text-muted-foreground">No. of Migrants:</span> <span className="font-medium">{flyoutHousehold.no_of_migrants ?? '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Monthly Income:</span> <span className="font-medium">{flyoutHousehold.monthly_income != null ? `PHP ${flyoutHousehold.monthly_income.toLocaleString()}` : '—'}</span></div>
-              </div>
+              <FieldRow label="Household Head" value={flyoutHousehold.household_name || '—'} />
+              <FieldRow label="No. of Families" value={flyoutHousehold.no_of_families ?? '—'} />
+              <FieldRow label="No. of Members" value={flyoutHousehold.no_of_household_members ?? '—'} />
+              <FieldRow label="No. of Migrants" value={flyoutHousehold.no_of_migrants ?? '—'} />
+              <FieldRow label="Monthly Income" value={flyoutHousehold.monthly_income != null ? `PHP ${flyoutHousehold.monthly_income.toLocaleString()}` : '—'} />
             </DetailSection>
 
             {/* National Indicators */}
             <DetailSection icon={<Building2 className="size-3" />} title="National Indicators (DILG/BIMS)">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div className="col-span-2"><span className="text-muted-foreground">Water System:</span> <span className="font-medium">{flyoutHousehold.water_system || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Waste Disposal:</span> <span className="font-medium">{flyoutHousehold.waste_disposal || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Power Supply:</span> <span className="font-medium">{flyoutHousehold.power_supply || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Toilet Type:</span> <span className="font-medium">{flyoutHousehold.toilet_type || '—'}</span></div>
-              </div>
+              <FieldRow label="Water System" value={flyoutHousehold.water_system || '—'} />
+              <FieldRow label="Waste Disposal" value={flyoutHousehold.waste_disposal || '—'} />
+              <FieldRow label="Power Supply" value={flyoutHousehold.power_supply || '—'} />
+              <FieldRow label="Toilet Type" value={flyoutHousehold.toilet_type || '—'} />
             </DetailSection>
 
             {/* Household Members */}
@@ -1426,10 +1418,8 @@ export default function HouseholdsPage() {
 
             {/* Metadata */}
             <DetailSection title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {formatDateTime(flyoutHousehold.created)}</div>
-                <div>Updated: {formatDateTime(flyoutHousehold.updated)}</div>
-              </div>
+              <FieldRow label="Created" value={formatDateTime(flyoutHousehold.created)} />
+              <FieldRow label="Updated" value={formatDateTime(flyoutHousehold.updated)} />
             </DetailSection>
           </>
         )}

@@ -14,13 +14,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { FormSection } from '@/components/ui/form-section'
 import { Combobox } from '@/components/ui/combobox'
 import { ConsentCheckbox } from '@/components/ui/consent-checkbox'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { tagColors } from '@/lib/statusStyles'
+import { generateResidentsCsv, downloadCsv } from '@/lib/bims-csv-export'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { computeAge } from '@/lib/age'
@@ -544,6 +545,22 @@ export default function ResidentsPage() {
 
   const canModify = hasRole('admin', 'staff')
 
+  /* ── CSV Bulk Export ─────────────────────────────────────────── */
+
+  const [exporting, setExporting] = useState(false)
+
+  async function handleBulkExport() {
+    setExporting(true)
+    try {
+      const all = await getResidents()
+      downloadCsv('bims_residents.csv', generateResidentsCsv(all))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const columns: Column<ApiResident>[] = [
     { key: 'last_name', label: 'Name', sortable: true, filterType: 'text',
       filterValue: (r) => `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`,
@@ -576,12 +593,17 @@ export default function ResidentsPage() {
   return (
     <>
       <PageHeader title="RESIDENT PROFILES">
-        {canModify && (
-          <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
-            <Plus className="size-3.5" />
-            New Resident
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBulkExport} disabled={exporting}>
+            {exporting ? 'Exporting...' : 'Export CSV (BIMS)'}
           </Button>
-        )}
+          {canModify && (
+            <Button size="sm" className="gap-1.5 motion-press" onClick={openCreatePanel}>
+              <Plus className="size-3.5" />
+              New Resident
+            </Button>
+          )}
+        </div>
       </PageHeader>
 
       <Card lifted={false} className="shadow-none">
@@ -608,7 +630,7 @@ export default function ResidentsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-3/4 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Resident' : 'New Resident'}</h2>
               <button
@@ -1049,71 +1071,64 @@ export default function ResidentsPage() {
         {flyoutResident && (
           <>
             <DetailSection icon={<Search className="size-3" />} title="Personal Information">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                <div className="col-span-2"><span className="text-muted-foreground">Full Name:</span> <span className="font-medium">{flyoutResident.first_name}{flyoutResident.middle_name ? ` ${flyoutResident.middle_name}` : ''} {flyoutResident.last_name}{flyoutResident.ext_name ? ` ${flyoutResident.ext_name}` : ''}</span>
-                  {displayTagKeys.filter(({ key }) => (flyoutResident as Record<string, unknown>)[key]).map(({ key, label, color }) => (
-                    <span key={key} className={cn('ml-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold', color)}>{label}</span>
-                  ))}
-                </div>
-                <div><span className="text-muted-foreground">PhilSys Card No:</span> {flyoutResident.philsys_card_no ? formatPhilsysCardNo(flyoutResident.philsys_card_no) : '—'}</div>
-                <div><span className="text-muted-foreground">Sex:</span> {flyoutResident.sex || '—'}</div>
-                <div><span className="text-muted-foreground">Gender:</span> {flyoutResident.gender || '—'}{flyoutResident.gender === 'Others (specify)' && flyoutResident.gender_other ? ` (${flyoutResident.gender_other})` : ''}</div>
-                <div><span className="text-muted-foreground">Date of Birth:</span> {formatDate(flyoutResident.date_of_birth)}</div>
-                <div><span className="text-muted-foreground">Age:</span> {flyoutResident.date_of_birth ? computeAge(flyoutResident.date_of_birth) : '—'}</div>
-                <div className="col-span-2"><span className="text-muted-foreground">Place of Birth:</span> {flyoutResident.place_of_birth || '—'}</div>
-                <div className="col-span-2"><span className="text-muted-foreground">Residence of Mother Upon Birth:</span> {flyoutResident.residence_of_mother_upon_birth || '—'}</div>
-                <div><span className="text-muted-foreground">Civil Status:</span> {flyoutResident.civil_status ? (flyoutResident.civil_status.charAt(0).toUpperCase() + flyoutResident.civil_status.slice(1)) : '—'}</div>
-                <div><span className="text-muted-foreground">Type of Resident:</span> {flyoutResident.type_of_resident || '—'}</div>
-                <div><span className="text-muted-foreground">Highest Educational Attainment:</span> {flyoutResident.highest_educational_attainment || '—'}</div>
-                <div><span className="text-muted-foreground">Profession/Occupation:</span> {flyoutResident.profession_occupation || '—'}</div>
-                {flyoutResident.pregnant_woman && (
-                  <div className="col-span-2"><span className="text-muted-foreground">Pregnant Woman:</span> <span className="font-medium text-amber-600">Yes</span></div>
-                )}
-                <div className="col-span-2"><span className="text-muted-foreground">Mother's Maiden Name:</span> {[flyoutResident.mother_maiden_first_name, flyoutResident.mother_maiden_middle_name, flyoutResident.mother_maiden_last_name].filter(Boolean).join(' ') || '—'}</div>
-              </div>
+              <FieldRow label="Full Name">
+                <span className="font-medium text-foreground">{flyoutResident.first_name}{flyoutResident.middle_name ? ` ${flyoutResident.middle_name}` : ''} {flyoutResident.last_name}{flyoutResident.ext_name ? ` ${flyoutResident.ext_name}` : ''}</span>
+                {displayTagKeys.filter(({ key }) => (flyoutResident as Record<string, unknown>)[key]).map(({ key, label, color }) => (
+                  <span key={key} className={cn('ml-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold', color)}>{label}</span>
+                ))}
+              </FieldRow>
+              <FieldRow label="PhilSys Card No" value={flyoutResident.philsys_card_no ? formatPhilsysCardNo(flyoutResident.philsys_card_no) : '—'} />
+              <FieldRow label="Sex" value={flyoutResident.sex || '—'} />
+              <FieldRow label="Gender" value={flyoutResident.gender ? `${flyoutResident.gender}${flyoutResident.gender === 'Others (specify)' && flyoutResident.gender_other ? ` (${flyoutResident.gender_other})` : ''}` : '—'} />
+              <FieldRow label="Date of Birth" value={formatDate(flyoutResident.date_of_birth)} />
+              <FieldRow label="Age" value={flyoutResident.date_of_birth ? computeAge(flyoutResident.date_of_birth) : '—'} />
+              <FieldRow label="Place of Birth" value={flyoutResident.place_of_birth || '—'} />
+              <FieldRow label="Residence of Mother Upon Birth" value={flyoutResident.residence_of_mother_upon_birth || '—'} />
+              <FieldRow label="Civil Status" value={flyoutResident.civil_status ? (flyoutResident.civil_status.charAt(0).toUpperCase() + flyoutResident.civil_status.slice(1)) : '—'} />
+              <FieldRow label="Type of Resident" value={flyoutResident.type_of_resident || '—'} />
+              <FieldRow label="Educational Attainment" value={flyoutResident.highest_educational_attainment || '—'} />
+              <FieldRow label="Profession/Occupation" value={flyoutResident.profession_occupation || '—'} />
+              {flyoutResident.pregnant_woman && (
+                <FieldRow label="Pregnant Woman">
+                  <span className="font-medium text-amber-600">Yes</span>
+                </FieldRow>
+              )}
+              <FieldRow label="Mother's Maiden Name" value={[flyoutResident.mother_maiden_first_name, flyoutResident.mother_maiden_middle_name, flyoutResident.mother_maiden_last_name].filter(Boolean).join(' ') || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Phone className="size-3" />} title="Contact Details">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Email:</span> {flyoutResident.email_address || '—'}</div>
-                <div><span className="text-muted-foreground">Mobile:</span> {flyoutResident.mobile_number ? formatMobileNumber(flyoutResident.mobile_number) : '—'}</div>
-                <div><span className="text-muted-foreground">Tel. No:</span> {flyoutResident.tel_number || '—'}</div>
-              </div>
+              <FieldRow label="Email" value={flyoutResident.email_address || '—'} />
+              <FieldRow label="Mobile" value={flyoutResident.mobile_number ? formatMobileNumber(flyoutResident.mobile_number) : '—'} />
+              <FieldRow label="Tel. No" value={flyoutResident.tel_number || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Home className="size-3" />} title="Address">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="col-span-2"><span className="text-muted-foreground">Full Address:</span> {[flyoutResident.house_block_lot_no, flyoutResident.street_name, flyoutResident.subdivision_village, flyoutResident.sitio_purok, flyoutResident.barangay, flyoutResident.city_municipality, flyoutResident.province, flyoutResident.region, flyoutResident.zip_code].filter(Boolean).join(', ') || '—'}</div>
-                <div><span className="text-muted-foreground">House/Block/Lot No:</span> {flyoutResident.house_block_lot_no || '—'}</div>
-                <div><span className="text-muted-foreground">Street:</span> {flyoutResident.street_name || '—'}</div>
-                <div><span className="text-muted-foreground">Subdivision/Village:</span> {flyoutResident.subdivision_village || '—'}</div>
-                <div><span className="text-muted-foreground">Sitio/Purok:</span> {flyoutResident.sitio_purok || '—'}</div>
-                <div><span className="text-muted-foreground">Barangay:</span> {flyoutResident.barangay || '—'}</div>
-                <div><span className="text-muted-foreground">City/Municipality:</span> {flyoutResident.city_municipality || '—'}</div>
-                <div><span className="text-muted-foreground">Province:</span> {flyoutResident.province || '—'}</div>
-                <div><span className="text-muted-foreground">Region:</span> {flyoutResident.region || '—'}</div>
-                <div><span className="text-muted-foreground">ZIP Code:</span> {flyoutResident.zip_code || '—'}</div>
-              </div>
+              <FieldRow label="Full Address" value={[flyoutResident.house_block_lot_no, flyoutResident.street_name, flyoutResident.subdivision_village, flyoutResident.sitio_purok, flyoutResident.barangay, flyoutResident.city_municipality, flyoutResident.province, flyoutResident.region, flyoutResident.zip_code].filter(Boolean).join(', ') || '—'} />
+              <FieldRow label="House/Block/Lot No" value={flyoutResident.house_block_lot_no || '—'} />
+              <FieldRow label="Street" value={flyoutResident.street_name || '—'} />
+              <FieldRow label="Subdivision/Village" value={flyoutResident.subdivision_village || '—'} />
+              <FieldRow label="Sitio/Purok" value={flyoutResident.sitio_purok || '—'} />
+              <FieldRow label="Barangay" value={flyoutResident.barangay || '—'} />
+              <FieldRow label="City/Municipality" value={flyoutResident.city_municipality || '—'} />
+              <FieldRow label="Province" value={flyoutResident.province || '—'} />
+              <FieldRow label="Region" value={flyoutResident.region || '—'} />
+              <FieldRow label="ZIP Code" value={flyoutResident.zip_code || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Fingerprint className="size-3" />} title="Identity Information">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Nationality:</span> {flyoutResident.nationality || '—'}</div>
-                <div><span className="text-muted-foreground">Ethnicity:</span> {flyoutResident.ethnicity || '—'}</div>
-                <div><span className="text-muted-foreground">Religion:</span> {flyoutResident.religion || '—'}{flyoutResident.religion === 'Others (specify)' && flyoutResident.religion_other ? ` (${flyoutResident.religion_other})` : ''}</div>
-                <div><span className="text-muted-foreground">Blood Type:</span> {flyoutResident.blood_type || '—'}</div>
-                <div><span className="text-muted-foreground">Height (m):</span> {flyoutResident.height_m ? `${flyoutResident.height_m}m` : '—'}</div>
-                <div><span className="text-muted-foreground">Weight (kg):</span> {flyoutResident.weight_kg ? `${flyoutResident.weight_kg}kg` : '—'}</div>
-                <div><span className="text-muted-foreground">Complexion:</span> {flyoutResident.complexion || '—'}</div>
-              </div>
+              <FieldRow label="Nationality" value={flyoutResident.nationality || '—'} />
+              <FieldRow label="Ethnicity" value={flyoutResident.ethnicity || '—'} />
+              <FieldRow label="Religion" value={`${flyoutResident.religion || '—'}${flyoutResident.religion === 'Others (specify)' && flyoutResident.religion_other ? ` (${flyoutResident.religion_other})` : ''}`} />
+              <FieldRow label="Blood Type" value={flyoutResident.blood_type || '—'} />
+              <FieldRow label="Height (m)" value={flyoutResident.height_m ? `${flyoutResident.height_m}m` : '—'} />
+              <FieldRow label="Weight (kg)" value={flyoutResident.weight_kg ? `${flyoutResident.weight_kg}kg` : '—'} />
+              <FieldRow label="Complexion" value={flyoutResident.complexion || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Vote className="size-3" />} title="Voter Information">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Registered Voter:</span> {flyoutResident.registered_voter ? 'Yes' : 'No'}</div>
-                <div><span className="text-muted-foreground">Resident Voter:</span> {flyoutResident.resident_voter ? 'Yes' : 'No'}</div>
-                <div><span className="text-muted-foreground">Last Voted Year:</span> {flyoutResident.last_voted_year || '—'}</div>
-              </div>
+              <FieldRow label="Registered Voter" value={flyoutResident.registered_voter ? 'Yes' : 'No'} />
+              <FieldRow label="Resident Voter" value={flyoutResident.resident_voter ? 'Yes' : 'No'} />
+              <FieldRow label="Last Voted Year" value={flyoutResident.last_voted_year || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Gift className="size-3" />} title="Beneficiary Info">
@@ -1153,12 +1168,12 @@ export default function ResidentsPage() {
 
             <DetailSection icon={<Home className="size-3" />} title="Household">
               {flyoutHousehold ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="col-span-2"><span className="text-muted-foreground">Household Name:</span> {flyoutHousehold.household_name || '—'}</div>
-                  <div><span className="text-muted-foreground">Household #:</span> {flyoutHousehold.household_number}</div>
-                  <div><span className="text-muted-foreground">Sitio/Purok:</span> {flyoutHousehold.sitio_purok || '—'}</div>
-                  <div className="col-span-2"><span className="text-muted-foreground">Complete Address:</span> {flyoutHousehold.household_complete_address || '—'}</div>
-                </div>
+                <>
+                  <FieldRow label="Household Name" value={flyoutHousehold.household_name || '—'} />
+                  <FieldRow label="Household #" value={flyoutHousehold.household_number} />
+                  <FieldRow label="Sitio/Purok" value={flyoutHousehold.sitio_purok || '—'} />
+                  <FieldRow label="Complete Address" value={flyoutHousehold.household_complete_address || '—'} />
+                </>
               ) : (
                 <p className="text-muted-foreground">Not assigned to a household.</p>
               )}

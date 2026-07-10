@@ -86,6 +86,9 @@ export interface InhabitantData {
 
   // Soft-delete
   is_deceased?: boolean
+
+  // Data set tag
+  data_set?: string
 }
 
 export interface ApiResident extends RecordModel {
@@ -173,6 +176,20 @@ export interface ApiResident extends RecordModel {
   updated: string
 }
 
+export async function searchResidents(query: string): Promise<ApiResident[]> {
+  try {
+    if (query.length < 3) return []
+    const filter = getClient().filter('(first_name ~ {:q} || last_name ~ {:q}) && is_deceased = false', { q: query })
+    return await getClient().collection(COLLECTION).getFullList<ApiResident>({
+      filter,
+      sort: 'last_name,first_name',
+      perPage: 15,
+    })
+  } catch (err) {
+    throw handleApiError(err)
+  }
+}
+
 export async function getResidents(params?: { household_id?: string }): Promise<ApiResident[]> {
   try {
     const query: Record<string, unknown> = { sort: '-id' }
@@ -195,7 +212,7 @@ export async function getResident(id: string): Promise<ApiResident> {
 
 export async function createResident(data: InhabitantData): Promise<ApiResident> {
   try {
-    const result = await getClient().collection(COLLECTION).create<ApiResident>(data)
+    const result = await getClient().collection(COLLECTION).create<ApiResident>({ ...data, data_set: 'BIPS' })
     createActivity('create', COLLECTION, result.id, `Created resident: ${result.first_name} ${result.last_name}`)
     return result
   } catch (err) {
@@ -205,7 +222,25 @@ export async function createResident(data: InhabitantData): Promise<ApiResident>
 
 export async function updateResident(id: string, data: Partial<InhabitantData>): Promise<ApiResident> {
   try {
-    const result = await getClient().collection(COLLECTION).update<ApiResident>(id, data)
+    // Cascade: if household_id is being cleared, remove the linked household member record
+    if (data.hasOwnProperty('household_id') && !data.household_id) {
+      try {
+        const members = await getClient().collection('household_members').getFullList({
+          filter: getClient().filter('resident_id = {:id}', { id }),
+        })
+        for (const m of members) {
+          await getClient().collection('household_members').delete(m.id)
+        }
+      } catch { /* ignore cascade errors */ }
+    }
+
+    const payload = { ...data, data_set: 'BIPS' } as Record<string, unknown>
+    // PocketBase requires null (not undefined) to clear a relation field
+    if (payload.household_id === undefined || payload.household_id === '') {
+      payload.household_id = null
+    }
+
+    const result = await getClient().collection(COLLECTION).update<ApiResident>(id, payload)
     createActivity('update', COLLECTION, id, `Updated resident: ${result.first_name} ${result.last_name}`)
     return result
   } catch (err) {

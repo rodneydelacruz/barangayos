@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { hasRole } from '@/auth/session'
 import { formatDateTime } from '@/lib/utils'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -244,7 +244,7 @@ export default function VisitorLogPage() {
             onClick={closePanel}
             aria-hidden="true"
           />
-          <div className="relative w-full overflow-y-auto bg-card shadow-xl motion-slide-up motion-fade-in md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
+          <div className="relative w-full overflow-y-auto bg-card shadow-xl motion-slide-up motion-fade-in md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">
                 {editingId ? 'Edit Visitor' : 'Check In Visitor'}
@@ -334,45 +334,21 @@ export default function VisitorLogPage() {
         {flyoutVisitor && (
           <>
             <DetailSection icon={<User className="size-3" />} title="Visitor Info">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-muted-foreground">Name:</span>{' '}
-                  <span className="font-medium">{flyoutVisitor.visitor_name}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Contact:</span>{' '}
-                  {flyoutVisitor.contact_number || '—'}
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Purpose:</span>{' '}
-                  {flyoutVisitor.purpose}
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Person to Visit:</span>{' '}
-                  {flyoutVisitor.person_to_visit || '—'}
-                </div>
-              </div>
+              <FieldRow label="Name" value={flyoutVisitor.visitor_name} />
+              <FieldRow label="Contact" value={flyoutVisitor.contact_number || '—'} />
+              <FieldRow label="Purpose" value={flyoutVisitor.purpose} />
+              <FieldRow label="Person to Visit" value={flyoutVisitor.person_to_visit || '—'} />
             </DetailSection>
 
             <DetailSection icon={<Clock className="size-3" />} title="Timeline">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-muted-foreground">Time In:</span>{' '}
-                  {formatDateTime(flyoutVisitor.time_in)}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Time Out:</span>{' '}
-                  {flyoutVisitor.time_out ? (
-                    formatDateTime(flyoutVisitor.time_out)
-                  ) : (
-                    <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyles.checkedIn}`}
-                    >
-                      Active
-                    </span>
-                  )}
-                </div>
-              </div>
+              <FieldRow label="Time In" value={formatDateTime(flyoutVisitor.time_in)} />
+              <FieldRow label="Time Out">
+                {flyoutVisitor.time_out ? (
+                  formatDateTime(flyoutVisitor.time_out)
+                ) : (
+                  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyles.checkedIn}`}>Active</span>
+                )}
+              </FieldRow>
             </DetailSection>
 
             {!flyoutVisitor.time_out && canModify && (
@@ -389,10 +365,8 @@ export default function VisitorLogPage() {
             )}
 
             <DetailSection title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {formatDateTime(flyoutVisitor.created)}</div>
-                <div>Updated: {formatDateTime(flyoutVisitor.updated)}</div>
-              </div>
+              <FieldRow label="Created" value={formatDateTime(flyoutVisitor.created)} />
+              <FieldRow label="Updated" value={formatDateTime(flyoutVisitor.updated)} />
             </DetailSection>
           </>
         )}

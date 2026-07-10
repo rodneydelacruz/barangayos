@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getRevenues, createRevenue, deleteRevenue, type ApiRevenue, type RevenueData } from '@/api/revenues'
 import { getIncomeAccounts, type ApiIncomeAccount } from '@/api/incomeAccounts'
@@ -134,60 +134,32 @@ export function RevenueTracking() {
         {flyout && (() => (
           <>
             <DetailSection icon={<DollarSign className="size-3.5" />} title="Revenue Info">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-semibold">₱{flyout.amount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date</span>
-                  <span>{flyout.revenue_date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Source</span>
-                  <span>{flyout.source}</span>
-                </div>
-              </div>
+              <FieldRow label="Amount">
+                <span className="font-semibold text-foreground">₱{flyout.amount.toLocaleString()}</span>
+              </FieldRow>
+              <FieldRow label="Date" value={flyout.revenue_date} />
+              <FieldRow label="Source" value={flyout.source} />
             </DetailSection>
             <DetailSection icon={<Tag className="size-3.5" />} title="Classification">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{CATEGORY_LABELS[flyout.category] || flyout.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Income Account</span>
-                  <span>{flyout.expand?.income_account?.name || '—'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">COA Code</span>
-                  <span className="font-mono text-xs">{flyout.expand?.income_account?.coa_code || '—'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fund Source</span>
-                  <span>{flyout.expand?.fund_source?.name || '—'}</span>
-                </div>
-              </div>
+              <FieldRow label="Category">
+                <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{CATEGORY_LABELS[flyout.category] || flyout.category}</span>
+              </FieldRow>
+              <FieldRow label="Income Account" value={flyout.expand?.income_account?.name || '—'} />
+              <FieldRow label="COA Code">
+                <span className="font-mono text-xs text-foreground">{flyout.expand?.income_account?.coa_code || '—'}</span>
+              </FieldRow>
+              <FieldRow label="Fund Source" value={flyout.expand?.fund_source?.name || '—'} />
             </DetailSection>
             <DetailSection icon={<Receipt className="size-3.5" />} title="Reference">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">OR No.</span>
-                  <span className="font-mono text-xs">{flyout.or_no || '—'}</span>
-                </div>
-                {flyout.expand?.document_request && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Document Request</span>
-                      <span className="text-xs">#{flyout.document_request}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Received By</span>
-                      <span>{(flyout.expand.document_request as Record<string, unknown>)?.received_by as string || '—'}</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              <FieldRow label="OR No.">
+                <span className="font-mono text-xs text-foreground">{flyout.or_no || '—'}</span>
+              </FieldRow>
+              {flyout.expand?.document_request && (
+                <>
+                  <FieldRow label="Document Request" value={`#${flyout.document_request}`} />
+                  <FieldRow label="Received By" value={(flyout.expand.document_request as Record<string, unknown>)?.received_by as string || '—'} />
+                </>
+              )}
             </DetailSection>
             {flyout.remarks && (
               <DetailSection icon={<FileText className="size-3.5" />} title="Remarks">
@@ -195,10 +167,8 @@ export function RevenueTracking() {
               </DetailSection>
             )}
             <DetailSection icon={<Calendar className="size-3.5" />} title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {new Date(flyout.created).toLocaleString()}</div>
-                <div>Updated: {new Date(flyout.updated).toLocaleString()}</div>
-              </div>
+              <FieldRow label="Created" value={new Date(flyout.created).toLocaleString()} />
+              <FieldRow label="Updated" value={new Date(flyout.updated).toLocaleString()} />
             </DetailSection>
           </>
         ))()}
@@ -206,7 +176,7 @@ export function RevenueTracking() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={() => setShowForm(false)} />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="p-6">
               <h2 className="font-display text-sm font-semibold mb-4">Add Revenue</h2>
               <div className="space-y-4">

@@ -8,6 +8,7 @@ export interface DeceasedRecordData {
   immediate_cause_of_death: string
   underlying_cause_of_death: string
   underlying_cause_other?: string
+  data_set?: string
 }
 
 export interface ApiDeceasedRecord extends RecordModel, DeceasedRecordData {}
@@ -20,7 +21,7 @@ export async function getDeceasedRecords(): Promise<ApiDeceasedRecord[]> {
 
 export async function createDeceasedRecord(data: DeceasedRecordData): Promise<ApiDeceasedRecord> {
   try {
-    const result = await getClient().collection('deceased_records').create<ApiDeceasedRecord>(data)
+    const result = await getClient().collection('deceased_records').create<ApiDeceasedRecord>({ ...data, data_set: 'BIPS' })
     await getClient().collection('residents').update(data.inhabitant_id, { is_deceased: true })
     return result
   } catch (err) { throw handleApiError(err) }
@@ -28,7 +29,7 @@ export async function createDeceasedRecord(data: DeceasedRecordData): Promise<Ap
 
 export async function updateDeceasedRecord(id: string, data: Partial<DeceasedRecordData>): Promise<ApiDeceasedRecord> {
   try {
-    return await getClient().collection('deceased_records').update<ApiDeceasedRecord>(id, data)
+    return await getClient().collection('deceased_records').update<ApiDeceasedRecord>(id, { ...data, data_set: 'BIPS' })
   } catch (err) { throw handleApiError(err) }
 }
 

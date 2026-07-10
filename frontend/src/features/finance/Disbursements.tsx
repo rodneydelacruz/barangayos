@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getDisbursements, createDisbursement, deleteDisbursement, type ApiDisbursement, type DisbursementData } from '@/api/disbursements'
 import { getAppropriations, type ApiAppropriation } from '@/api/appropriations'
@@ -115,52 +115,25 @@ export function Disbursements() {
           return (
             <>
               <DetailSection icon={<DollarSign className="size-3.5" />} title="Payment Info">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount</span>
-                    <span className="font-semibold">₱{flyout.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date</span>
-                    <span>{flyout.disbursement_date}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Particular</span>
-                    <span>{flyout.particular}</span>
-                  </div>
-                </div>
+                <FieldRow label="Amount">
+                  <span className="font-semibold text-foreground">₱{flyout.amount.toLocaleString()}</span>
+                </FieldRow>
+                <FieldRow label="Date" value={flyout.disbursement_date} />
+                <FieldRow label="Particular" value={flyout.particular} />
               </DetailSection>
               <DetailSection icon={<Receipt className="size-3.5" />} title="Reference Numbers">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Check No.</span>
-                    <span className="font-mono text-xs">{flyout.check_no || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">OR No.</span>
-                    <span className="font-mono text-xs">{flyout.or_no || '—'}</span>
-                  </div>
-                </div>
+                <FieldRow label="Check No.">
+                  <span className="font-mono text-xs text-foreground">{flyout.check_no || '—'}</span>
+                </FieldRow>
+                <FieldRow label="OR No.">
+                  <span className="font-mono text-xs text-foreground">{flyout.or_no || '—'}</span>
+                </FieldRow>
               </DetailSection>
               <DetailSection icon={<Building className="size-3.5" />} title="Appropriation">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payee</span>
-                    <span>{flyout.payee || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Particular</span>
-                    <span>{flyout.particular || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Item</span>
-                    <span>{appr?.item_name || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Fund Source</span>
-                    <span>{appr?.expand?.fund_source?.name || '—'}</span>
-                  </div>
-                </div>
+                <FieldRow label="Payee" value={flyout.payee || '—'} />
+                <FieldRow label="Particular" value={flyout.particular || '—'} />
+                <FieldRow label="Item" value={appr?.item_name || '—'} />
+                <FieldRow label="Fund Source" value={appr?.expand?.fund_source?.name || '—'} />
               </DetailSection>
               {flyout.notes && (
                 <DetailSection icon={<FileText className="size-3.5" />} title="Notes">
@@ -168,10 +141,8 @@ export function Disbursements() {
                 </DetailSection>
               )}
               <DetailSection icon={<Calendar className="size-3.5" />} title="Metadata">
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>Created: {new Date(flyout.created).toLocaleString()}</div>
-                  <div>Updated: {new Date(flyout.updated).toLocaleString()}</div>
-                </div>
+                <FieldRow label="Created" value={new Date(flyout.created).toLocaleString()} />
+                <FieldRow label="Updated" value={new Date(flyout.updated).toLocaleString()} />
               </DetailSection>
             </>
           )
@@ -180,7 +151,7 @@ export function Disbursements() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={() => setShowForm(false)} />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="p-6">
               <h2 className="font-display text-sm font-semibold mb-4">Record Disbursement</h2>
               <div className="space-y-4">

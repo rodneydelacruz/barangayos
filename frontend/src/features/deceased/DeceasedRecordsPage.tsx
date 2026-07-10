@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { hasRole } from '@/auth/session'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { DataTable, type Column } from '@/components/ui/data-table'
@@ -417,7 +417,7 @@ export default function DeceasedRecordsPage() {
             onClick={closePanel}
             aria-hidden="true"
           />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">
                 {editingId ? 'Edit Deceased Record' : 'New Deceased Record'}
@@ -554,72 +554,36 @@ export default function DeceasedRecordsPage() {
                   icon={<User className="size-3" />}
                   title="Inhabitant Info"
                 >
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">Name:</span>{' '}
-                      <span className="font-medium">
-                        {inhabitant
-                          ? `${inhabitant.first_name} ${inhabitant.last_name}`
-                          : '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Type of Resident:
-                      </span>{' '}
-                      {inhabitant?.type_of_resident || '—'}
-                    </div>
-                  </div>
+                  <FieldRow label="Name">
+                    <span className="font-medium text-foreground">
+                      {inhabitant
+                        ? `${inhabitant.first_name} ${inhabitant.last_name}`
+                        : '—'}
+                    </span>
+                  </FieldRow>
+                  <FieldRow label="Type of Resident" value={inhabitant?.type_of_resident || '—'} />
                 </DetailSection>
 
                 <DetailSection
                   icon={<Calendar className="size-3" />}
                   title="Death Info"
                 >
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">
-                        Date of Death:
-                      </span>{' '}
-                      {formatDate(flyoutRecord.date_of_death)}
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">
-                        Immediate Cause:
-                      </span>{' '}
-                      {flyoutRecord.immediate_cause_of_death || '—'}
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">
-                        Underlying Cause:
-                      </span>{' '}
-                      {flyoutRecord.underlying_cause_of_death || '—'}
-                    </div>
-                    {flyoutRecord.underlying_cause_of_death ===
-                      'Others (specify)' &&
-                      flyoutRecord.underlying_cause_other && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">
-                            Specified Cause:
-                          </span>{' '}
-                          {flyoutRecord.underlying_cause_other}
-                        </div>
-                      )}
-                  </div>
+                  <FieldRow label="Date of Death" value={formatDate(flyoutRecord.date_of_death)} />
+                  <FieldRow label="Immediate Cause" value={flyoutRecord.immediate_cause_of_death || '—'} />
+                  <FieldRow label="Underlying Cause" value={flyoutRecord.underlying_cause_of_death || '—'} />
+                  {flyoutRecord.underlying_cause_of_death ===
+                    'Others (specify)' &&
+                    flyoutRecord.underlying_cause_other && (
+                      <FieldRow label="Specified Cause" value={flyoutRecord.underlying_cause_other} />
+                    )}
                 </DetailSection>
 
                 <DetailSection
                   icon={<Skull className="size-3" />}
                   title="Metadata"
                 >
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      Created: {formatDateTime(flyoutRecord.created)}
-                    </div>
-                    <div>
-                      Updated: {formatDateTime(flyoutRecord.updated)}
-                    </div>
-                  </div>
+                  <FieldRow label="Created" value={formatDateTime(flyoutRecord.created)} />
+                  <FieldRow label="Updated" value={formatDateTime(flyoutRecord.updated)} />
                 </DetailSection>
               </>
             )
