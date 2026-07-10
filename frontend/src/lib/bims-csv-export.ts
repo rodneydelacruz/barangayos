@@ -76,6 +76,10 @@ export const HOUSEHOLD_COLUMNS = [
   'NO_OF_MEMBERS',
   'NO_OF_MIGRANTS',
   'MONTHLY_INCOME',
+  'WATER_SYSTEM',
+  'WASTE_DISPOSAL',
+  'POWER_SUPPLY',
+  'TOILET_TYPE',
   'DATA_SET',
   'DATE_EXPORTED',
 ]
@@ -232,6 +236,10 @@ export function generateHouseholdsCsv(
       h.no_of_household_members ?? 0,
       h.no_of_migrants ?? 0,
       h.monthly_income ?? 0,
+      h.water_system ?? '',
+      h.waste_disposal ?? '',
+      h.power_supply ?? '',
+      h.toilet_type ?? '',
       h.data_set ?? 'BIPS',
       dateExported,
     ])

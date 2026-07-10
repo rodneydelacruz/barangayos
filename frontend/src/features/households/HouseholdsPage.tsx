@@ -88,6 +88,11 @@ function emptyForm() {
     household_unit_other: '',
     household_name: '',
     monthly_income: 0,
+    // DILG / BIMS National Indicators
+    water_system: '',
+    waste_disposal: '',
+    power_supply: '',
+    toilet_type: '',
   }
 }
 
@@ -418,6 +423,10 @@ export default function HouseholdsPage() {
       household_unit_other: household.household_unit_other ?? '',
       household_name: household.household_name ?? '',
       monthly_income: household.monthly_income ?? 0,
+      water_system: household.water_system ?? '',
+      waste_disposal: household.waste_disposal ?? '',
+      power_supply: household.power_supply ?? '',
+      toilet_type: household.toilet_type ?? '',
     })
     setPanelOpen(true)
     setError(null)
@@ -485,14 +494,40 @@ export default function HouseholdsPage() {
 
   async function handleAddMember() {
     if (!selectedResident || !memberForm.relationship_to_head) return
-    if (!editingId) return
+
+    // Get or create the household first
+    let householdId = editingId
+    if (!householdId) {
+      const validationError = validate()
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      try {
+        const payload = {
+          ...form,
+          no_of_household_members: panelMembers.length,
+          no_of_migrants: panelMigrants.length,
+        }
+        const created = await createHousehold(payload)
+        setHouseholds((prev) => [created, ...prev])
+        setEditingId(created.id)
+        householdId = created.id
+        setForm((prev) => ({ ...prev, household_number: created.household_number }))
+        setError(null)
+        setFieldErrors({})
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to save household')
+        return
+      }
+    }
 
     try {
       const maxOrder = panelMembers.length > 0
         ? Math.max(...panelMembers.map(m => m.sort_order ?? 0))
         : 0
       const created = await createHouseholdMember({
-        household_id: editingId,
+        household_id: householdId,
         first_name: selectedResident.first_name,
         last_name: selectedResident.last_name,
         middle_name: selectedResident.middle_name || 'N/A',
@@ -506,7 +541,7 @@ export default function HouseholdsPage() {
 
       // Link the selected resident to this household
       try {
-        await updateResident(selectedResident.id, { household_id: editingId })
+        await updateResident(selectedResident.id, { household_id: householdId })
       } catch (linkErr) {
         console.warn('Failed to link resident to household:', linkErr)
       }
@@ -966,8 +1001,59 @@ export default function HouseholdsPage() {
                 </div>
               </FormSection>
 
-              {/* ── Members section (edit only) ──────────────────── */}
-              {editingId && (
+              {/* ── DILG / BIMS National Indicators ──────────────── */}
+              <FormSection icon={<Building2 className="size-4" />} title="DILG / BIMS National Indicators" defaultOpen={false}>
+                <p className="text-[10px] text-muted-foreground pb-1">
+                  Infrastructure and service indicators required under DILG MC No. 2025-104
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Water System</Label>
+                    <select value={form.water_system} onChange={(e) => updateField('water_system', e.target.value)} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <option value="">— Select —</option>
+                      <option value="Level I (Point Source)">Level I (Point Source)</option>
+                      <option value="Level II (Communal Faucet)">Level II (Communal Faucet)</option>
+                      <option value="Level III (Individual Connection)">Level III (Individual Connection)</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Waste Disposal</Label>
+                    <select value={form.waste_disposal} onChange={(e) => updateField('waste_disposal', e.target.value)} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <option value="">— Select —</option>
+                      <option value="Garbage Collection">Garbage Collection</option>
+                      <option value="Composting">Composting</option>
+                      <option value="Burning">Burning</option>
+                      <option value="Open Dumping">Open Dumping</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Power Supply</Label>
+                    <select value={form.power_supply} onChange={(e) => updateField('power_supply', e.target.value)} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <option value="">— Select —</option>
+                      <option value="Electric Connection">Electric Connection</option>
+                      <option value="Solar">Solar</option>
+                      <option value="Generator">Generator</option>
+                      <option value="None">None</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Toilet Type</Label>
+                    <select value={form.toilet_type} onChange={(e) => updateField('toilet_type', e.target.value)} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <option value="">— Select —</option>
+                      <option value="Water-Sealed">Water-Sealed</option>
+                      <option value="Antipolo">Antipolo</option>
+                      <option value="Pit Latrine">Pit Latrine</option>
+                      <option value="None">None</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                </div>
+              </FormSection>
+
+              {/* ── Members section ────────────────────────────────── */}
                 <FormSection icon={<Users className="size-4" />} title={`Household Members (${panelMembers.length})`} defaultOpen>
                   <div className="flex items-center justify-between pb-1">
                     <p className="text-[10px] text-muted-foreground">Manage household members and their relationships</p>
@@ -1089,7 +1175,6 @@ export default function HouseholdsPage() {
                     </div>
                   )}
                 </FormSection>
-              )}
 
               {/* ── Migrant section (edit only, conditional) ─────── */}
               {editingId && panelMigrants.length > 0 && (

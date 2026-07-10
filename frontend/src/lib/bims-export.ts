@@ -176,6 +176,27 @@ export function exportBimsFormA1(data: BimsExportData) {
   <tr><td class="field-label">Monthly Household Income (PHP)</td><td class="field-value">${household.monthly_income != null ? 'PHP ' + Number(household.monthly_income).toLocaleString() : '—'}</td></tr>
 </table>
 
+<!-- ─── NATIONAL INDICATORS ──────────────────────────────────── -->
+<div class="section-title">National Indicators (DILG MC No. 2025-104)</div>
+<table>
+  <tr>
+    <td class="field-label">Water System</td>
+    <td class="field-value">${esc(household.water_system || '—')}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Waste Disposal</td>
+    <td class="field-value">${esc(household.waste_disposal || '—')}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Power Supply</td>
+    <td class="field-value">${esc(household.power_supply || '—')}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Toilet Type</td>
+    <td class="field-value">${esc(household.toilet_type || '—')}</td>
+  </tr>
+</table>
+
 <!-- ─── PART 2: HOUSEHOLD MEMBERS ─────────────────────────────── -->
 <div class="form-title">Part 2 — Household Members (List of All Members)</div>
 
