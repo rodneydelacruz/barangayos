@@ -1,5 +1,5 @@
 import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { Plus, ChevronDown, Home, Users, MapPin, Building2, ArrowUpDown } from 'lucide-react'
 import {
@@ -22,18 +22,27 @@ import {
   deleteMigrant,
   type ApiMigrant,
 } from '@/api/migrantInfo'
+import { updateResident, searchResidents, type ApiResident } from '@/api/residents'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { FormSection } from '@/components/ui/form-section'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useLookups } from '@/hooks/useLookups'
+import { exportBimsFormA1 } from '@/lib/bims-export'
+import {
+  generateHouseholdsCsv,
+  generateMembersCsv,
+  generateMigrantsCsv,
+  downloadCsv,
+} from '@/lib/bims-csv-export'
 
 /* ------------------------------------------------------------------ */
 /*  Order-listing sort (PSA household member ordering)                 */
@@ -148,6 +157,23 @@ export default function HouseholdsPage() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [memberForm, setMemberForm] = useState(emptyMemberForm())
 
+  // Resident search for add-member
+  const [residentQuery, setResidentQuery] = useState('')
+  const [residentResults, setResidentResults] = useState<ApiResident[]>([])
+  const [searchingResidents, setSearchingResidents] = useState(false)
+  const [selectedResident, setSelectedResident] = useState<ApiResident | null>(null)
+  const residentSearchRef = useRef<HTMLDivElement>(null)
+
+  // Household head search (household form level)
+  const [hhHeadQuery, setHhHeadQuery] = useState('')
+  const [hhHeadResults, setHhHeadResults] = useState<ApiResident[]>([])
+  const [searchingHhHead, setSearchingHhHead] = useState(false)
+  const hhHeadSearchRef = useRef<HTMLDivElement>(null)
+  const currentHead = useMemo(
+    () => panelMembers.find((m) => m.relationship_to_head === '1') ?? null,
+    [panelMembers],
+  )
+
   // Inline add-migrant form
   const [showAddMigrant, setShowAddMigrant] = useState(false)
   const [migrantForm, setMigrantForm] = useState(emptyMigrantForm())
@@ -157,6 +183,38 @@ export default function HouseholdsPage() {
 
   // General error
   const [error, setError] = useState<string | null>(null)
+
+  // Field-level validation
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
+  function validate(): string | null {
+    const errors: Record<string, string> = {}
+
+    if (!form.region.trim()) errors.region = 'Region is required'
+    if (!form.province.trim()) errors.province = 'Province is required'
+    if (!form.city_municipality.trim()) errors.city_municipality = 'City/Municipality is required'
+    if (!form.barangay.trim()) errors.barangay = 'Barangay is required'
+    if (!form.household_complete_address.trim()) errors.household_complete_address = 'Complete address is required'
+    if (!form.household_type) errors.household_type = 'Household type is required'
+    if (form.household_type === 'Others' && !form.household_type_other.trim()) errors.household_type_other = 'Please specify household type'
+    if (!form.tenure_status) errors.tenure_status = 'Tenure status is required'
+    if (form.tenure_status === 'Others' && !form.tenure_status_other.trim()) errors.tenure_status_other = 'Please specify tenure status'
+    if (!form.household_unit) errors.household_unit = 'Household unit is required'
+    if (form.household_unit === 'Others' && !form.household_unit_other.trim()) errors.household_unit_other = 'Please specify household unit'
+    if (form.no_of_families < 0) errors.no_of_families = 'Must be 0 or more'
+
+    setFieldErrors(errors)
+    const keys = Object.keys(errors)
+    return keys.length > 0 ? `Please fix ${keys.length} field(s) before saving.` : null
+  }
 
   // ── Lookups ──────────────────────────────────────────────────────
 
@@ -234,15 +292,77 @@ export default function HouseholdsPage() {
       .finally(() => setFlyoutLoading(false))
   }, [flyoutHousehold])
 
+  /* ── Resident search (debounced) ───────────────────────────────── */
+
+  useEffect(() => {
+    if (residentQuery.length < 3) {
+      setResidentResults([])
+      return
+    }
+    setSearchingResidents(true)
+    const timer = setTimeout(() => {
+      searchResidents(residentQuery)
+        .then(setResidentResults)
+        .catch(() => setResidentResults([]))
+        .finally(() => setSearchingResidents(false))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [residentQuery])
+
+  /* ── Household head search (debounced) ─────────────────────────── */
+
+  useEffect(() => {
+    if (hhHeadQuery.length < 3) {
+      setHhHeadResults([])
+      return
+    }
+    setSearchingHhHead(true)
+    const timer = setTimeout(() => {
+      searchResidents(hhHeadQuery)
+        .then(setHhHeadResults)
+        .catch(() => setHhHeadResults([]))
+        .finally(() => setSearchingHhHead(false))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [hhHeadQuery])
+
+  /* ── Close hh-head dropdown on click outside ──────────────────── */
+
+  useEffect(() => {
+    if (!showAddMember) return
+    const handler = (e: MouseEvent) => {
+      if (residentSearchRef.current && !residentSearchRef.current.contains(e.target as Node)) {
+        setResidentResults([])
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showAddMember])
+
+  /* ── Close hh-head dropdown on click outside ──────────────────── */
+
+  useEffect(() => {
+    if (!editingId) return
+    const handler = (e: MouseEvent) => {
+      if (hhHeadSearchRef.current && !hhHeadSearchRef.current.contains(e.target as Node)) {
+        setHhHeadResults([])
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [editingId])
+
   /* ── form helpers ──────────────────────────────────────────────── */
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    clearFieldError(field)
   }
 
   function updateNumberField(field: string, value: string) {
     const num = value === '' ? 0 : Number(value)
     setForm((prev) => ({ ...prev, [field]: num }))
+    clearFieldError(field)
   }
 
   /* ── panel handlers ────────────────────────────────────────────── */
@@ -255,9 +375,15 @@ export default function HouseholdsPage() {
     setPanelMigrants([])
     setShowAddMember(false)
     setMemberForm(emptyMemberForm())
+    setSelectedResident(null)
+    setResidentQuery('')
+    setResidentResults([])
+    setHhHeadQuery('')
+    setHhHeadResults([])
     setShowAddMigrant(false)
     setMigrantForm(emptyMigrantForm())
     setError(null)
+    setFieldErrors({})
   }
 
   async function openCreatePanel() {
@@ -280,7 +406,7 @@ export default function HouseholdsPage() {
       city_municipality: household.city_municipality ?? '',
       barangay: household.barangay ?? '',
       sitio_purok: household.sitio_purok ?? '',
-      household_complete_address: household.household_complete_address || household.address || '',
+      household_complete_address: household.household_complete_address || '',
       no_of_families: household.no_of_families ?? 0,
       no_of_household_members: household.no_of_household_members ?? 0,
       no_of_migrants: household.no_of_migrants ?? 0,
@@ -295,6 +421,13 @@ export default function HouseholdsPage() {
     })
     setPanelOpen(true)
     setError(null)
+    setShowAddMember(false)
+    setMemberForm(emptyMemberForm())
+    setSelectedResident(null)
+    setResidentQuery('')
+    setResidentResults([])
+    setHhHeadQuery('')
+    setHhHeadResults([])
 
     // Fetch existing members & migrants
     Promise.all([getHouseholdMembers(household.id), getMigrants(household.id)])
@@ -314,15 +447,35 @@ export default function HouseholdsPage() {
     e.preventDefault()
     if (!form.household_number.trim()) return
 
+    // Validate required fields
+    const validationError = validate()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    // Auto-calc member/migrant counts before submit
+    const payload = {
+      ...form,
+      no_of_household_members: panelMembers.length,
+      no_of_migrants: panelMigrants.length,
+    }
+
     try {
       if (editingId) {
-        const updated = await updateHousehold(editingId, form)
+        const updated = await updateHousehold(editingId, payload)
         setHouseholds((prev) => prev.map((h) => (h.id === editingId ? updated : h)))
+        closePanel()
       } else {
-        const created = await createHousehold(form)
+        const created = await createHousehold(payload)
         setHouseholds((prev) => [created, ...prev])
+        // Transition to edit mode so staff/admins can add members
+        setEditingId(created.id)
+        setForm((prev) => ({ ...prev, household_number: created.household_number }))
+        setError(null)
+        setFieldErrors({})
+        return
       }
-      closePanel()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save household')
     }
@@ -331,21 +484,37 @@ export default function HouseholdsPage() {
   /* ── member handlers ───────────────────────────────────────────── */
 
   async function handleAddMember() {
-    if (!memberForm.first_name.trim() || !memberForm.last_name.trim() || !memberForm.relationship_to_head) return
+    if (!selectedResident || !memberForm.relationship_to_head) return
     if (!editingId) return
 
     try {
+      const maxOrder = panelMembers.length > 0
+        ? Math.max(...panelMembers.map(m => m.sort_order ?? 0))
+        : 0
       const created = await createHouseholdMember({
         household_id: editingId,
-        first_name: memberForm.first_name.trim(),
-        last_name: memberForm.last_name.trim(),
-        middle_name: memberForm.middle_name.trim() || undefined,
-        ext_name: memberForm.ext_name.trim() || undefined,
+        first_name: selectedResident.first_name,
+        last_name: selectedResident.last_name,
+        middle_name: selectedResident.middle_name || 'N/A',
+        ext_name: selectedResident.ext_name || undefined,
+        resident_id: selectedResident.id,
         relationship_to_head: memberForm.relationship_to_head,
         source_of_income: memberForm.source_of_income || undefined,
         monthly_income: memberForm.monthly_income || 0,
+        sort_order: maxOrder + 1,
       })
+
+      // Link the selected resident to this household
+      try {
+        await updateResident(selectedResident.id, { household_id: editingId })
+      } catch (linkErr) {
+        console.warn('Failed to link resident to household:', linkErr)
+      }
+
       setPanelMembers((prev) => sortMembers([...prev, created]))
+      setSelectedResident(null)
+      setResidentQuery('')
+      setResidentResults([])
       setMemberForm(emptyMemberForm())
       setShowAddMember(false)
     } catch (err) {
@@ -359,6 +528,47 @@ export default function HouseholdsPage() {
       setPanelMembers((prev) => prev.filter((m) => m.id !== id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove member')
+    }
+  }
+
+  /* ── household head handler ────────────────────────────────────── */
+
+  async function handleSelectHouseholdHead(resident: ApiResident) {
+    if (!editingId) return
+
+    try {
+      // Remove existing head if any
+      if (currentHead) {
+        await deleteHouseholdMember(currentHead.id)
+      }
+
+      const created = await createHouseholdMember({
+        household_id: editingId,
+        first_name: resident.first_name,
+        last_name: resident.last_name,
+        middle_name: resident.middle_name || 'N/A',
+        ext_name: resident.ext_name || undefined,
+        resident_id: resident.id,
+        relationship_to_head: '1',
+        sort_order: 1,
+      })
+
+      // Link resident to this household
+      try {
+        await updateResident(resident.id, { household_id: editingId })
+      } catch { /* ignore */ }
+
+      setPanelMembers((prev) => sortMembers([...prev, created]))
+
+      // Auto-fill household_name if empty
+      if (!form.household_name) {
+        updateField('household_name', `${resident.last_name}, ${resident.first_name} Family`)
+      }
+
+      setHhHeadQuery('')
+      setHhHeadResults([])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set household head')
     }
   }
 
@@ -431,16 +641,52 @@ export default function HouseholdsPage() {
     setFlyoutHousehold(null)
   }
 
+  /* ── CSV Bulk Export ─────────────────────────────────────────── */
+
+  const [exporting, setExporting] = useState(false)
+
+  async function handleBulkExport() {
+    setExporting(true)
+    try {
+      const allHh = await getHouseholds()
+      const membersMap = new Map<string, ApiHouseholdMember[]>()
+      const migrantsMap = new Map<string, ApiMigrant[]>()
+
+      for (const h of allHh) {
+        const [members, migrants] = await Promise.all([
+          getHouseholdMembers(h.id).catch(() => [] as ApiHouseholdMember[]),
+          getMigrants(h.id).catch(() => [] as ApiMigrant[]),
+        ])
+        membersMap.set(h.id, members)
+        migrantsMap.set(h.id, migrants)
+      }
+
+      downloadCsv('bims_households.csv', generateHouseholdsCsv(allHh))
+      downloadCsv('bims_household_members.csv', generateMembersCsv(allHh, membersMap))
+      downloadCsv('bims_migrants.csv', generateMigrantsCsv(allHh, migrantsMap))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   /* ── misc ──────────────────────────────────────────────────────── */
 
   const canModify = hasRole('admin', 'staff')
 
   const newHouseholdButton = canModify ? (
-    <Button variant="ghost" size="sm" className="gap-0.5 rounded-md text-blue-400 hover:text-blue-300 h-6 text-xs" onClick={openCreatePanel}>
+    <Button variant="ghost" size="sm" className="gap-1.5 rounded-md text-blue-400 hover:text-blue-300 motion-press" onClick={openCreatePanel}>
       <Plus className="size-3" />
       New Household
     </Button>
   ) : null
+
+  const exportButton = (
+    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBulkExport} disabled={exporting}>
+      {exporting ? 'Exporting...' : 'Export CSV (BIMS)'}
+    </Button>
+  )
 
   /* ── columns ───────────────────────────────────────────────────── */
 
@@ -492,7 +738,7 @@ export default function HouseholdsPage() {
       <div className="-ml-4 -mr-4 sm:-ml-6 sm:-mr-6 lg:-ml-8 lg:-mr-8 -mt-4 sm:-mt-6 lg:-mt-8 -mb-4 sm:-mb-6 lg:-mb-8 h-[calc(100vh-56px)] h-[calc(100dvh-60px)] md:h-[calc(100dvh-52px)] flex flex-col overflow-hidden">
         <DataTable
           title="HOUSEHOLDS"
-          toolbarActions={newHouseholdButton}
+          toolbarActions={<div className="flex items-center gap-1">{newHouseholdButton}{exportButton}</div>}
           columns={columns}
           data={households}
           loading={loading}
@@ -538,29 +784,29 @@ export default function HouseholdsPage() {
               </div>
 
               {/* ── Address section ──────────────────────────────── */}
-              <div className="space-y-3 border-b border-border pb-4">
-                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <MapPin className="size-3" />
-                  Address
-                </h3>
+              <FormSection icon={<MapPin className="size-4" />} title="Address" defaultOpen>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="panel-region" className="text-xs">Region *</Label>
-                    <Input id="panel-region" value={form.region} onChange={(e) => updateField('region', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-region" value={form.region} onChange={(e) => updateField('region', e.target.value)} className={cn('h-8 text-xs', fieldErrors.region && 'border-destructive')} />
+                    {fieldErrors.region && <p className="text-xs text-destructive">{fieldErrors.region}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-province" className="text-xs">Province *</Label>
-                    <Input id="panel-province" value={form.province} onChange={(e) => updateField('province', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-province" value={form.province} onChange={(e) => updateField('province', e.target.value)} className={cn('h-8 text-xs', fieldErrors.province && 'border-destructive')} />
+                    {fieldErrors.province && <p className="text-xs text-destructive">{fieldErrors.province}</p>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="panel-city" className="text-xs">City / Municipality *</Label>
-                    <Input id="panel-city" value={form.city_municipality} onChange={(e) => updateField('city_municipality', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-city" value={form.city_municipality} onChange={(e) => updateField('city_municipality', e.target.value)} className={cn('h-8 text-xs', fieldErrors.city_municipality && 'border-destructive')} />
+                    {fieldErrors.city_municipality && <p className="text-xs text-destructive">{fieldErrors.city_municipality}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-barangay" className="text-xs">Barangay *</Label>
-                    <Input id="panel-barangay" value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-barangay" value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className={cn('h-8 text-xs', fieldErrors.barangay && 'border-destructive')} />
+                    {fieldErrors.barangay && <p className="text-xs text-destructive">{fieldErrors.barangay}</p>}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -574,84 +820,142 @@ export default function HouseholdsPage() {
                     value={form.household_complete_address}
                     onChange={(e) => updateField('household_complete_address', e.target.value)}
                     rows={2}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={cn('flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50', fieldErrors.household_complete_address && 'border-destructive')}
                   />
+                  {fieldErrors.household_complete_address && <p className="text-xs text-destructive">{fieldErrors.household_complete_address}</p>}
                 </div>
-              </div>
+              </FormSection>
 
               {/* ── Classification section ────────────────────────── */}
-              <div className="space-y-3 border-b border-border pb-4">
-                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Building2 className="size-3" />
-                  Classification
-                </h3>
+              <FormSection icon={<Building2 className="size-4" />} title="Classification" defaultOpen>
                 <div className="space-y-2">
                   <Label htmlFor="panel-household-type" className="text-xs">Household Type *</Label>
-                  <Select id="panel-household-type" value={form.household_type} onValueChange={(v) => updateField('household_type', v)} className="h-8 text-xs">
+                  <Select id="panel-household-type" value={form.household_type} onValueChange={(v) => updateField('household_type', v)} className={cn('h-8 text-xs', fieldErrors.household_type && 'border-destructive')}>
                     <option value="">Select type</option>
                     {householdTypeOptions.map((opt) => (
                       <option key={opt.label} value={opt.label}>{opt.label}</option>
                     ))}
                   </Select>
+                  {fieldErrors.household_type && <p className="text-xs text-destructive">{fieldErrors.household_type}</p>}
                 </div>
                 {form.household_type === 'Others' && (
                   <div className="space-y-2">
                     <Label htmlFor="panel-hh-type-other" className="text-xs">Specify household type *</Label>
-                    <Input id="panel-hh-type-other" value={form.household_type_other} onChange={(e) => updateField('household_type_other', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-hh-type-other" value={form.household_type_other} onChange={(e) => updateField('household_type_other', e.target.value)} className={cn('h-8 text-xs', fieldErrors.household_type_other && 'border-destructive')} />
+                    {fieldErrors.household_type_other && <p className="text-xs text-destructive">{fieldErrors.household_type_other}</p>}
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="panel-tenure-status" className="text-xs">Tenure Status *</Label>
-                  <Select id="panel-tenure-status" value={form.tenure_status} onValueChange={(v) => updateField('tenure_status', v)} className="h-8 text-xs">
+                  <Select id="panel-tenure-status" value={form.tenure_status} onValueChange={(v) => updateField('tenure_status', v)} className={cn('h-8 text-xs', fieldErrors.tenure_status && 'border-destructive')}>
                     <option value="">Select tenure</option>
                     {tenureStatusOptions.map((opt) => (
                       <option key={opt.label} value={opt.label}>{opt.label}</option>
                     ))}
                   </Select>
+                  {fieldErrors.tenure_status && <p className="text-xs text-destructive">{fieldErrors.tenure_status}</p>}
                 </div>
                 {form.tenure_status === 'Others' && (
                   <div className="space-y-2">
                     <Label htmlFor="panel-tenure-other" className="text-xs">Specify tenure status *</Label>
-                    <Input id="panel-tenure-other" value={form.tenure_status_other} onChange={(e) => updateField('tenure_status_other', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-tenure-other" value={form.tenure_status_other} onChange={(e) => updateField('tenure_status_other', e.target.value)} className={cn('h-8 text-xs', fieldErrors.tenure_status_other && 'border-destructive')} />
+                    {fieldErrors.tenure_status_other && <p className="text-xs text-destructive">{fieldErrors.tenure_status_other}</p>}
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="panel-household-unit" className="text-xs">Household Unit *</Label>
-                  <Select id="panel-household-unit" value={form.household_unit} onValueChange={(v) => updateField('household_unit', v)} className="h-8 text-xs">
+                  <Select id="panel-household-unit" value={form.household_unit} onValueChange={(v) => updateField('household_unit', v)} className={cn('h-8 text-xs', fieldErrors.household_unit && 'border-destructive')}>
                     <option value="">Select unit</option>
                     {householdUnitOptions.map((opt) => (
                       <option key={opt.label} value={opt.label}>{opt.label}</option>
                     ))}
                   </Select>
+                  {fieldErrors.household_unit && <p className="text-xs text-destructive">{fieldErrors.household_unit}</p>}
                 </div>
                 {form.household_unit === 'Others' && (
                   <div className="space-y-2">
                     <Label htmlFor="panel-unit-other" className="text-xs">Specify household unit *</Label>
-                    <Input id="panel-unit-other" value={form.household_unit_other} onChange={(e) => updateField('household_unit_other', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-unit-other" value={form.household_unit_other} onChange={(e) => updateField('household_unit_other', e.target.value)} className={cn('h-8 text-xs', fieldErrors.household_unit_other && 'border-destructive')} />
+                    {fieldErrors.household_unit_other && <p className="text-xs text-destructive">{fieldErrors.household_unit_other}</p>}
                   </div>
                 )}
-              </div>
+              </FormSection>
 
               {/* ── Demographics section ──────────────────────────── */}
-              <div className="space-y-3 border-b border-border pb-4">
-                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Users className="size-3" />
-                  Demographics
-                </h3>
+              <FormSection icon={<Users className="size-4" />} title="Demographics" defaultOpen>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="panel-no-families" className="text-xs">No. of Families</Label>
-                    <Input id="panel-no-families" type="number" min={0} value={form.no_of_families} onChange={(e) => updateNumberField('no_of_families', e.target.value)} className="h-8 text-xs" />
+                    <Label htmlFor="panel-no-families" className="text-xs">No. of Families *</Label>
+                    <Input id="panel-no-families" type="number" min={0} value={form.no_of_families} onChange={(e) => updateNumberField('no_of_families', e.target.value)} className={cn('h-8 text-xs', fieldErrors.no_of_families && 'border-destructive')} />
+                    {fieldErrors.no_of_families && <p className="text-xs text-destructive">{fieldErrors.no_of_families}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-no-members" className="text-xs">No. of Members</Label>
-                    <Input id="panel-no-members" type="number" min={0} value={form.no_of_household_members} onChange={(e) => updateNumberField('no_of_household_members', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-no-members" type="number" min={0} value={panelMembers.length} disabled className="h-8 text-xs bg-muted" />
+                    <p className="text-[10px] text-muted-foreground">Auto-calculated from member list</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="panel-no-migrants" className="text-xs">No. of Migrants</Label>
-                    <Input id="panel-no-migrants" type="number" min={0} value={form.no_of_migrants} onChange={(e) => updateNumberField('no_of_migrants', e.target.value)} className="h-8 text-xs" />
+                    <Input id="panel-no-migrants" type="number" min={0} value={panelMigrants.length} disabled className="h-8 text-xs bg-muted" />
+                    <p className="text-[10px] text-muted-foreground">Auto-calculated from migrant list</p>
                   </div>
                 </div>
+                {/* Household Head (edit only, searchable from residents) */}
+                {editingId && (
+                  <div className="space-y-1" ref={hhHeadSearchRef}>
+                    <Label className="text-xs">Household Head</Label>
+                    {currentHead ? (
+                      <div className="flex items-center justify-between rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs">
+                        <span className="font-medium">
+                          {currentHead.last_name}, {currentHead.first_name}
+                          {currentHead.middle_name ? ` ${currentHead.middle_name}` : ''}
+                          {currentHead.ext_name ? ` ${currentHead.ext_name}` : ''}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await handleDeleteMember(currentHead.id)
+                            setHhHeadQuery('')
+                            setHhHeadResults([])
+                          }}
+                          className="text-destructive hover:text-destructive/80 text-sm leading-none"
+                          aria-label="Remove household head"
+                        >&times;</button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Input
+                          value={hhHeadQuery}
+                          onChange={(e) => setHhHeadQuery(e.target.value)}
+                          placeholder="Type at least 3 letters to search..."
+                          className="h-8 text-xs"
+                        />
+                        {hhHeadQuery.length >= 3 && (
+                          <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-background shadow-lg">
+                            {searchingHhHead ? (
+                              <div className="px-3 py-2 text-xs text-muted-foreground">Searching...</div>
+                            ) : hhHeadResults.length === 0 ? (
+                              <div className="px-3 py-2 text-xs text-muted-foreground">No matching residents found.</div>
+                            ) : (
+                              hhHeadResults.map((r) => (
+                                <button
+                                  key={r.id}
+                                  type="button"
+                                  onClick={() => handleSelectHouseholdHead(r)}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                                >
+                                  <span className="font-medium">{r.last_name}, {r.first_name}</span>
+                                  {r.middle_name && <span className="text-muted-foreground">{r.middle_name}</span>}
+                                  {r.ext_name && <span className="text-muted-foreground">{r.ext_name}</span>}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="panel-household-name" className="text-xs">Household Name</Label>
                   <Input id="panel-household-name" value={form.household_name} onChange={(e) => updateField('household_name', e.target.value)} className="h-8 text-xs" />
@@ -660,16 +964,13 @@ export default function HouseholdsPage() {
                   <Label htmlFor="panel-monthly-income" className="text-xs">Monthly Income</Label>
                   <Input id="panel-monthly-income" type="number" min={0} value={form.monthly_income} onChange={(e) => updateNumberField('monthly_income', e.target.value)} className="h-8 text-xs" />
                 </div>
-              </div>
+              </FormSection>
 
               {/* ── Members section (edit only) ──────────────────── */}
               {editingId && (
-                <div className="space-y-3 border-b border-border pb-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <Users className="size-3" />
-                      Household Members ({panelMembers.length})
-                    </h3>
+                <FormSection icon={<Users className="size-4" />} title={`Household Members (${panelMembers.length})`} defaultOpen>
+                  <div className="flex items-center justify-between pb-1">
+                    <p className="text-[10px] text-muted-foreground">Manage household members and their relationships</p>
                     {!showAddMember && (
                       <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddMember(true)} className="h-7 gap-1 text-xs">
                         <Plus className="size-3" />
@@ -681,25 +982,61 @@ export default function HouseholdsPage() {
                   {/* Inline add-member form */}
                   {showAddMember && (
                     <div className="space-y-3 rounded-md border border-border/50 bg-muted/30 p-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">First Name *</Label>
-                          <Input value={memberForm.first_name} onChange={(e) => setMemberForm((p) => ({ ...p, first_name: e.target.value }))} className="h-8 text-xs" />
+                      {/* Resident search */}
+                      <div className="space-y-1" ref={residentSearchRef}>
+                        <Label className="text-xs">Search Resident *</Label>
+                        <div className="relative">
+                          <Input
+                            value={selectedResident ? `${selectedResident.last_name}, ${selectedResident.first_name}` : residentQuery}
+                            onChange={(e) => {
+                              setResidentQuery(e.target.value)
+                              if (selectedResident) setSelectedResident(null)
+                            }}
+                            onFocus={() => {
+                              if (selectedResident) { setResidentQuery(''); setSelectedResident(null) }
+                            }}
+                            placeholder={selectedResident ? '' : 'Type at least 3 letters...'}
+                            className="h-8 text-xs"
+                          />
+                          {selectedResident && (
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedResident(null); setResidentQuery(''); setResidentResults([]) }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground hover:text-foreground leading-none"
+                              aria-label="Clear"
+                            >&times;</button>
+                          )}
+                          {/* Results dropdown */}
+                          {!selectedResident && residentQuery.length >= 3 && (
+                            <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-background shadow-lg">
+                              {searchingResidents ? (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">Searching...</div>
+                              ) : residentResults.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">No matching residents found.</div>
+                              ) : (
+                                residentResults.map((r) => (
+                                  <button
+                                    key={r.id}
+                                    type="button"
+                                    onClick={() => setSelectedResident(r)}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                                  >
+                                    <span className="font-medium">{r.last_name}, {r.first_name}</span>
+                                    {r.middle_name && <span className="text-muted-foreground">{r.middle_name}</span>}
+                                    {r.ext_name && <span className="text-muted-foreground">{r.ext_name}</span>}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Last Name *</Label>
-                          <Input value={memberForm.last_name} onChange={(e) => setMemberForm((p) => ({ ...p, last_name: e.target.value }))} className="h-8 text-xs" />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Middle Name</Label>
-                          <Input value={memberForm.middle_name} onChange={(e) => setMemberForm((p) => ({ ...p, middle_name: e.target.value }))} className="h-8 text-xs" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Ext. Name</Label>
-                          <Input value={memberForm.ext_name} onChange={(e) => setMemberForm((p) => ({ ...p, ext_name: e.target.value }))} className="h-8 text-xs" />
-                        </div>
+                        {selectedResident && (
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            ✓ Selected: {selectedResident.last_name}, {selectedResident.first_name}
+                            {selectedResident.middle_name ? ` ${selectedResident.middle_name}` : ''}
+                            {selectedResident.ext_name ? ` ${selectedResident.ext_name}` : ''}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Relationship to Head *</Label>
@@ -728,7 +1065,7 @@ export default function HouseholdsPage() {
                       </div>
                       <div className="flex gap-2">
                         <Button type="button" size="sm" onClick={handleAddMember} className="h-7 text-xs">Add</Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => { setShowAddMember(false); setMemberForm(emptyMemberForm()) }} className="h-7 text-xs">Cancel</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => { setShowAddMember(false); setMemberForm(emptyMemberForm()); setSelectedResident(null); setResidentQuery(''); setResidentResults([]) }} className="h-7 text-xs">Cancel</Button>
                       </div>
                     </div>
                   )}
@@ -751,17 +1088,14 @@ export default function HouseholdsPage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </FormSection>
               )}
 
               {/* ── Migrant section (edit only, conditional) ─────── */}
-              {editingId && form.no_of_migrants > 0 && (
-                <div className="space-y-3 border-b border-border pb-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <ArrowUpDown className="size-3" />
-                      Migrant Info ({panelMigrants.length})
-                    </h3>
+              {editingId && panelMigrants.length > 0 && (
+                <FormSection icon={<ArrowUpDown className="size-4" />} title={`Migrant Info (${panelMigrants.length})`} defaultOpen>
+                  <div className="flex items-center justify-between pb-1">
+                    <p className="text-[10px] text-muted-foreground">Track household migrant information</p>
                     {!showAddMigrant && (
                       <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddMigrant(true)} className="h-7 gap-1 text-xs">
                         <Plus className="size-3" />
@@ -875,7 +1209,7 @@ export default function HouseholdsPage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </FormSection>
               )}
 
               {/* ── form buttons ──────────────────────────────────── */}
@@ -895,6 +1229,14 @@ export default function HouseholdsPage() {
         title={flyoutHousehold ? `Household #${flyoutHousehold.household_number}` : ''}
         onEdit={canModify && flyoutHousehold ? () => { openEditPanel(flyoutHousehold); closeFlyout() } : undefined}
         onDelete={canModify && flyoutHousehold ? () => handleDelete(flyoutHousehold.id) : undefined}
+        onExport={flyoutHousehold ? () => exportBimsFormA1({
+          household: flyoutHousehold,
+          members: flyoutMembers,
+          migrants: flyoutMigrants,
+          relationshipLabels: relationshipLabelMap,
+          incomeLabels: incomeLabelMap,
+          leavingLabels: leavingLabelMap,
+        }) : undefined}
         loading={flyoutLoading}
       >
         {flyoutHousehold && (
@@ -907,7 +1249,7 @@ export default function HouseholdsPage() {
                 <div><span className="text-muted-foreground">City/Municipality:</span> <span className="font-medium">{flyoutHousehold.city_municipality || '—'}</span></div>
                 <div><span className="text-muted-foreground">Barangay:</span> <span className="font-medium">{flyoutHousehold.barangay || '—'}</span></div>
                 <div className="col-span-2"><span className="text-muted-foreground">Sitio/Purok:</span> <span className="font-medium">{flyoutHousehold.sitio_purok || '—'}</span></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Complete Address:</span> <span className="font-medium">{flyoutHousehold.household_complete_address || flyoutHousehold.address || '—'}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Complete Address:</span> <span className="font-medium">{flyoutHousehold.household_complete_address || '—'}</span></div>
               </div>
             </DetailSection>
 
