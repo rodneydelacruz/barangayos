@@ -734,7 +734,7 @@ export default function HouseholdsPage() {
     },
     {
       key: 'household_name',
-      label: 'Name',
+      label: 'Household Head',
       filterType: 'text',
       render: (h) => (
         <div className="flex items-center gap-1.5">
@@ -992,7 +992,7 @@ export default function HouseholdsPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="panel-household-name" className="text-xs">Household Name</Label>
+                  <Label htmlFor="panel-household-name" className="text-xs">Household Head Name</Label>
                   <Input id="panel-household-name" value={form.household_name} onChange={(e) => updateField('household_name', e.target.value)} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-2">
@@ -1353,11 +1353,21 @@ export default function HouseholdsPage() {
             {/* Demographics */}
             <DetailSection icon={<Users className="size-3" />} title="Demographics">
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">Household Name:</span> <span className="font-medium">{flyoutHousehold.household_name || '—'}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Household Head:</span> <span className="font-medium">{flyoutHousehold.household_name || '—'}</span></div>
                 <div><span className="text-muted-foreground">No. of Families:</span> <span className="font-medium">{flyoutHousehold.no_of_families ?? '—'}</span></div>
                 <div><span className="text-muted-foreground">No. of Members:</span> <span className="font-medium">{flyoutHousehold.no_of_household_members ?? '—'}</span></div>
                 <div><span className="text-muted-foreground">No. of Migrants:</span> <span className="font-medium">{flyoutHousehold.no_of_migrants ?? '—'}</span></div>
                 <div className="col-span-2"><span className="text-muted-foreground">Monthly Income:</span> <span className="font-medium">{flyoutHousehold.monthly_income != null ? `PHP ${flyoutHousehold.monthly_income.toLocaleString()}` : '—'}</span></div>
+              </div>
+            </DetailSection>
+
+            {/* National Indicators */}
+            <DetailSection icon={<Building2 className="size-3" />} title="National Indicators (DILG/BIMS)">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div className="col-span-2"><span className="text-muted-foreground">Water System:</span> <span className="font-medium">{flyoutHousehold.water_system || '—'}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Waste Disposal:</span> <span className="font-medium">{flyoutHousehold.waste_disposal || '—'}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Power Supply:</span> <span className="font-medium">{flyoutHousehold.power_supply || '—'}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Toilet Type:</span> <span className="font-medium">{flyoutHousehold.toilet_type || '—'}</span></div>
               </div>
             </DetailSection>
 
