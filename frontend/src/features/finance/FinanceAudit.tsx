@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Clock, User, Database, FileText } from 'lucide-react'
 import { getFinanceAuditLogs, type ApiFinanceAudit } from '@/api/financeAudit'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { cn, formatDateTime } from '@/lib/utils'
 
 const FINANCE_COLLECTIONS = [
@@ -103,10 +103,10 @@ export function FinanceAudit() {
         {flyoutLog && (
           <>
             <DetailSection icon={<FileText className="size-3" />} title="Action">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Action:</span> <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', actionColors[flyoutLog.action] || 'bg-muted text-muted-foreground')}>{flyoutLog.action}</span></div>
-                <div><span className="text-muted-foreground">Collection:</span> <span>{collectionLabels[flyoutLog.collection_name] || flyoutLog.collection_name}</span></div>
-              </div>
+              <FieldRow label="Action">
+                <span className={cn('inline-flex rounded-md px-3 py-0.5 text-xs font-bold', actionColors[flyoutLog.action] || 'bg-muted text-muted-foreground')}>{flyoutLog.action}</span>
+              </FieldRow>
+              <FieldRow label="Collection" value={collectionLabels[flyoutLog.collection_name] || flyoutLog.collection_name} />
             </DetailSection>
 
             <DetailSection icon={<Database className="size-3" />} title="Details">
@@ -115,20 +115,22 @@ export function FinanceAudit() {
 
             {flyoutLog.amount ? (
               <DetailSection title="Amount">
-                <p className="text-sm font-semibold text-foreground">{formatPeso(flyoutLog.amount)}</p>
+                <FieldRow label="Amount" value={formatPeso(flyoutLog.amount)} />
               </DetailSection>
             ) : null}
 
             <DetailSection icon={<User className="size-3" />} title="User">
-              <p className="text-sm text-foreground">{flyoutLog.user_name}</p>
+              <FieldRow label="Name" value={flyoutLog.user_name} />
             </DetailSection>
 
             <DetailSection icon={<Clock className="size-3" />} title="Timestamp">
-              <p className="text-sm text-foreground">{formatDateTime(flyoutLog.created)}</p>
+              <FieldRow label="Created" value={formatDateTime(flyoutLog.created)} />
             </DetailSection>
 
             <DetailSection title="Record ID">
-              <p className="text-xs text-muted-foreground font-mono">{flyoutLog.record_id}</p>
+              <FieldRow label="Record ID">
+                <span className="font-mono text-xs text-foreground">{flyoutLog.record_id}</span>
+              </FieldRow>
             </DetailSection>
           </>
         )}

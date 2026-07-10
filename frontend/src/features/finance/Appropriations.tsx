@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getAppropriations, createAppropriation, updateAppropriation, deleteAppropriation, markAppropriationAsObligated, type ApiAppropriation, type AppropriationData } from '@/api/appropriations'
 import { getFundSources, type ApiFundSource } from '@/api/fundSources'
@@ -199,73 +199,47 @@ export function Appropriations() {
           return (
             <>
               <DetailSection icon={<DollarSign className="size-3.5" />} title="Financial Summary">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Appropriated</p>
-                    <p className="font-semibold">₱{flyout.appropriated_amount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Disbursed</p>
-                    <p className="font-semibold">₱{flyout.disbursed_amount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-semibold ${appropriationStatusColors[status] ?? ''}`}>{status.replace(/_/g, ' ')}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Balance</p>
-                    <p className={`font-semibold ${bal <= 0 ? 'text-destructive' : ''}`}>₱{bal.toLocaleString()}</p>
-                  </div>
-                </div>
+                <FieldRow label="Appropriated">
+                  <span className="font-semibold text-foreground">₱{flyout.appropriated_amount.toLocaleString()}</span>
+                </FieldRow>
+                <FieldRow label="Disbursed">
+                  <span className="font-semibold text-foreground">₱{flyout.disbursed_amount.toLocaleString()}</span>
+                </FieldRow>
+                <FieldRow label="Status">
+                  <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-semibold ${appropriationStatusColors[status] ?? ''}`}>{status.replace(/_/g, ' ')}</span>
+                </FieldRow>
+                <FieldRow label="Balance">
+                  <span className={`font-semibold ${bal <= 0 ? 'text-destructive' : ''}`}>₱{bal.toLocaleString()}</span>
+                </FieldRow>
               </DetailSection>
               <DetailSection icon={<Building className="size-3.5" />} title="Fund Source">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Name</span>
-                    <span>{fundSource?.name || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Code</span>
-                    <span className="font-mono text-xs">{fundSource?.code || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Original Balance</span>
-                    <span>₱{(fundSource?.original_balance || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Current Balance</span>
-                    <span>₱{(fundSource?.current_balance || 0).toLocaleString()}</span>
-                  </div>
-                </div>
+                <FieldRow label="Name" value={fundSource?.name || '—'} />
+                <FieldRow label="Code">
+                  <span className="font-mono text-xs text-foreground">{fundSource?.code || '—'}</span>
+                </FieldRow>
+                <FieldRow label="Original Balance">
+                  <span className="font-semibold text-foreground">₱{(fundSource?.original_balance || 0).toLocaleString()}</span>
+                </FieldRow>
+                <FieldRow label="Current Balance">
+                  <span className="font-semibold text-foreground">₱{(fundSource?.current_balance || 0).toLocaleString()}</span>
+                </FieldRow>
               </DetailSection>
               <DetailSection icon={<BookOpen className="size-3.5" />} title="Item Details">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Expense Class</span>
-                    <span><span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{flyout.expense_class}</span></span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payee</span>
-                    <span>{flyout.payee || '—'}</span>
-                  </div>
-                  {flyout.obligated_date && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Obligated Date</span>
-                      <span>{flyout.obligated_date}</span>
-                    </div>
-                  )}
-                  {flyout.fully_disbursed_date && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fully Disbursed</span>
-                      <span>{flyout.fully_disbursed_date}</span>
-                    </div>
-                  )}
-                  {status === 'pending' && (
-                    <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => { setObligateTarget(flyout); setObligateForm({ payee: '', obligated_date: new Date().toISOString().split('T')[0], obligation_notes: '' }) }}>
-                      <ArrowRight className="size-3 mr-1" /> Mark as Obligated
-                    </Button>
-                  )}
-                </div>
+                <FieldRow label="Expense Class">
+                  <span><span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{flyout.expense_class}</span></span>
+                </FieldRow>
+                <FieldRow label="Payee" value={flyout.payee || '—'} />
+                {flyout.obligated_date && (
+                  <FieldRow label="Obligated Date" value={flyout.obligated_date} />
+                )}
+                {flyout.fully_disbursed_date && (
+                  <FieldRow label="Fully Disbursed" value={flyout.fully_disbursed_date} />
+                )}
+                {status === 'pending' && (
+                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => { setObligateTarget(flyout); setObligateForm({ payee: '', obligated_date: new Date().toISOString().split('T')[0], obligation_notes: '' }) }}>
+                    <ArrowRight className="size-3 mr-1" /> Mark as Obligated
+                  </Button>
+                )}
               </DetailSection>
               <DetailSection icon={<Receipt className="size-3.5" />} title="Linked Disbursements">
                 {disbursements.length === 0 ? (
@@ -307,10 +281,8 @@ export function Appropriations() {
                 </DetailSection>
               )}
               <DetailSection icon={<Calendar className="size-3.5" />} title="Metadata">
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>Created: {new Date(flyout.created).toLocaleString()}</div>
-                  <div>Updated: {new Date(flyout.updated).toLocaleString()}</div>
-                </div>
+                <FieldRow label="Created" value={new Date(flyout.created).toLocaleString()} />
+                <FieldRow label="Updated" value={new Date(flyout.updated).toLocaleString()} />
               </DetailSection>
             </>
           )
@@ -347,7 +319,7 @@ export function Appropriations() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={() => { setShowForm(false); setEditId(null) }} />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="p-6">
               <h2 className="font-display text-sm font-semibold mb-4">{editId ? 'Edit' : 'Add'} Appropriation</h2>
               <div className="space-y-4">

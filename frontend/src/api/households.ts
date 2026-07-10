@@ -14,7 +14,6 @@ export interface HouseholdData {
   barangay?: string
   sitio_purok?: string
   household_complete_address?: string
-  address?: string
   no_of_families?: number
   no_of_household_members?: number
   no_of_migrants?: number
@@ -26,7 +25,12 @@ export interface HouseholdData {
   household_unit_other?: string
   household_name?: string
   monthly_income?: number
-  notes?: string
+  data_set?: string
+  // DILG / BIMS National Indicators
+  water_system?: string
+  waste_disposal?: string
+  power_supply?: string
+  toilet_type?: string
 }
 
 export interface ApiHousehold extends RecordModel {
@@ -37,7 +41,6 @@ export interface ApiHousehold extends RecordModel {
   barangay: string
   sitio_purok: string
   household_complete_address: string
-  address: string
   no_of_families: number
   no_of_household_members: number
   no_of_migrants: number
@@ -49,7 +52,12 @@ export interface ApiHousehold extends RecordModel {
   household_unit_other: string
   household_name: string
   monthly_income: number
-  notes: string
+  data_set: string
+  // DILG / BIMS National Indicators
+  water_system: string
+  waste_disposal: string
+  power_supply: string
+  toilet_type: string
   updated: string
 }
 
@@ -122,7 +130,7 @@ export async function getHousehold(id: string): Promise<ApiHousehold> {
 
 export async function createHousehold(data: HouseholdData): Promise<ApiHousehold> {
   try {
-    const result = await getClient().collection(COLLECTION).create<ApiHousehold>(data)
+    const result = await getClient().collection(COLLECTION).create<ApiHousehold>({ ...sanitize(data), data_set: 'BIPS' })
     createActivity('create', COLLECTION, result.id, `Created household: ${result.household_number} — ${result.household_name}`)
     return result
   } catch (err) {
@@ -132,12 +140,24 @@ export async function createHousehold(data: HouseholdData): Promise<ApiHousehold
 
 export async function updateHousehold(id: string, data: Partial<HouseholdData>): Promise<ApiHousehold> {
   try {
-    const result = await getClient().collection(COLLECTION).update<ApiHousehold>(id, data)
+    const result = await getClient().collection(COLLECTION).update<ApiHousehold>(id, { ...sanitize(data), data_set: 'BIPS' })
     createActivity('update', COLLECTION, id, `Updated household: ${result.household_number} — ${result.household_name}`)
     return result
   } catch (err) {
     throw handleApiError(err)
   }
+}
+
+/**
+ * Fix M2: Strip _other fields when their parent field isn't "Others".
+ * This prevents inconsistent data even if the UI fails to sanitize.
+ */
+function sanitize(data: Partial<HouseholdData>): Partial<HouseholdData> {
+  const out = { ...data }
+  if (out.household_type !== 'Others') delete out.household_type_other
+  if (out.tenure_status !== 'Others') delete out.tenure_status_other
+  if (out.household_unit !== 'Others') delete out.household_unit_other
+  return out
 }
 
 export async function deleteHousehold(id: string): Promise<boolean> {

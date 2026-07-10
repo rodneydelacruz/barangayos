@@ -11,7 +11,7 @@ import { Select } from '@/components/ui/select'
 import { ResidentNameCombobox } from '@/components/ui/ResidentNameCombobox'
 import { hasRole } from '@/auth/session'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { documentStatusColors } from '@/lib/statusStyles'
@@ -255,7 +255,7 @@ export default function DocumentsPage() {
       {panelOpen && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={closePanel} aria-hidden="true" />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-display text-sm font-semibold text-foreground">{editingId ? 'Edit Request' : 'New Document Request'}</h2>
               <button
@@ -352,18 +352,16 @@ export default function DocumentsPage() {
         {flyoutDoc && (
           <>
             <DetailSection icon={<FileText className="size-3" />} title="Document Info">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Queue #:</span> <span className="font-medium">#{flyoutDoc.queue_number}</span></div>
-                <div><span className="text-muted-foreground">Type:</span> <span className="capitalize">{flyoutDoc.document_type.replace(/_/g, ' ')}</span></div>
-                {flyoutDoc.other_document_type && <div className="col-span-2"><span className="text-muted-foreground">Specified:</span> {flyoutDoc.other_document_type}</div>}
-                <div className="col-span-2"><span className="text-muted-foreground">Status:</span> <span className={cn('inline-flex rounded-md px-3.5 py-0.5 text-xs font-bold', statusColors[flyoutDoc.status])}>{statusLabels[flyoutDoc.status]}</span></div>
-              </div>
+              <FieldRow label="Queue #" value={`#${flyoutDoc.queue_number}`} />
+              <FieldRow label="Type" value={flyoutDoc.document_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} />
+              {flyoutDoc.other_document_type && <FieldRow label="Specified" value={flyoutDoc.other_document_type} />}
+              <FieldRow label="Status">
+                <span className={cn('inline-flex rounded-md px-3.5 py-0.5 text-xs font-bold', statusColors[flyoutDoc.status])}>{statusLabels[flyoutDoc.status]}</span>
+              </FieldRow>
             </DetailSection>
 
             <DetailSection icon={<User className="size-3" />} title="Resident">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="col-span-2"><span className="text-muted-foreground">Name:</span> {flyoutDoc.resident_name}</div>
-              </div>
+              <FieldRow label="Name" value={flyoutDoc.resident_name} />
             </DetailSection>
 
             <DetailSection icon={<FileText className="size-3" />} title="Purpose">
@@ -371,25 +369,22 @@ export default function DocumentsPage() {
             </DetailSection>
 
             <DetailSection icon={<DollarSign className="size-3" />} title="Payment">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-muted-foreground">Status:</span>{' '}
-                  <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-bold', {
-                    'bg-amber-100 text-amber-800': flyoutDoc.payment_status === 'unpaid',
-                    'bg-emerald-100 text-emerald-800': flyoutDoc.payment_status === 'paid',
-                    'bg-muted text-muted-foreground': flyoutDoc.payment_status === 'waived',
-                  })}>
-                    {flyoutDoc.payment_status === 'unpaid' ? 'Unpaid' : flyoutDoc.payment_status === 'paid' ? 'Paid' : 'Waived'}
-                  </span>
-                </div>
-                {flyoutDoc.payment_status === 'paid' && (
-                  <>
-                    <div><span className="text-muted-foreground">Amount:</span> ₱{flyoutDoc.payment_amount.toFixed(2)}</div>
-                    {flyoutDoc.or_no && <div className="col-span-2"><span className="text-muted-foreground">O.R. #:</span> {flyoutDoc.or_no}</div>}
-                    <div className="col-span-2"><span className="text-muted-foreground">Date:</span> {flyoutDoc.payment_date ? formatDate(flyoutDoc.payment_date) : '-'}</div>
-                  </>
-                )}
-              </div>
+              <FieldRow label="Status">
+                <span className={cn('inline-flex rounded-md px-2.5 py-0.5 text-xs font-bold', {
+                  'bg-amber-100 text-amber-800': flyoutDoc.payment_status === 'unpaid',
+                  'bg-emerald-100 text-emerald-800': flyoutDoc.payment_status === 'paid',
+                  'bg-muted text-muted-foreground': flyoutDoc.payment_status === 'waived',
+                })}>
+                  {flyoutDoc.payment_status === 'unpaid' ? 'Unpaid' : flyoutDoc.payment_status === 'paid' ? 'Paid' : 'Waived'}
+                </span>
+              </FieldRow>
+              {flyoutDoc.payment_status === 'paid' && (
+                <>
+                  <FieldRow label="Amount" value={`₱${flyoutDoc.payment_amount.toFixed(2)}`} />
+                  {flyoutDoc.or_no && <FieldRow label="O.R. #" value={flyoutDoc.or_no} />}
+                  <FieldRow label="Date" value={flyoutDoc.payment_date ? formatDate(flyoutDoc.payment_date) : '-'} />
+                </>
+              )}
             </DetailSection>
 
             {flyoutDoc.notes && (
@@ -422,17 +417,13 @@ export default function DocumentsPage() {
             )}
 
             <DetailSection icon={<Clock className="size-3" />} title="Timeline">
-              <div className="space-y-1 text-sm">
-                <div><span className="text-muted-foreground">Requested:</span> {formatDateTime(flyoutDoc.requested_at)}</div>
-                {flyoutDoc.released_at && <div><span className="text-muted-foreground">Released:</span> {formatDateTime(flyoutDoc.released_at)}</div>}
-              </div>
+              <FieldRow label="Requested" value={formatDateTime(flyoutDoc.requested_at)} />
+              {flyoutDoc.released_at && <FieldRow label="Released" value={formatDateTime(flyoutDoc.released_at)} />}
             </DetailSection>
 
             <DetailSection title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {formatDateTime(flyoutDoc.created)}</div>
-                <div>Updated: {formatDateTime(flyoutDoc.updated)}</div>
-              </div>
+              <FieldRow label="Created" value={formatDateTime(flyoutDoc.created)} />
+              <FieldRow label="Updated" value={formatDateTime(flyoutDoc.updated)} />
             </DetailSection>
           </>
         )}

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { DetailPanel, DetailSection } from '@/components/ui/DetailPanel'
+import { DetailPanel, DetailSection, FieldRow } from '@/components/ui/DetailPanel'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getFundSources, createFundSource, updateFundSource, deleteFundSource, type ApiFundSource, type FundSourceData } from '@/api/fundSources'
 import { getFinanceAuditLogs, type ApiFinanceAudit } from '@/api/financeAudit'
@@ -160,40 +160,28 @@ export function FundSources() {
         {flyout && (() => (
           <>
             <DetailSection icon={<DollarSign className="size-3.5" />} title="Balance Breakdown">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Original Balance</span>
-                  <span className="font-semibold">₱{flyout.original_balance?.toLocaleString() ?? '—'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Current Balance</span>
-                  <span className="font-semibold">₱{flyout.current_balance?.toLocaleString()}</span>
-                </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Total Deducted</span>
-                    <span className="font-semibold text-destructive">-₱{((flyout.original_balance || 0) - (flyout.current_balance || 0)).toLocaleString()}</span>
-                  </div>
-                </div>
+              <FieldRow label="Original Balance">
+                <span className="font-semibold text-foreground">₱{flyout.original_balance?.toLocaleString() ?? '—'}</span>
+              </FieldRow>
+              <FieldRow label="Current Balance">
+                <span className="font-semibold text-foreground">₱{flyout.current_balance?.toLocaleString()}</span>
+              </FieldRow>
+              <div className="border-t pt-2">
+                <FieldRow label="Total Deducted">
+                  <span className="font-semibold text-destructive">-₱{((flyout.original_balance || 0) - (flyout.current_balance || 0)).toLocaleString()}</span>
+                </FieldRow>
               </div>
             </DetailSection>
             <DetailSection icon={<Landmark className="size-3.5" />} title="Fund Details">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Code</span>
-                  <span className="font-mono text-xs">{flyout.code}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Statutory Rule</span>
-                  <span>{STATUTORY_LABELS[flyout.statutory_rule]}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <span className={`text-xs px-2 py-0.5 rounded ${flyout.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
-                    {flyout.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
+              <FieldRow label="Code">
+                <span className="font-mono text-xs text-foreground">{flyout.code}</span>
+              </FieldRow>
+              <FieldRow label="Statutory Rule" value={STATUTORY_LABELS[flyout.statutory_rule]} />
+              <FieldRow label="Status">
+                <span className={`text-xs px-2 py-0.5 rounded ${flyout.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                  {flyout.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </FieldRow>
             </DetailSection>
             <DetailSection icon={<Scale className="size-3.5" />} title="Transaction History">
               {fundRevenues.length === 0 && auditLogs.filter(l => l.details?.toLowerCase().includes('disburs') || l.details?.toLowerCase().includes('restor') || l.details?.toLowerCase().includes('revenue')).length === 0 ? (
@@ -246,10 +234,8 @@ export function FundSources() {
               </DetailSection>
             )}
             <DetailSection icon={<Calendar className="size-3.5" />} title="Metadata">
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Created: {new Date(flyout.created).toLocaleString()}</div>
-                <div>Updated: {new Date(flyout.updated).toLocaleString()}</div>
-              </div>
+              <FieldRow label="Created" value={new Date(flyout.created).toLocaleString()} />
+              <FieldRow label="Updated" value={new Date(flyout.updated).toLocaleString()} />
             </DetailSection>
           </>
         ))()}
@@ -257,7 +243,7 @@ export function FundSources() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex max-md:flex-col max-md:justify-end md:justify-end">
           <div className="fixed inset-0 bg-black/40 motion-fade-in" onClick={() => { setShowForm(false); setEditing(null) }} />
-          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:max-w-md md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
+          <div className="relative w-full bg-card shadow-xl motion-slide-up motion-fade-in overflow-y-auto md:w-1/2 md:border-l md:border-border max-md:max-h-[85vh] max-md:rounded-t-2xl font-display">
             <div className="p-6">
               <h2 className="font-display text-sm font-semibold mb-4">{editing ? 'Edit' : 'Add'} Fund Source</h2>
               <div className="space-y-4">
