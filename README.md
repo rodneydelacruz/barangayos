@@ -144,6 +144,20 @@ docker compose up -d --build
 
 > **Note:** The `pocketbase-service.exe` binary in `backend/` is for local Windows testing only and is gitignored. In production, PocketBase runs inside a Docker container.
 
+### Creating a Superuser
+
+To create a superuser (admin), run:
+
+```bash
+docker exec -it barangay-pocketbase /pb/pocketbase superuser upsert your@email.com yourpassword
+```
+
+`upsert` creates the account if it doesn't exist, or updates the password if it does.
+
+Then log in to the admin UI at **http://localhost:8090/_/**.
+
+> **Alternative:** If no superuser exists yet, visiting http://localhost:8090/_/ directly will show a first-run setup screen to create one interactively.
+
 ## Project Structure
 
 ```
